@@ -1,0 +1,311 @@
+/* 日历容器 */
+.mobile-calendar {
+  height: 100vh;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* 顶部工具栏 */
+.mobile-toolbar {
+  position: sticky;
+  top: 50px;
+  background: #fff;
+  z-index: 10;
+  padding: 8px 16px;
+  border-bottom: 1px solid #f0f2f5;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.date-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.current-date {
+  font-size: 16px;
+  font-weight: 500;
+  color: #303133;
+  min-width: 120px;
+  text-align: center;
+}
+
+/* 日历主体 */
+.calendar-wrapper {
+  display: flex;
+  background: white;
+  height: calc(100vh - 60px);
+  overflow-x: auto;
+  position: relative;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: 45px repeat(7, minmax(60px, 1fr));
+  height: 100%;
+  overflow-y: auto;
+  position: relative;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  min-width: 100%;
+}
+
+/* 时间轴 */
+.time-column {
+  background: #f8f9fa;
+  border-right: 1px solid #f0f2f5;
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  font-size: 9px;
+  width: 45px;
+  height: 100%;
+}
+
+.time-header {
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 1px solid #ebeef5;
+  font-weight: 500;
+  color: #606266;
+  position: sticky;
+  top: 0;
+  background: #f8f9fa;
+  z-index: 3;
+}
+
+.hour-slot {
+  height: 120px; /* 保持1小时对应10px高度 */
+  border-bottom: 1px solid #ebeef5;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 时间轴上的时间标签 */
+.time-column .hour-slot {
+  background: #fafafa;
+}
+
+.time-column .time-label {
+  color: #909399;
+  font-size: 10px;
+  white-space: pre-line;
+  line-height: 1.2;
+  text-align: center;
+}
+
+/* 日期列 */
+.day-column {
+  position: relative;
+  border-right: 1px solid #ebeef5;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  height: 100%;
+}
+
+.day-header {
+  padding: 6px 4px;
+  text-align: center;
+  height: 50px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  position: sticky;
+  top: 0;
+  background: #fff;
+  z-index: 3;
+}
+
+.day-name {
+  color: #909399;
+  font-size: 12px;
+  margin-bottom: 2px;
+}
+
+.day-date {
+  font-size: 14px;
+  font-weight: 500;
+  color: #303133;
+}
+
+.current-day {
+  color: #409eff;
+}
+
+/* 事件相关 */
+.time-grid {
+  flex: 1;
+  position: relative;
+}
+
+.day-events {
+  position: absolute;
+  top: 60px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 4;
+}
+
+.event-item {
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  pointer-events: auto;
+  border-radius: 4px;
+  padding: 2px 4px;
+  font-size: 11px;
+  color: white;
+  overflow: hidden;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  z-index: 5;
+  box-sizing: border-box;
+}
+
+.event-content {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.event-title {
+  font-weight: 500;
+  margin-bottom: 2px;
+}
+
+.event-time {
+  font-size: 11px;
+  opacity: 0.9;
+}
+
+.event-item:hover {
+  opacity: 0.85;
+}
+
+.event-item:active {
+  opacity: 0.7;
+}
+
+/* 导航栏 */
+.mobile-header {
+  position: sticky;
+  top: 0;
+  background: #fff;
+  z-index: 10;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f0f2f5;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.date-navigation {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.current-date {
+  font-size: 16px !important;
+  font-weight: 500;
+  color: #303133;
+  min-width: 120px;
+  text-align: center;
+}
+
+.today-btn {
+  font-size: 14px;
+  color: #409eff;
+}
+
+.fab-button {
+  position: fixed;
+  right: 16px;
+  bottom: 76px;
+  width: 56px;
+  height: 56px;
+  border-radius: 28px;
+  background: #409eff;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.4);
+  cursor: pointer;
+  transition: all 0.3s;
+  z-index: 100;
+}
+
+.fab-button:active {
+  transform: scale(0.95);
+}
+
+.fab-button .el-icon {
+  font-size: 24px;
+}
+
+/* 添加媒体查询 */
+@media screen and (min-width: 768px) {
+  .mobile-calendar {
+    max-width: 480px;
+    margin: 0 auto;
+  }
+
+  .calendar-grid {
+    grid-template-columns: 45px repeat(7, minmax(50px, 1fr));
+  }
+
+  .event-item {
+    font-size: 12px;
+  }
+
+  .time-label {
+    font-size: 9px;
+  }
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.notification-badge {
+  cursor: pointer;
+}
+
+.notification-icon {
+  font-size: 20px;
+  color: #606266;
+}
+
+/* 日期列中的小时格子 */
+.time-grid .hour-slot {
+  background: transparent;
+}
+
+.hour-content {
+  width: 100%;
+  height: 100%;
+} 

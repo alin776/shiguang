@@ -1,0 +1,159 @@
+:root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: light dark;
+  color: rgba(255, 255, 255, 0.87);
+  background-color: #242424;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  /* 亮色主题变量 */
+  --el-bg-color: #ffffff;
+  --el-text-color: #303133;
+  --el-border-color: #dcdfe6;
+  --el-bg-color-overlay: #ffffff;
+  --el-text-color-primary: #303133;
+  --el-text-color-regular: #606266;
+}
+
+[data-theme='dark'] {
+  /* 深色主题变量 */
+  --el-bg-color: #3b3b3b;
+  --el-text-color: #e5eaf3;
+  --el-border-color: #4c4d4f;
+  
+  /* Element Plus 深色主题覆盖 */
+  --el-color-primary: #409eff;
+  --el-bg-color-overlay: #1d1e1f;
+  --el-text-color-primary: #e5eaf3;
+  --el-text-color-regular: #cfd3dc;
+  --el-border-color-light: #4c4d4f;
+  
+  /* 自定义深色主题样式 */
+  color-scheme: dark;
+
+  /* 日历容器 */
+  .mobile-calendar {
+    background: var(--el-bg-color);
+  }
+
+  /* 顶部工具栏 */
+  .mobile-header {
+    background: var(--el-bg-color-overlay);
+    border-color: var(--el-border-color-light);
+  }
+
+  /* 时间轴 */
+  .time-column {
+    background: var(--el-bg-color-overlay);
+    border-color: var(--el-border-color-light);
+  }
+
+  /* 时间格子 */
+  .hour-slot {
+    border-color: var(--el-border-color-light);
+  }
+
+  /* 日期列 */
+  .day-column {
+    border-color: var(--el-border-color-light);
+  }
+
+  /* 日期头部 */
+  .day-header {
+    background: var(--el-bg-color-overlay);
+  }
+
+  /* 其他元素颜色 */
+  .day-name {
+    color: var(--el-text-color-regular);
+  }
+  
+  .day-date {
+    color: var(--el-text-color-primary);
+  }
+
+  .time-label {
+    color: var(--el-text-color-regular);
+  }
+
+  .event-item {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  }
+}
+
+/* 深色模式适配 */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --el-bg-color: #1a1a1a;
+    --el-text-color: #e5eaf3;
+    --el-border-color: #4c4d4f;
+    --el-bg-color-overlay: #1d1e1f;
+    --el-text-color-primary: #e5eaf3;
+    --el-text-color-regular: #cfd3dc;
+  }
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  display: flex;
+  place-items: center;
+  min-width: 320px;
+  min-height: 100vh;
+  background-color: var(--el-bg-color);
+  color: var(--el-text-color);
+}
+
+h1 {
+  font-size: 3.2em;
+  line-height: 1.1;
+}
+
+button {
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: #1a1a1a;
+  cursor: pointer;
+  transition: border-color 0.25s;
+}
+button:hover {
+  border-color: #646cff;
+}
+button:focus,
+button:focus-visible {
+  outline: 4px auto -webkit-focus-ring-color;
+}
+
+.card {
+  padding: 2em;
+}
+
+#app {
+  max-width: 1280px;
+  margin: 0 auto;
+  text-align: center;
+  overflow: scroll;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color: #213547;
+    background-color: #ffffff;
+  }
+  a:hover {
+    color: #747bff;
+  }
+  button {
+    background-color: #f9f9f9;
+  }
+}

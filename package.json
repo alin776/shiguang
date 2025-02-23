@@ -1,0 +1,31 @@
+{
+  "name": "shiguang",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.0.1",
+    "@capacitor/app": "^7.0.0",
+    "@capacitor/cli": "^6.2.0",
+    "@capacitor/core": "^7.0.1",
+    "@capacitor/ios": "^7.0.1",
+    "@vueuse/core": "^12.7.0",
+    "axios": "^1.7.9",
+    "element-plus": "^2.9.4",
+    "pinia": "^3.0.1",
+    "vue": "^3.5.13",
+    "vue-router": "^4.5.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.2.1",
+    "autoprefixer": "^10.4.20",
+    "terser": "^5.39.0",
+    "typescript": "^5.7.3",
+    "vite": "^6.1.0"
+  }
+}

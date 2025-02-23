@@ -1,0 +1,21 @@
+time-management/
+├── public/
+├── src/
+│   ├── api/
+│   │   ├── auth.js
+│   │   └── events.js
+│   ├── assets/
+│   ├── components/
+│   │   ├── auth/
+│   │   └── calendar/
+│   ├── router/
+│   │   └── index.js
+│   ├── stores/
+│   │   ├── auth.js
+│   │   └── events.js
+│   ├── views/
+│   │   ├── LoginView.vue
+│   │   └── CalendarView.vue
+│   ├── App.vue
+│   └── main.js
+└── package.json 
