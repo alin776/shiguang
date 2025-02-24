@@ -12,6 +12,11 @@
 - 🌓 深色模式：自动适配系统深色模式
 - 📱 响应式设计：完美适配移动端和桌面端
 - 🔔 消息通知：实时接收互动消息提醒
+- ![Image](https://github.com/user-attachments/assets/db2707c3-717b-4ad6-93e4-0df01b8b7aaf)
+![Image](https://github.com/user-attachments/assets/aa15eb8c-4556-4195-9dc9-3bdd7f39beca)
+![Image](https://github.com/user-attachments/assets/4996999a-590a-47f0-ac97-1509fd7522e1)
+![Image](https://github.com/user-attachments/assets/9ae0db28-9142-4296-b794-bbdcec3e8d86)
+![Image](https://github.com/user-attachments/assets/6f7c5133-1d58-404b-a1d1-0500dd9f5dd6)
 
 ## 技术栈
 
