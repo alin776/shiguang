@@ -1,7 +1,10 @@
 <template>
   <div class="user-profile-page">
+    <!-- 添加宇宙粒子背景 -->
+    <SpaceBackground />
+
     <!-- 背景图和用户信息 -->
-    <div class="profile-header">
+    <div class="profile-header tech-card enhanced-border">
       <div
         class="cover-image"
         :style="{
@@ -28,8 +31,7 @@
           </el-avatar>
           <el-button
             v-if="!isOwnProfile"
-            class="follow-btn"
-            type="primary"
+            class="follow-btn glow-button"
             round
             :class="{ following: isFollowing }"
             @click="toggleFollow"
@@ -39,22 +41,28 @@
           </el-button>
         </div>
 
-        <h1 class="username">{{ userProfile.username }}</h1>
+        <h1 class="username cosmic-text">{{ userProfile.username }}</h1>
         <p class="bio">{{ userProfile.bio || "这个人很懒，什么都没写~" }}</p>
 
-        <div class="stats-bar">
+        <div class="stats-bar enhanced-gradient">
           <div class="stat-item hover-effect" @click="showFollowers">
-            <span class="count">{{ userProfile.followersCount || 0 }}</span>
+            <span class="count cosmic-number">{{
+              userProfile.followersCount || 0
+            }}</span>
             <span class="label">粉丝</span>
           </div>
           <div class="divider"></div>
           <div class="stat-item hover-effect" @click="showFollowing">
-            <span class="count">{{ userProfile.followingCount || 0 }}</span>
+            <span class="count cosmic-number">{{
+              userProfile.followingCount || 0
+            }}</span>
             <span class="label">关注</span>
           </div>
           <div class="divider"></div>
           <div class="stat-item">
-            <span class="count">{{ userProfile.postsCount || 0 }}</span>
+            <span class="count cosmic-number">{{
+              userProfile.postsCount || 0
+            }}</span>
             <span class="label">帖子</span>
           </div>
         </div>
@@ -62,33 +70,33 @@
     </div>
 
     <!-- 帖子列表 -->
-    <div class="posts-container">
-      <h2 class="section-title">发布的帖子</h2>
+    <div class="posts-container tech-container">
+      <h2 class="section-title cosmic-text">发布的帖子</h2>
       <div class="post-list" v-if="posts.length > 0">
         <div
           v-for="post in posts"
           :key="post.id"
-          class="post-card"
+          class="post-card tech-card"
           @click="viewPost(post)"
         >
           <div class="post-cover" v-if="post.images?.length">
             <img :src="getImageUrl(post.images[0])" :alt="post.title" />
-            <div class="image-count" v-if="post.images.length > 1">
+            <div class="image-count tech-badge" v-if="post.images.length > 1">
               <el-icon><Picture /></el-icon>
               {{ post.images.length }}
             </div>
           </div>
 
           <div class="post-content">
-            <h3 class="post-title">{{ post.title }}</h3>
+            <h3 class="post-title cosmic-title">{{ post.title }}</h3>
             <p class="post-text">{{ post.content }}</p>
             <div class="post-meta">
               <div class="post-stats">
-                <span class="stat-item">
+                <span class="stat-item cosmic-stat">
                   <el-icon><View /></el-icon>
                   {{ post.views || 0 }}
                 </span>
-                <span class="stat-item">
+                <span class="stat-item cosmic-stat">
                   <el-icon><Star /></el-icon>
                   {{ post.likes || 0 }}
                 </span>
@@ -99,7 +107,7 @@
         </div>
       </div>
 
-      <div v-else class="empty-state">
+      <div v-else class="empty-state tech-card">
         <el-empty description="暂无帖子" />
       </div>
     </div>
@@ -126,6 +134,7 @@ import { getAvatarUrl, getImageUrl } from "@/utils/imageHelpers";
 import formatTime from "@/utils/formatTime";
 import { API_BASE_URL } from "@/config";
 import { useUnmountDetection } from "../composables/useUnmountDetection";
+import SpaceBackground from "./calendar/components/SpaceBackground.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -266,29 +275,56 @@ onMounted(() => {
 <style scoped>
 .user-profile-page {
   min-height: 100vh;
-  background: #f6f7f9;
-  overflow-y: auto;
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  width: 100%;
+  background: rgba(18, 18, 30, 0.9);
+  color: white;
+  position: relative;
 }
 
 .profile-header {
+  background: rgba(30, 30, 40, 0.7);
   position: relative;
-  background: #fff;
+  z-index: 2;
+  overflow: hidden;
+}
+
+/* 宇宙科技风格卡片 */
+.tech-card {
+  background: rgba(30, 30, 40, 0.7);
+  border-radius: 16px;
+  overflow: hidden;
+  position: relative;
   margin-bottom: 16px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.enhanced-border {
+  position: relative;
+  z-index: 0;
+}
+
+.enhanced-border::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  padding: 2px;
+  border-radius: 16px;
+  background: linear-gradient(
+    45deg,
+    rgba(56, 189, 248, 0.6),
+    rgba(147, 51, 234, 0.6)
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
 }
 
 .cover-image {
-  height: 240px;
+  height: 180px;
   background-size: cover;
   background-position: center;
   position: relative;
-  background-color: #f5f7fa;
+  background-color: rgba(20, 20, 30, 0.8);
 }
 
 .header-actions {
@@ -298,59 +334,70 @@ onMounted(() => {
   right: 16px;
   display: flex;
   justify-content: space-between;
+  z-index: 5;
 }
 
-.back-icon,
-.header-actions .el-icon {
+.back-icon {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(0, 0, 0, 0.5);
+  color: white;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  color: #333;
-  font-size: 18px;
-}
-
-.cover-upload {
-  position: absolute;
-  bottom: 16px;
-  right: 16px;
+  box-shadow: 0 0 10px rgba(147, 51, 234, 0.4);
 }
 
 .user-info {
-  padding: 0 24px 28px;
-  margin-top: -44px;
   position: relative;
+  margin-top: -44px;
+  padding: 0 16px 20px;
   text-align: center;
 }
 
 .avatar-wrapper {
-  margin-bottom: 16px;
-  position: relative;
-  display: inline-block;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 12px;
 }
 
 .profile-avatar {
-  border: 4px solid #fff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 4px solid rgba(30, 30, 40, 0.8);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 0 15px rgba(147, 51, 234, 0.6);
+  transition: all 0.3s ease;
+}
+
+.profile-avatar:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 20px rgba(147, 51, 234, 0.8);
 }
 
 .follow-btn {
   position: absolute;
-  right: -88px;
-  bottom: 8px;
-  padding: 8px 24px;
-  font-weight: 500;
+  right: 20px;
+  top: 0;
+  min-width: 90px;
+  background: linear-gradient(45deg, #8b5cf6, #d946ef);
+  border: none;
+  color: white;
+  font-weight: 600;
+  box-shadow: 0 4px 10px rgba(147, 51, 234, 0.4);
   transition: all 0.3s ease;
 }
 
+.follow-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(147, 51, 234, 0.6);
+}
+
 .follow-btn.following {
-  background-color: #f5f7fa;
-  border-color: #dcdfe6;
-  color: #606266;
+  background: rgba(147, 51, 234, 0.2);
+  color: white;
+  border: 1px solid rgba(147, 51, 234, 0.4);
 }
 
 .follow-btn .el-icon {
@@ -360,13 +407,32 @@ onMounted(() => {
 .username {
   font-size: 24px;
   font-weight: 600;
-  color: #333;
+  color: white;
   margin: 0 0 8px;
+  text-shadow: 0 0 10px rgba(147, 51, 234, 0.7);
+}
+
+.cosmic-text {
+  background: linear-gradient(45deg, #38bdf8, #9333ea);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: 0 0 8px rgba(147, 51, 234, 0.4);
+}
+
+.cosmic-number {
+  font-weight: bold;
+  text-shadow: 0 0 8px rgba(147, 51, 234, 0.7);
+}
+
+.cosmic-title {
+  color: white;
+  text-shadow: 0 0 6px rgba(147, 51, 234, 0.5);
 }
 
 .bio {
   font-size: 15px;
-  color: #666;
+  color: rgba(255, 255, 255, 0.8);
   margin: 0 0 24px;
   line-height: 1.6;
   max-width: 480px;
@@ -379,15 +445,27 @@ onMounted(() => {
   justify-content: center;
   align-items: center;
   padding: 16px 0;
-  border-top: 1px solid #f0f2f5;
+  border-top: 1px solid rgba(147, 51, 234, 0.3);
   max-width: 400px;
   margin: 0 auto;
+}
+
+.enhanced-gradient {
+  background: linear-gradient(
+    to right,
+    rgba(30, 30, 40, 0.5),
+    rgba(56, 189, 248, 0.1),
+    rgba(30, 30, 40, 0.5)
+  );
+  border-radius: 8px;
+  padding: 12px;
+  box-shadow: inset 0 0 10px rgba(147, 51, 234, 0.2);
 }
 
 .divider {
   width: 1px;
   height: 24px;
-  background-color: #f0f2f5;
+  background-color: rgba(147, 51, 234, 0.3);
   margin: 0 32px;
 }
 
@@ -410,18 +488,19 @@ onMounted(() => {
 .stat-item .count {
   font-size: 20px;
   font-weight: 600;
-  color: #333;
+  color: white;
 }
 
 .stat-item .label {
   font-size: 13px;
-  color: #8c8c8c;
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .section-title {
   font-size: 18px;
   font-weight: 500;
-  color: #333;
+  color: white;
+  text-shadow: 0 0 8px rgba(147, 51, 234, 0.7);
   margin: 0 0 16px;
   padding: 0 16px;
 }
@@ -432,19 +511,25 @@ onMounted(() => {
   margin: 0 auto;
 }
 
+.tech-container {
+  position: relative;
+  z-index: 1;
+}
+
 .post-card {
-  background: #fff;
-  border-radius: 12px;
+  background: rgba(30, 30, 40, 0.6);
+  border: 1px solid rgba(147, 51, 234, 0.2);
   overflow: hidden;
   margin-bottom: 16px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   transition: transform 0.2s, box-shadow 0.2s;
   cursor: pointer;
 }
 
 .post-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 8px 20px rgba(147, 51, 234, 0.3);
+  border-color: rgba(147, 51, 234, 0.4);
 }
 
 .post-cover {
@@ -465,14 +550,20 @@ onMounted(() => {
   position: absolute;
   right: 8px;
   top: 8px;
-  background: rgba(0, 0, 0, 0.6);
-  color: #fff;
+  background: rgba(147, 51, 234, 0.6);
+  color: white;
   padding: 4px 8px;
   border-radius: 12px;
   font-size: 12px;
   display: flex;
   align-items: center;
   gap: 4px;
+  box-shadow: 0 0 10px rgba(147, 51, 234, 0.5);
+}
+
+.tech-badge {
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .post-content {
@@ -483,12 +574,12 @@ onMounted(() => {
   font-size: 17px;
   font-weight: 600;
   margin: 0 0 8px;
-  color: #333;
+  color: white;
 }
 
 .post-text {
   font-size: 15px;
-  color: #666;
+  color: rgba(255, 255, 255, 0.7);
   margin: 0 0 12px;
   line-height: 1.6;
   display: -webkit-box;
@@ -511,21 +602,31 @@ onMounted(() => {
 .post-stats .stat-item {
   flex-direction: row;
   font-size: 13px;
-  color: #8c8c8c;
+  color: rgba(255, 255, 255, 0.5);
   gap: 4px;
+}
+
+.cosmic-stat {
+  transition: all 0.3s ease;
+}
+
+.cosmic-stat:hover {
+  color: rgba(147, 51, 234, 0.9);
+  transform: translateY(-1px);
 }
 
 .post-time {
   font-size: 13px;
-  color: #999;
+  color: rgba(255, 255, 255, 0.5);
 }
 
 .empty-state {
   padding: 48px 0;
   text-align: center;
-  background: #fff;
+  background: rgba(30, 30, 40, 0.7);
   border-radius: 12px;
   margin: 16px 8px;
+  border: 1px solid rgba(147, 51, 234, 0.2);
 }
 
 :deep(.nav-bar) {

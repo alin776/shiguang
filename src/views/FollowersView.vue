@@ -1,13 +1,19 @@
 <template>
-  <div class="followers-page">
-    <div class="page-header">
+  <div class="followers-page page-container">
+    <SpaceBackground />
+    <div class="page-header tech-card">
       <el-icon class="back-icon" @click="router.back()"><ArrowLeft /></el-icon>
-      <h2>粉丝</h2>
+      <h2 class="cosmic-text">粉丝</h2>
     </div>
 
     <div class="user-list" v-if="followers.length > 0">
-      <div v-for="user in followers" :key="user.id" class="user-item">
-        <div class="user-info" @click="viewUserProfile(user.id)">
+      <div
+        v-for="user in followers"
+        :key="user.id"
+        class="user-item tech-card enhanced-border"
+        @click="viewUserProfile(user.id)"
+      >
+        <div class="user-info">
           <el-avatar
             :size="48"
             :src="getAvatarUrl(user.avatar)"
@@ -17,14 +23,13 @@
             {{ user.username?.charAt(0).toUpperCase() || "?" }}
           </el-avatar>
           <div class="user-meta">
-            <div class="username">{{ user.username }}</div>
+            <div class="username cosmic-text">{{ user.username }}</div>
             <div class="bio">{{ user.bio || "这个人很懒，什么都没写~" }}</div>
           </div>
         </div>
         <el-button
           v-if="user.id !== currentUserId"
-          class="follow-btn"
-          type="primary"
+          class="follow-btn glow-button"
           round
           size="small"
           :class="{ following: user.isFollowing }"
@@ -35,7 +40,7 @@
       </div>
     </div>
 
-    <div v-else class="empty-state">
+    <div v-else class="empty-state tech-card">
       <el-empty description="暂无粉丝" />
     </div>
   </div>
@@ -48,6 +53,7 @@ import { ElMessage } from "element-plus";
 import { ArrowLeft } from "@element-plus/icons-vue";
 import { useAuthStore } from "../stores/auth";
 import { useCommunityStore } from "../stores/community";
+import SpaceBackground from "./calendar/components/SpaceBackground.vue";
 
 const router = useRouter();
 const route = useRoute();
@@ -115,24 +121,29 @@ onMounted(() => {
 
 <style scoped>
 .followers-page {
-  padding-top: 60px;
   min-height: 100vh;
-  background: #f6f7f9;
+  background: rgba(18, 18, 30, 0.9);
+  color: white;
+  position: relative;
+  background-color: #000000;
 }
 
 .page-header {
   display: flex;
   align-items: center;
   padding: 16px;
-  background: #fff;
+  background: rgba(30, 30, 40, 0.7);
   position: sticky;
   top: 0;
   z-index: 10;
+  margin-bottom: 16px;
+  border-bottom: 1px solid rgba(147, 51, 234, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .back-icon {
   font-size: 20px;
-  color: #606266;
+  color: white;
   cursor: pointer;
   padding: 4px;
 }
@@ -143,6 +154,7 @@ onMounted(() => {
   font-weight: 500;
   flex: 1;
   text-align: center;
+  text-shadow: 0 0 8px rgba(147, 51, 234, 0.7);
 }
 
 .user-list {
@@ -154,9 +166,41 @@ onMounted(() => {
   align-items: center;
   justify-content: space-between;
   padding: 12px;
-  background: #fff;
+  background: rgba(30, 30, 40, 0.6);
   border-radius: 8px;
   margin-bottom: 8px;
+  border: 1px solid rgba(147, 51, 234, 0.2);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.user-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(147, 51, 234, 0.3);
+  border-color: rgba(147, 51, 234, 0.4);
+}
+
+.enhanced-border {
+  position: relative;
+  z-index: 0;
+}
+
+.enhanced-border::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  padding: 2px;
+  border-radius: 8px;
+  background: linear-gradient(
+    45deg,
+    rgba(56, 189, 248, 0.6),
+    rgba(147, 51, 234, 0.6)
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
 }
 
 .user-info {
@@ -174,13 +218,22 @@ onMounted(() => {
 .username {
   font-size: 16px;
   font-weight: 500;
-  color: #333;
+  color: white;
   margin-bottom: 4px;
+  text-shadow: 0 0 8px rgba(147, 51, 234, 0.7);
+}
+
+.cosmic-text {
+  background: linear-gradient(45deg, #38bdf8, #9333ea);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: 0 0 8px rgba(147, 51, 234, 0.4);
 }
 
 .bio {
   font-size: 13px;
-  color: #999;
+  color: rgba(255, 255, 255, 0.7);
   display: -webkit-box;
   -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
@@ -189,17 +242,32 @@ onMounted(() => {
 
 .follow-btn {
   min-width: 80px;
+  background: linear-gradient(45deg, #8b5cf6, #d946ef);
+  border: none;
+  font-weight: 600;
+  box-shadow: 0 4px 10px rgba(147, 51, 234, 0.4);
+  transition: all 0.3s ease;
+  color: white;
+}
+
+.follow-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(147, 51, 234, 0.6);
 }
 
 .follow-btn.following {
-  background-color: #f5f7fa;
-  border-color: #dcdfe6;
-  color: #606266;
+  background: rgba(147, 51, 234, 0.2);
+  color: white;
+  border: 1px solid rgba(147, 51, 234, 0.4);
 }
 
 .empty-state {
   padding: 40px 0;
   text-align: center;
+  background: rgba(30, 30, 40, 0.7);
+  border-radius: 12px;
+  margin: 16px 8px;
+  border: 1px solid rgba(147, 51, 234, 0.2);
 }
 
 @media screen and (min-width: 768px) {
