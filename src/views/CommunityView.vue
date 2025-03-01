@@ -12,6 +12,9 @@
             @clear="handleSearch"
             @keyup.enter="handleSearch"
           />
+          <div class="notification-container">
+            <NotificationBadge />
+          </div>
         </div>
       </div>
 
@@ -244,6 +247,7 @@ import { useRouter } from "vue-router";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { Search, Plus, Picture, View, ChatDotRound, Star } from "@element-plus/icons-vue";
 import BottomNavBar from "@/components/BottomNavBar.vue";
+import NotificationBadge from "@/components/NotificationBadge.vue";
 import formatTime from "@/utils/formatTime";
 import { useCommunityStore } from "@/stores/community";
 import { useAuthStore } from "@/stores/auth";
@@ -487,7 +491,7 @@ onMounted(() => {
   background: var(--card-bg);
   position: sticky;
   top: 0;
-  z-index: 10;
+  z-index: 20;
   width: 100%;
   box-sizing: border-box;
 }
@@ -496,16 +500,23 @@ onMounted(() => {
   flex: 1;
   max-width: 600px;
   margin: 0 auto;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.notification-container {
+  margin-left: 12px;
 }
 
 .sort-tabs {
   display: flex;
-  background: var(--card-bg);
+  justify-content: space-between;
   padding: 12px 16px;
-  gap: 32px;
-  border-bottom: 1px solid var(--el-border-color-light);
+  background-color: var(--bg-color);
+  margin-bottom: 8px;
   position: sticky;
-  top: 64px;
+  top: 56px;
   z-index: 10;
 }
 
