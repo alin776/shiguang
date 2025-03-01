@@ -143,10 +143,11 @@ watch(
   margin-bottom: 16px;
   font-size: 16px;
   color: var(--text-color);
+  text-align: left;
 }
 
 .no-comments {
-  text-align: center;
+  text-align: left;
   padding: 20px 0;
   color: var(--text-secondary, #909399);
 }

@@ -9,11 +9,13 @@
         :class="{ active: currentRoute === item.path }"
         @click="navigate(item.path)"
       >
-        <img
-          :src="currentRoute === item.path ? item.activeIcon : item.icon"
-          class="nav-icon"
-          :alt="item.label"
-        />
+        <div class="icon-container" :class="{ active: currentRoute === item.path }">
+          <img
+            :src="currentRoute === item.path ? item.activeIcon : item.icon"
+            class="nav-icon"
+            :alt="item.label"
+          />
+        </div>
         <span>{{ item.label }}</span>
       </div>
     </div>
@@ -65,15 +67,16 @@ const navigate = (path) => {
   bottom: 0;
   left: 0;
   right: 0;
-  height: 56px;
-  background: #fff;
+  height: 60px;
+  background: #1E1E1E;
   display: flex;
   justify-content: space-around;
   align-items: center;
-  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
   z-index: 100;
   max-width: inherit;
   margin: 0 auto;
+  border-radius: 20px 20px 0 0;
+  padding: 0 10px;
 }
 
 .nav-item {
@@ -82,20 +85,45 @@ const navigate = (path) => {
   align-items: center;
   justify-content: center;
   gap: 4px;
-  padding: 4px 0;
-  min-width: 56px;
+  padding: 6px 0;
+  min-width: 70px;
   color: #909399;
   font-size: 12px;
   cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.icon-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+  margin-bottom: 2px;
+}
+
+.icon-container.active {
+  background-color: #6C5CE7;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(108, 92, 231, 0.3);
 }
 
 .nav-item.active {
-  color: #409eff;
+  color: #FFFFFF;
+  transform: scale(1.05);
+}
+
+.nav-item:not(.active) {
+  color: #909399;
+  opacity: 0.7;
 }
 
 .nav-icon {
   width: 24px;
   height: 24px;
+  transition: all 0.3s ease;
 }
 
 /* 在大屏幕上限制宽度 */
@@ -107,24 +135,9 @@ const navigate = (path) => {
   }
 }
 
-/* 暗色模式适配 */
-@media (prefers-color-scheme: dark) {
-  .bottom-nav {
-    background: #242424;
-  }
-
-  .nav-item {
-    color: #909399;
-  }
-
-  .nav-item.active {
-    color: var(--el-color-primary);
-  }
-}
-
 /* 底部导航栏占位元素 */
 .bottom-nav-placeholder {
-  height: 56px;
+  height: 60px;
   width: 100%;
   margin-bottom: 0;
 }

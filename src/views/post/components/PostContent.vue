@@ -133,6 +133,7 @@ const nextImage = () => {
 .post-content {
   padding: 16px;
   background-color: var(--card-bg);
+  text-align: left;
 }
 
 .post-title {
@@ -140,6 +141,7 @@ const nextImage = () => {
   margin-bottom: 12px;
   font-size: 18px;
   color: var(--text-color);
+  text-align: left;
 }
 
 .post-text {
@@ -148,5 +150,6 @@ const nextImage = () => {
   white-space: pre-wrap;
   color: var(--text-color);
   margin: 0;
+  text-align: left;
 }
 </style>

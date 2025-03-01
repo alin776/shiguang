@@ -149,6 +149,7 @@ defineEmits([
   margin-bottom: 12px;
   white-space: pre-wrap;
   word-break: break-word;
+  text-align: left;
 }
 
 .comment-actions {
@@ -212,6 +213,7 @@ defineEmits([
 .reply-text {
   white-space: pre-wrap;
   word-break: break-word;
+  text-align: left;
 }
 
 .reply-actions {
