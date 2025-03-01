@@ -190,21 +190,31 @@ const resetPassword = async (req, res) => {
 };
 
 // 获取当前用户信息
-const getUserInfo = async (req, res) => {
+const getCurrentUser = async (req, res) => {
   try {
     const [users] = await db.execute(
-      "SELECT id, username, email, phone, status FROM users WHERE id = ?",
-      [req.user.id]
+      `SELECT id, username, email, phone, avatar, status, bio, cover_image
+       FROM users 
+       WHERE id = ?`,
+      [req.user?.userId || req.user?.id]
     );
 
-    if (users.length === 0) {
+    const user = users[0];
+    if (!user) {
       return res.status(404).json({ message: "用户不存在" });
     }
-
-    res.json(users[0]);
+    
+    console.log("获取到的用户数据:", user);
+    
+    res.json({
+      ...user,
+      avatar: user.avatar ? `/uploads/avatars/${user.avatar}` : null,
+      coverImage: user.cover_image ? `/uploads/covers/${user.cover_image}` : null,
+      bio: user.bio || ""
+    });
   } catch (error) {
-    console.error("获取用户信息错误:", error);
-    res.status(500).json({ message: "获取用户信息失败" });
+    console.error("获取用户信息失败:", error);
+    res.status(500).json({ message: error.message });
   }
 };
 
@@ -374,31 +384,6 @@ const getOnlineUsers = async (req, res) => {
   }
 };
 
-// 获取当前用户信息
-const getCurrentUser = async (req, res) => {
-  try {
-    const [users] = await db.execute(
-      `SELECT id, username, email, phone, avatar, status 
-       FROM users 
-       WHERE id = ?`,
-      [req.user?.userId || req.user?.id]
-    );
-
-    const user = users[0];
-    if (!user) {
-      return res.status(404).json({ message: "用户不存在" });
-    }
-    res.json({
-      ...user,
-      avatar: user.avatar ? `/uploads/avatars/${user.avatar}` : null,
-    });
-  } catch (error) {
-    console.error("获取用户信息失败:", error);
-    res.status(500).json({ message: error.message });
-  }
-};
-
-// 更新用户信息
 const updateProfile = async (req, res) => {
   try {
     console.log("收到的请求数据:", req.body); // 添加日志
@@ -767,15 +752,12 @@ const unfollowUser = async (req, res) => {
 module.exports = {
   register,
   login,
-  thirdPartyLogin,
-  forgotPassword,
   resetPassword,
-  getUserInfo,
+  getCurrentUser,
   getSettings,
   updateSettings,
   logout,
   getOnlineUsers,
-  getCurrentUser,
   updateProfile,
   changePassword,
   getFollowers,

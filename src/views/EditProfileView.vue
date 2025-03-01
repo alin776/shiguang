@@ -20,11 +20,12 @@
         <div class="dark-overlay"></div>
         <el-upload
           class="upload-cover"
-          :action="`${API_BASE_URL}/api/users/upload/cover`"
+          :action="`${API_BASE_URL}/api/v1/users/upload/cover`"
           :headers="uploadHeaders"
           :show-file-list="false"
           :on-success="handleCoverSuccess"
-          :before-upload="beforeUpload"
+          :before-upload="(file) => beforeUpload(file, 'cover')"
+          :on-error="handleUploadError"
         >
           <div class="cover-update-btn">
             <el-icon><Camera /></el-icon>
@@ -46,7 +47,8 @@
           :headers="uploadHeaders"
           :show-file-list="false"
           :on-success="handleAvatarSuccess"
-          :before-upload="beforeUpload"
+          :before-upload="(file) => beforeUpload(file, 'avatar')"
+          :on-error="handleUploadError"
         >
           <div class="avatar-update-label">更换头像</div>
         </el-upload>
@@ -99,6 +101,11 @@ const authStore = useAuthStore();
 
 const defaultCover = "../default-cover.jpg"; // 添加默认封面图
 
+// 添加上传请求头
+const uploadHeaders = computed(() => ({
+  Authorization: `Bearer ${authStore.token}`
+}));
+
 const saving = ref(false);
 const form = ref({
   username: "",
@@ -109,63 +116,118 @@ const form = ref({
 });
 
 onMounted(async () => {
-  const avatar = authStore.user?.avatar;
-  const avatarMatches = avatar?.match(/avatar-[\w-]+\.\w+$/);
+  try {
+    // 先获取最新的用户信息
+    console.log("开始获取用户信息...");
+    await authStore.fetchUserInfo();
+    console.log("获取用户信息成功:", authStore.user);
+    
+    // 处理头像路径
+    const avatar = authStore.user?.avatar;
+    let avatarFileName = "";
+    if (avatar) {
+      const avatarMatches = avatar.match(/avatar-[\w-]+\.\w+$/);
+      avatarFileName = avatarMatches ? avatarMatches[0] : "";
+      console.log("提取的头像文件名:", avatarFileName);
+    }
 
-  const coverImage = authStore.user?.coverImage;
-  const coverMatches = coverImage?.match(/cover-[\w-]+\.\w+$/);
-
-  form.value = {
-    username: authStore.user?.username || "",
-    bio: authStore.user?.bio || "",
-    email: authStore.user?.email || "",
-    avatar: avatarMatches ? avatarMatches[0] : "", // 只保存头像文件名
-    coverImage: coverMatches ? coverMatches[0] : "", // 只保存封面图文件名
-  };
+    // 处理封面图路径
+    const coverImage = authStore.user?.coverImage;
+    let coverFileName = "";
+    if (coverImage) {
+      const coverMatches = coverImage.match(/cover-[\w-]+\.\w+$/);
+      coverFileName = coverMatches ? coverMatches[0] : "";
+      console.log("提取的封面图文件名:", coverFileName);
+    }
+    
+    // 初始化表单数据
+    form.value = {
+      username: authStore.user?.username || "",
+      bio: authStore.user?.bio || "",
+      email: authStore.user?.email || "",
+      avatar: avatarFileName,
+      coverImage: coverFileName,
+    };
+    
+    console.log("表单数据初始化完成:", {
+      formData: form.value,
+      avatarUrl: displayAvatar.value,
+      coverUrl: displayCover.value,
+      originalUser: authStore.user
+    });
+  } catch (error) {
+    console.error("初始化用户资料失败:", error);
+    ElMessage.error("获取用户信息失败，请稍后重试");
+  }
 });
 
 const saveProfile = async () => {
   try {
     saving.value = true;
+    
+    console.log("准备保存的表单数据:", form.value);
+    
+    // 验证必填字段
+    if (!form.value.username.trim()) {
+      ElMessage.error("用户名不能为空");
+      return;
+    }
+    
+    // 构建要发送的数据
     const profileData = {
-      username: form.value.username,
-      bio: form.value.bio,
+      username: form.value.username.trim(),
+      bio: form.value.bio || "",  // 确保bio不为null或undefined
       email: form.value.email,
-      avatar: form.value.avatar,
-      coverImage: form.value.coverImage,
+      avatar: form.value.avatar,  // 只发送文件名
+      coverImage: form.value.coverImage,  // 只发送文件名
     };
-
+    
+    console.log("发送的用户资料数据:", profileData);
+    
+    // 更新用户资料
     const response = await authStore.updateProfile(profileData);
-    ElMessage.success("保存成功");
+    console.log("更新资料成功:", response);
+    
+    // 确保获取最新的用户信息
+    await authStore.fetchUserInfo();
+    
+    ElMessage.success("个人资料保存成功");
     router.back();
   } catch (error) {
     console.error("保存失败:", error);
-    ElMessage.error(error.message || "保存失败");
+    ElMessage.error(error.message || "保存失败，请稍后重试");
   } finally {
     saving.value = false;
   }
 };
 
-const beforeCoverUpload = (file) => {
+const beforeUpload = (file, type = 'image') => {
+  console.log(`验证${type}上传:`, file);
   const isJpgOrPng = file.type === "image/jpeg" || file.type === "image/png";
-  const isLt5M = file.size / 1024 / 1024 < 5;
+  
+  // 根据类型确定大小限制
+  const sizeLimit = type === 'cover' ? 5 : 2; // 封面图5MB，头像2MB
+  const isUnderSizeLimit = file.size / 1024 / 1024 < sizeLimit;
 
   if (!isJpgOrPng) {
-    ElMessage.error("封面图只能是 JPG 或 PNG 格式!");
+    ElMessage.error("图片只能是 JPG 或 PNG 格式!");
   }
-  if (!isLt5M) {
-    ElMessage.error("封面图大小不能超过 5MB!");
+  if (!isUnderSizeLimit) {
+    ElMessage.error(`图片大小不能超过 ${sizeLimit}MB!`);
   }
-  return isJpgOrPng && isLt5M;
+  return isJpgOrPng && isUnderSizeLimit;
 };
 
 const handleCoverSuccess = (res) => {
   try {
+    console.log("封面图上传成功，返回数据:", res);
     if (res.url) {
       // 从完整 URL 中提取文件名
       const matches = res.url.match(/cover-[\w-]+\.\w+$/);
+      console.log("提取封面图文件名:", matches);
       if (matches) {
         form.value.coverImage = matches[0]; // 只保存文件名
+        console.log("更新表单中的封面图文件名:", form.value.coverImage);
         ElMessage.success("封面图上传成功");
       } else {
         ElMessage.error("上传失败：无效的文件名格式");
@@ -181,11 +243,14 @@ const handleCoverSuccess = (res) => {
 
 const handleAvatarSuccess = (res) => {
   try {
+    console.log("头像上传成功，返回数据:", res);
     if (res.url) {
       // 从完整 URL 中提取文件名
       const matches = res.url.match(/avatar-[\w-]+\.\w+$/);
+      console.log("提取头像文件名:", matches);
       if (matches) {
         form.value.avatar = matches[0]; // 只保存文件名
+        console.log("更新表单中的头像文件名:", form.value.avatar);
         ElMessage.success("头像上传成功");
       } else {
         ElMessage.error("上传失败：无效的文件名格式");
@@ -201,31 +266,24 @@ const handleAvatarSuccess = (res) => {
 
 const handleUploadError = (error) => {
   console.error("上传失败:", error);
-  ElMessage.error("上传失败，请重试");
-};
-
-const beforeAvatarUpload = (file) => {
-  const isJpgOrPng = file.type === "image/jpeg" || file.type === "image/png";
-  const isLt2M = file.size / 1024 / 1024 < 2;
-
-  if (!isJpgOrPng) {
-    ElMessage.error("头像只能是 JPG 或 PNG 格式!");
-    return false;
-  }
-  if (!isLt2M) {
-    ElMessage.error("头像大小不能超过 2MB!");
-    return false;
-  }
-  return true;
+  ElMessage.error("上传失败，请检查网络连接或服务器状态");
 };
 
 const displayAvatar = computed(() => {
   if (!form.value.avatar) return "";
+  console.log("计算头像URL:", {
+    原始值: form.value.avatar,
+    处理后: getAvatarUrl(form.value.avatar)
+  });
   return getAvatarUrl(form.value.avatar);
 });
 
 const displayCover = computed(() => {
   if (!form.value.coverImage) return defaultCover;
+  console.log("计算封面URL:", {
+    原始值: form.value.coverImage,
+    处理后: getImageUrl(form.value.coverImage)
+  });
   return getImageUrl(form.value.coverImage);
 });
 </script>

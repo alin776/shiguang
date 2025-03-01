@@ -93,9 +93,23 @@ export const useAuthStore = defineStore("auth", {
       try {
         console.log("发送到后端的数据:", profileData);
 
+        // 确保传递给后端的是正确处理过的数据
+        const dataToSend = {
+          ...profileData,
+          // 确保只发送文件名，不包含完整路径
+          avatar: profileData.avatar && profileData.avatar.includes("/")
+            ? profileData.avatar.split("/").pop()
+            : profileData.avatar,
+          coverImage: profileData.coverImage && profileData.coverImage.includes("/")
+            ? profileData.coverImage.split("/").pop()
+            : profileData.coverImage
+        };
+
+        console.log("处理后发送到后端的数据:", dataToSend);
+
         const response = await axios.put(
           `${API_BASE_URL}/api/users/profile`,
-          profileData,
+          dataToSend,
           {
             headers: { Authorization: `Bearer ${this.token}` },
           }
@@ -103,16 +117,29 @@ export const useAuthStore = defineStore("auth", {
 
         console.log("后端返回的数据:", response.data);
 
+        // 处理返回的头像和封面图路径
+        let avatar = response.data.user.avatar;
+        if (avatar && !avatar.includes("http")) {
+          // 确保路径格式正确
+          avatar = avatar.startsWith("/") 
+            ? `${API_BASE_URL}${avatar}`
+            : `${API_BASE_URL}/uploads/avatars/${avatar}`;
+        }
+
+        let coverImage = response.data.user.coverImage;
+        if (coverImage && !coverImage.includes("http")) {
+          // 确保路径格式正确
+          coverImage = coverImage.startsWith("/")
+            ? `${API_BASE_URL}${coverImage}`
+            : `${API_BASE_URL}/uploads/covers/${coverImage}`;
+        }
+
         // 更新本地存储的用户信息
         this.user = {
           ...this.user,
           ...response.data.user,
-          avatar: response.data.user.avatar
-            ? `${API_BASE_URL}${response.data.user.avatar}`
-            : null,
-          coverImage: response.data.user.coverImage
-            ? `${API_BASE_URL}${response.data.user.coverImage}`
-            : null,
+          avatar,
+          coverImage
         };
 
         // 更新 localStorage
@@ -266,13 +293,43 @@ export const useAuthStore = defineStore("auth", {
 
     async fetchUserInfo() {
       try {
+        console.log("开始获取用户信息...");
         const response = await axios.get(`${API_BASE_URL}/api/users/me`, {
           headers: { Authorization: `Bearer ${this.token}` },
         });
-        this.user = response.data;
+        
+        console.log("服务器返回的原始用户数据:", response.data);
+        
+        // 处理头像和封面图路径
+        let userData = { ...response.data };
+        
+        // 处理头像路径
+        if (userData.avatar) {
+          // 如果已经是完整的URL，保留原样
+          if (!userData.avatar.includes("http")) {
+            userData.avatar = userData.avatar.startsWith("/")
+              ? `${API_BASE_URL}${userData.avatar}`
+              : `${API_BASE_URL}/uploads/avatars/${userData.avatar}`;
+          }
+        }
+        
+        // 处理封面图路径
+        if (userData.coverImage) {
+          // 如果已经是完整的URL，保留原样
+          if (!userData.coverImage.includes("http")) {
+            userData.coverImage = userData.coverImage.startsWith("/")
+              ? `${API_BASE_URL}${userData.coverImage}`
+              : `${API_BASE_URL}/uploads/covers/${userData.coverImage}`;
+          }
+        }
+        
+        this.user = userData;
+        console.log("处理后的用户数据:", this.user);
+        
         localStorage.setItem("user", JSON.stringify(this.user));
-        return response.data;
+        return this.user;
       } catch (error) {
+        console.error("获取用户信息失败:", error);
         if (error.response?.status === 401 || error.response?.status === 404) {
           this.logout();
           throw new Error("登录已过期，请重新登录");

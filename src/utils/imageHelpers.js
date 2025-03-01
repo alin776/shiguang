@@ -43,6 +43,8 @@ export const getAvatarUrl = (avatar) => {
  */
 export const getImageUrl = (image) => {
   if (!image) return "";
+  
+  console.log("处理图片URL:", image);
 
   // 修复重复域名问题 - 检测多个http://或https://
   if (image.includes("http://") || image.includes("https://")) {
@@ -56,6 +58,7 @@ export const getImageUrl = (image) => {
       const path = matches[2];
       // 确保路径以/开头
       const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+      console.log("通过URL正则提取路径:", normalizedPath);
       return `${API_BASE_URL}${normalizedPath}`;
     }
     
@@ -65,18 +68,23 @@ export const getImageUrl = (image) => {
 
   // 处理相对路径
   if (image.startsWith("/")) {
+    console.log("处理绝对路径:", `${API_BASE_URL}${image}`);
     return `${API_BASE_URL}${image}`;
   }
 
   // 尝试确定图片类型
-  if (image.includes('cover-')) {
+  if (image.match(/cover-[\w-]+\.\w+$/)) {
+    console.log("匹配到封面图格式:", `${API_BASE_URL}${UPLOAD_PATHS.COVERS}${image}`);
     return `${API_BASE_URL}${UPLOAD_PATHS.COVERS}${image}`;
-  } else if (image.includes('post-')) {
+  } else if (image.match(/post-[\w-]+\.\w+$/)) {
     return `${API_BASE_URL}${UPLOAD_PATHS.POSTS}${image}`;
+  } else if (image.match(/avatar-[\w-]+\.\w+$/)) {
+    return `${API_BASE_URL}${UPLOAD_PATHS.AVATARS}${image}`;
   }
 
-  // 否则，添加 API_BASE_URL 前缀
-  return `${API_BASE_URL}${image}`;
+  // 否则，添加 API_BASE_URL 前缀（假设是通用上传路径）
+  console.log("使用默认路径:", `${API_BASE_URL}/uploads/${image}`);
+  return `${API_BASE_URL}/uploads/${image}`;
 };
 
 /**
