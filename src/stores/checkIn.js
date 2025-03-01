@@ -4,12 +4,21 @@ import { useAuthStore } from "./auth";
 
 const API_BASE_URL = "http://47.98.210.7:3000";
 
+// 格式化日期为YYYY-MM-DD，考虑本地时区
+function formatLocalDate(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 export const useCheckInStore = defineStore("checkIn", {
   state: () => ({
     checkInItems: [],
     userCheckIns: [],
     loading: false,
     authStore: null,
+    completedItemIds: [], // 新增状态，记录已完成打卡的项目ID
   }),
 
   actions: {
@@ -38,69 +47,96 @@ export const useCheckInStore = defineStore("checkIn", {
       }
     },
 
-    // 获取用户打卡记录
+    // 获取用户指定年月的打卡记录
     async getUserCheckIns(year, month) {
       try {
         this.init();
-        const response = await axios.get(`${API_BASE_URL}/api/checkins/user`, {
-          params: { year, month },
-          headers: { Authorization: `Bearer ${this.authStore.token}` },
-        });
-        this.userCheckIns = response.data;
+        
+        // 确保年月参数有效
+        if (!year || !month) {
+          const now = new Date();
+          year = year || now.getFullYear();
+          month = month || now.getMonth() + 1;
+        }
+        
+        console.log(`获取用户${year}年${month}月的打卡记录`);
+        
+        // 添加时间戳避免缓存
+        const response = await axios.get(
+          `${API_BASE_URL}/api/checkins/user`, 
+          {
+            params: {
+              year,
+              month,
+              _t: new Date().getTime()
+            },
+            headers: { Authorization: `Bearer ${this.authStore.token}` }
+          }
+        );
+        
+        if (!response.data || !Array.isArray(response.data)) {
+          console.warn("获取用户打卡记录: 返回数据格式不正确", response.data);
+          return [];
+        }
+        
+        console.log(`成功获取${response.data.length}条${year}年${month}月的打卡记录`);
         return response.data;
       } catch (error) {
         console.error("获取用户打卡记录失败:", error);
-        throw error;
+        if (error.response) {
+          console.error("服务器错误详情:", error.response.data);
+        }
+        // 返回空数组而不是抛出错误，避免界面崩溃
+        return [];
       }
     },
     
-    // 获取今天的打卡记录 - 考虑时区问题
+    // 获取今日的打卡记录
     async getTodayCheckIns() {
       try {
         this.init();
+        this.loading = true;
+        
+        // 获取当前日期（本地时区）
         const today = new Date();
+        const formattedDate = formatLocalDate(today);
+        
+        console.log(`获取今日(${formattedDate})打卡记录...`);
+        
+        // 获取当月的所有打卡记录
         const year = today.getFullYear();
         const month = today.getMonth() + 1;
-        
-        // 获取当月打卡记录
         const checkIns = await this.getUserCheckIns(year, month);
         
-        // 获取东八区的今天日期
-        const todayLocal = new Date().toLocaleDateString("zh-CN").replace(/\//g, "-");
-        const yesterdayLocal = new Date(today.getTime() - 86400000).toLocaleDateString("zh-CN").replace(/\//g, "-");
+        console.log("当月所有打卡记录:", checkIns);
         
-        console.log("getTodayCheckIns - 本地今天日期:", todayLocal);
-        console.log("getTodayCheckIns - 本地昨天日期:", yesterdayLocal);
-        console.log("getTodayCheckIns - 所有打卡记录:", checkIns);
-        
-        // 修改比较逻辑，适应API返回的日期格式并考虑时区差异
+        // 在客户端筛选今天的打卡记录
         const todayCheckIns = checkIns.filter(checkIn => {
-          // 将API日期转换为本地日期进行比较
-          const date = new Date(checkIn.date);
+          // 将API日期转换为本地格式进行比较
+          const checkInDate = new Date(checkIn.date);
+          const checkInDateFormatted = formatLocalDate(checkInDate);
           
-          // 提取日期部分（东八区）
-          const localDateStr = date.toLocaleDateString("zh-CN").replace(/\//g, "-");
+          // 记录详细信息用于调试
+          console.log(`比较打卡记录: 项目ID:${checkIn.item_id}, API日期:${checkIn.date}, 格式化日期:${checkInDateFormatted}`);
+          console.log(`  与今天日期匹配: ${checkInDateFormatted === formattedDate}`);
           
-          // 检查是否是昨天晚上但对应UTC已经是今天
-          const isYesterday = localDateStr === yesterdayLocal;
-          const utcHours = date.getUTCHours();
-          const isYesterdayButUtcToday = isYesterday && utcHours >= 16; // UTC时间晚上8点后
-          
-          // 输出每条记录的日期比较详情
-          console.log(`比较打卡记录: ${checkIn.item_id}, API日期: ${checkIn.date}`);
-          console.log(`  本地日期: ${localDateStr}, UTC小时: ${utcHours}`);
-          console.log(`  是今天: ${localDateStr === todayLocal}, 是昨天但UTC今天: ${isYesterdayButUtcToday}`);
-          
-          // 返回本地今天的打卡或因时区问题实际应计入今天的打卡
-          return localDateStr === todayLocal || isYesterdayButUtcToday;
+          // 返回今天的打卡记录
+          return checkInDateFormatted === formattedDate;
         });
         
-        console.log("getTodayCheckIns - 考虑时区后的今日打卡记录:", todayCheckIns);
+        console.log("今日打卡记录:", todayCheckIns);
         
+        // 更新今日已完成打卡的项目ID列表
+        this.completedItemIds = todayCheckIns.map(checkIn => parseInt(checkIn.item_id));
+        console.log("更新已完成打卡项目ID列表:", this.completedItemIds);
+        
+        // 返回今日打卡记录
         return todayCheckIns;
       } catch (error) {
         console.error("获取今日打卡记录失败:", error);
-        throw error;
+        return [];
+      } finally {
+        this.loading = false;
       }
     },
 
@@ -114,35 +150,36 @@ export const useCheckInStore = defineStore("checkIn", {
           throw new Error("无效的项目ID");
         }
 
-        // 格式化日期
-        let formattedDate;
-        try {
-          formattedDate = new Date(date).toISOString().split("T")[0];
-        } catch (e) {
-          // 如果日期解析失败，使用今天日期
-          formattedDate = new Date().toISOString().split("T")[0];
+        // 使用当天本地时间（考虑时区）
+        const now = new Date();
+        // 格式化为YYYY-MM-DD格式，使用本地时区
+        const formattedDate = formatLocalDate(now);
+        
+        console.log("== 打卡操作信息 ==");
+        console.log(`本地当前时间: ${now.toLocaleString('zh-CN')}`);
+        console.log(`使用当天日期(本地时区): ${formattedDate}`);
+        console.log(`尝试打卡: 项目ID:${intItemId}`);
+        
+        // 获取最新的打卡记录，确保前端状态与后端同步
+        const todayCheckIns = await this.getTodayCheckIns();
+        console.log(`获取到的今日打卡记录:`, todayCheckIns);
+        
+        // 检查该项目是否已经完成打卡
+        if (this.completedItemIds.includes(intItemId)) {
+          console.log(`项目 ${intItemId} 今日已打卡，不再重复请求`);
+          
+          // 自定义错误对象，但不实际发送请求
+          const error = new Error("今日已打卡");
+          error.isExpected = true; // 标记为预期错误
+          throw error;
         }
 
-        // 检查是否已经打卡
-        const today = new Date().toISOString().split("T")[0];
-        if (formattedDate === today) {
-          const todayCheckIns = await this.getUserCheckIns(
-            new Date().getFullYear(),
-            new Date().getMonth() + 1
-          );
-
-          const alreadyCheckedIn = todayCheckIns.some(
-            (checkIn) => checkIn.item_id === intItemId && checkIn.date === today
-          );
-
-          if (alreadyCheckedIn) {
-            // 自定义错误对象，但不实际发送请求
-            const error = new Error("今日已打卡");
-            error.isExpected = true; // 标记为预期错误
-            throw error;
-          }
-        }
-
+        // 发送打卡请求
+        console.log(`向服务器发送打卡请求:`, {
+          itemId: intItemId,
+          date: formattedDate,
+        });
+        
         const response = await axios.post(
           `${API_BASE_URL}/api/checkins`,
           {
@@ -151,6 +188,15 @@ export const useCheckInStore = defineStore("checkIn", {
           },
           { headers: { Authorization: `Bearer ${this.authStore.token}` } }
         );
+        
+        console.log("打卡成功响应:", response.data);
+        
+        // 打卡成功后立即刷新数据
+        await this.getTodayCheckIns();
+        
+        // 记录已完成打卡的项目ID
+        this.completedItemIds.push(intItemId);
+        
         return response.data;
       } catch (error) {
         // 更详细的错误信息
@@ -178,11 +224,38 @@ export const useCheckInStore = defineStore("checkIn", {
     async cancelCheckIn(itemId, date = new Date()) {
       try {
         this.init();
-        const formattedDate = new Date(date).toISOString().split("T")[0];
+        // 确保 itemId 是整数
+        const intItemId = parseInt(itemId);
+        if (isNaN(intItemId)) {
+          throw new Error("无效的项目ID");
+        }
+
+        // 使用本地时区的当天日期
+        const formattedDate = formatLocalDate(date);
+        
+        console.log(`取消打卡操作: 项目ID:${intItemId}, 日期:${formattedDate}`);
+        
+        // 发送取消打卡请求 - 使用params方式传参
         const response = await axios.delete(`${API_BASE_URL}/api/checkins`, {
-          params: { itemId, date: formattedDate },
+          params: { 
+            itemId: intItemId, 
+            date: formattedDate,
+            _t: new Date().getTime() // 添加时间戳避免缓存
+          },
           headers: { Authorization: `Bearer ${this.authStore.token}` },
         });
+        
+        console.log("取消打卡成功:", response.data);
+        
+        // 取消打卡后立即刷新数据
+        await this.getTodayCheckIns();
+        
+        // 从已完成列表中移除
+        const index = this.completedItemIds.indexOf(intItemId);
+        if (index !== -1) {
+          this.completedItemIds.splice(index, 1);
+        }
+        
         return response.data;
       } catch (error) {
         console.error("取消打卡失败:", error);

@@ -23,7 +23,10 @@
             item.color || checkInColors.default
           ),
         }"
-        @click="$emit('toggle-checkin', item)"
+        @click="$emit('toggle-check-in', item)"
+        @touchstart="startPressTimer(item)"
+        @touchend="clearPressTimer"
+        @touchmove="clearPressTimer"
       >
         <div class="check-in-info">
           <div class="check-in-name">
@@ -48,6 +51,7 @@
 
 <script setup>
 import { Calendar } from "@element-plus/icons-vue";
+import { ref } from "vue";
 
 defineProps({
   checkInItems: {
@@ -66,7 +70,7 @@ defineProps({
   },
 });
 
-defineEmits(["toggle-checkin", "go-to-settings"]);
+const emit = defineEmits(["toggle-check-in", "go-to-settings", "force-check-in"]);
 
 // 十六进制转RGB辅助函数
 const hexToRgb = (hex) => {
@@ -84,6 +88,34 @@ const hexToRgb = (hex) => {
   const b = parseInt(hex.substring(4, 6), 16);
 
   return `${r}, ${g}, ${b}`;
+};
+
+// 长按计时器
+const pressTimer = ref(null);
+
+// 开始长按计时器
+const startPressTimer = (item) => {
+  // 清除任何现有计时器
+  clearPressTimer();
+  
+  // 设置新计时器 - 800ms 后执行强制打卡
+  pressTimer.value = setTimeout(() => {
+    // 触发强制打卡事件
+    emit("force-check-in", item);
+    
+    // 添加震动反馈（如果设备支持）
+    if (navigator.vibrate) {
+      navigator.vibrate(100);
+    }
+  }, 800);
+};
+
+// 清除长按计时器
+const clearPressTimer = () => {
+  if (pressTimer.value) {
+    clearTimeout(pressTimer.value);
+    pressTimer.value = null;
+  }
 };
 </script>
 

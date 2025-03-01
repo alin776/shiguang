@@ -14,7 +14,7 @@
           <el-button class="text-button glow-button" @click="goToNewEvent">
             添加事务
           </el-button>
-          <el-button class="text-button glow-button" @click="goToSettings">
+          <el-button class="text-button glow-button" @click="router.push('/settings')">
             添加打卡
           </el-button>
         </div>
@@ -37,8 +37,9 @@
           :check-in-items="checkInItems"
           :recently-completed="recentlyCompleted"
           :check-in-colors="checkInColors"
-          @toggle-checkin="toggleCheckIn"
-          @go-to-settings="goToSettings"
+          @toggle-check-in="toggleCheckIn"
+          @force-check-in="forceCheckIn"
+          @go-to-settings="router.push('/settings')"
         />
 
         <!-- 右侧事件区域 -->
@@ -67,6 +68,7 @@ import { useEventStore } from "../../stores/event";
 import { useSettingsStore } from "../../stores/settings";
 import { useAuthStore } from "../../stores/auth";
 import { useCheckInStore } from "../../stores/checkIn";
+import axios from 'axios'; // Import axios
 
 // 导入组件
 import SpaceBackground from "./components/SpaceBackground.vue";
@@ -175,60 +177,48 @@ const calendarDays = computed(() => {
 
 // 选中日期的事件
 const selectedDayEvents = computed(() => {
+  // 确保selectedDate.value是dayjs对象
+  const selectedDateObj = dayjs(selectedDate.value);
+  
   return events.value
     .filter((event) => {
       const eventStart = dayjs(event.start_time);
       return (
         eventStart.format("YYYY-MM-DD") ===
-        selectedDate.value.format("YYYY-MM-DD")
+        selectedDateObj.format("YYYY-MM-DD")
       );
     })
     .sort((a, b) => dayjs(a.start_time).diff(dayjs(b.start_time)));
 });
 
-// 当天已完成的打卡项目
+// 计算属性：今日已完成的打卡项目ID列表
 const todayCompletedCheckIns = computed(() => {
-  // 获取本地今天日期
-  const today = dayjs().format("YYYY-MM-DD");
-  const yesterday = dayjs().subtract(1, "day").format("YYYY-MM-DD");
+  // 获取UTC日期（与服务器一致的日期标准）
+  const now = new Date();
+  const utcDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  const todayISO = utcDate.toISOString().split('T')[0];
+  
+  console.log("计算todayCompletedCheckIns");
+  console.log("本地当前时间:", now.toLocaleString('zh-CN'));
+  console.log("使用UTC今天日期:", todayISO);
+  console.log("用户打卡记录:", userCheckIns.value);
 
-  console.log(
-    "计算todayCompletedCheckIns - 本地今天:",
-    today,
-    "昨天:",
-    yesterday
-  );
-  console.log("计算todayCompletedCheckIns - 用户打卡记录:", userCheckIns.value);
-
+  // 只筛选出服务器认为是"今天"的打卡记录
   const completedItems = userCheckIns.value
     .filter((checkIn) => {
-      // 转换API返回的日期格式为本地日期
-      const checkInLocalDate = dayjs(checkIn.date).format("YYYY-MM-DD");
-
-      // 检查是否是昨天晚上但对应UTC已经是今天
-      const isYesterday = checkInLocalDate === yesterday;
+      // 将API返回的日期转换为ISO格式进行比较
       const checkInDate = new Date(checkIn.date);
-      const utcHours = checkInDate.getUTCHours();
-      const isYesterdayButUtcToday = isYesterday && utcHours >= 16; // UTC时间晚上8点后
+      const checkInDateISO = checkInDate.toISOString().split('T')[0];
+      
+      // 严格匹配当天UTC日期，确保与服务器判断一致
+      const isToday = checkInDateISO === todayISO;
 
-      const isToday = checkInLocalDate === today;
+      console.log(`检查打卡记录: ID:${checkIn.item_id}, 日期:${checkIn.date}, ISO日期:${checkInDateISO}`);
+      console.log(`与今天UTC日期匹配: ${isToday}`);
 
-      console.log(`检查打卡: ID:${checkIn.item_id}, 日期:${checkIn.date}`);
-      console.log(`  本地日期:${checkInLocalDate}, UTC小时:${utcHours}`);
-      console.log(
-        `  是今天:${isToday}, 是昨天但UTC今天:${isYesterdayButUtcToday}`
-      );
-
-      return isToday || isYesterdayButUtcToday;
+      return isToday;
     })
-    .map((checkIn) => {
-      console.log(
-        `已完成的打卡项目 ID: ${
-          checkIn.item_id
-        }, 类型: ${typeof checkIn.item_id}`
-      );
-      return checkIn.item_id;
-    });
+    .map((checkIn) => parseInt(checkIn.item_id)); // 确保ID为数字类型
 
   console.log("今日已完成打卡项目ID列表:", completedItems);
   return completedItems;
@@ -252,61 +242,172 @@ const selectDay = (day) => {
 
 const toggleCheckIn = async (item) => {
   try {
-    const isCompleted = todayCompletedCheckIns.value.includes(item.id);
-    console.log(
-      `尝试${isCompleted ? "取消" : "完成"}打卡: ${item.name} (ID: ${item.id})`
-    );
+    // 创建一个新对象，避免直接修改原始项目
+    const updatedItem = { ...item };
 
-    if (isCompleted) {
-      // 取消打卡
-      await checkInStore.cancelCheckIn(item.id);
-      ElMessage.info(`已取消${item.name}打卡`);
+    if (!updatedItem.completed) {
+      // 处理打卡
+      try {
+        console.log(`执行打卡操作...`);
+        await checkInStore.checkIn(updatedItem.id);
+        console.log(`打卡成功！`);
+        
+        // 显示成功消息
+        ElMessage.success(`成功打卡: ${updatedItem.name}`);
+        
+        // 标记为最近完成，添加动画效果
+        recentlyCompleted.value[updatedItem.id] = true;
+        setTimeout(() => {
+          recentlyCompleted.value[updatedItem.id] = false;
+        }, 2000);
+        
+        // 更新项目状态和持续打卡天数
+        await refreshAllCheckInData();
+      } catch (error) {
+        // 特殊处理已知错误
+        if (error.isExpected || (error.message && error.message.includes("已打卡"))) {
+          ElMessage.info("今日已打卡");
+          // 无论如何都刷新最新状态，确保前端状态与后端一致
+          await refreshAllCheckInData();
+          return;
+        }
+        
+        // 提取错误信息
+        let errorMsg = "打卡失败";
+        if (error.response && error.response.data && error.response.data.message) {
+          errorMsg += `: ${error.response.data.message}`;
+        } else if (error.message) {
+          errorMsg += `: ${error.message}`;
+        }
+        
+        ElMessage.error(errorMsg);
+        console.error("打卡失败详情:", error);
+      }
     } else {
-      // 新增打卡
-      await checkInStore.checkIn(item.id);
-      ElMessage.success(`恭喜完成${item.name}，已连续${item.streak || 1}天！`);
-
-      // 记录最近完成的打卡项，触发动画效果
-      recentlyCompleted.value[item.id] = true;
-      setTimeout(() => {
-        recentlyCompleted.value[item.id] = false;
-      }, 2000); // 增加动画持续时间
+      // 处理取消打卡
+      try {
+        console.log(`执行取消打卡操作...`);
+        await checkInStore.cancelCheckIn(updatedItem.id);
+        console.log(`取消打卡成功！`);
+        
+        // 更新项目状态和持续打卡天数
+        await refreshAllCheckInData();
+        ElMessage.success(`已取消打卡: ${updatedItem.name}`);
+      } catch (error) {
+        // 提取错误信息
+        let errorMsg = "取消打卡失败";
+        if (error.response && error.response.data && error.response.data.message) {
+          errorMsg += `: ${error.response.data.message}`;
+        } else if (error.message) {
+          errorMsg += `: ${error.message}`;
+        }
+        
+        console.error("取消打卡失败详情:", error);
+        ElMessage.error(errorMsg);
+      }
     }
-
-    // 重新加载打卡数据
-    console.log("打卡操作已完成，重新加载数据...");
-    await loadUserCheckIns();
-
-    // 额外调用getTodayCheckIns确保最新状态
-    const latestTodayCheckIns = await checkInStore.getTodayCheckIns();
-    console.log("打卡后最新的今日打卡状态:", latestTodayCheckIns);
-
-    // 强制重新计算todayCompletedCheckIns
-    const today = dayjs().format("YYYY-MM-DD");
-    const completedIds = latestTodayCheckIns
-      .filter((checkIn) => {
-        // 转换API日期为YYYY-MM-DD格式
-        const checkInDate = dayjs(checkIn.date).format("YYYY-MM-DD");
-        return checkInDate === today;
-      })
-      .map((checkIn) => checkIn.item_id);
-
-    console.log("打卡后更新的已完成ID:", completedIds);
   } catch (error) {
-    // 如果是预期的错误（如"今日已打卡"），显示友好提示
-    if (error.isExpected || error.response?.data?.message === "今日已打卡") {
-      ElMessage.info(`今天你已经打卡过啦！`);
-    } else {
-      ElMessage.error(`操作失败: ${error.message || "未知错误"}`);
-    }
+    // 通用错误处理
+    console.error(`打卡操作失败:`, error);
+    ElMessage.error(`操作失败，请稍后重试`);
   }
 };
 
-// 导航方法
-const goToSettings = () => {
-  router.push("/calendar/settings");
+// 强制执行打卡（绕过某些前端检查，直接向服务器发送请求）
+const forceCheckIn = async (item) => {
+  try {
+    // 使用当前日期，确保考虑本地时区
+    const now = new Date();
+    // 格式化为YYYY-MM-DD格式
+    const formattedDate = formatLocalDate(now);
+    
+    console.log(`当前时间: ${now.toLocaleString('zh-CN')}`);
+    console.log(`使用当天日期(本地时区): ${formattedDate}`);
+    
+    // 直接向服务器发送API请求，绕过store的checkIn方法
+    // 后台API可能会拒绝重复打卡，但至少尝试发送请求
+    try {
+      const API_BASE_URL = "http://47.98.210.7:3000";
+      const response = await axios.post(
+        `${API_BASE_URL}/api/checkins`,
+        {
+          itemId: parseInt(item.id),
+          date: formattedDate,
+        },
+        { headers: { Authorization: `Bearer ${authStore.token}` } }
+      );
+      
+      console.log("强制打卡成功:", response.data);
+      ElMessage.success(`成功打卡: ${item.name}`);
+      
+      // 刷新数据
+      await refreshCheckInData();
+    } catch (error) {
+      console.error("强制打卡失败:", error);
+      
+      // 即使失败也尝试刷新数据
+      await refreshCheckInData();
+      
+      // 根据错误类型提供不同的反馈
+      if (error.response && error.response.data) {
+        ElMessage.error(`打卡失败: ${error.response.data.message || "未知错误"}`);
+      } else {
+        ElMessage.error("打卡失败，请稍后重试");
+      }
+    }
+  } catch (e) {
+    console.error("强制打卡过程中出错:", e);
+    ElMessage.error("操作失败，请稍后重试");
+  }
 };
 
+// 格式化日期为YYYY-MM-DD，考虑本地时区
+function formatLocalDate(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+// 刷新所有打卡相关数据
+const refreshAllCheckInData = async () => {
+  try {
+    console.log("刷新所有打卡数据...");
+    
+    // 获取当前年月
+    const year = currentDate.value.year();
+    const month = currentDate.value.month() + 1; // dayjs month is 0-based
+    
+    // 1. 强制刷新整个月用户打卡记录
+    userCheckIns.value = await checkInStore.getUserCheckIns(year, month);
+    console.log("刷新后的整月用户打卡记录:", userCheckIns.value);
+    
+    // 2. 强制刷新今日打卡状态
+    const todayCheckInsData = await checkInStore.getTodayCheckIns();
+    console.log("刷新后的今日打卡记录:", todayCheckInsData);
+    
+    // 3. 重新加载打卡项目
+    await loadCheckInItems();
+    console.log("刷新后的打卡项目状态:", checkInItems.value);
+  } catch (error) {
+    console.error("刷新打卡数据失败:", error);
+    throw new Error(`刷新数据失败: ${error.message}`);
+  }
+};
+
+// 显示打卡成功通知
+const showCheckInSuccessNotification = (itemName, streak) => {
+  const message = streak > 1 
+    ? `恭喜！您已连续打卡 ${streak} 天: ${itemName}` 
+    : `打卡成功: ${itemName}`;
+  
+  ElMessage.success({
+    message,
+    duration: 3000,
+  });
+};
+
+// 导航方法
 const goToNewEvent = () => {
   const date = selectedDate.value.format("YYYY-MM-DD");
   router.push({
@@ -349,76 +450,52 @@ const loadEvents = async () => {
 // 加载打卡项目
 const loadCheckInItems = async () => {
   try {
+    console.log("== 开始加载打卡项目 ==");
+    
+    // 记录当前时间供调试
+    const now = new Date();
+    // 使用UTC日期与服务器保持一致
+    const utcDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    const todayISO = utcDate.toISOString().split('T')[0];
+    
+    console.log(`当前本地时间: ${now.toLocaleString('zh-CN')}`);
+    console.log(`使用UTC今天日期: ${todayISO}`);
+    
+    // 获取打卡项目列表
     const data = await checkInStore.getCheckInItems();
+    console.log("获取到的打卡项目列表:", data);
 
     // 获取连续打卡天数数据
     const streakData = await checkInStore.getStreakData();
+    console.log("获取到的连续打卡天数数据:", streakData);
+    
     const streakMap = {};
     if (streakData && Array.isArray(streakData)) {
       streakData.forEach((item) => {
         streakMap[item.item_id] = item.streak;
       });
     }
+    console.log("连续打卡天数映射:", streakMap);
 
-    // 直接获取今天的打卡数据（这个可能是空的，因为时区问题）
+    // 强制刷新今日打卡状态（直接从API获取最新数据）
+    console.log("强制从API刷新今日打卡状态");
     const todayCheckIns = await checkInStore.getTodayCheckIns();
-    console.log("loadCheckInItems - 今日打卡记录:", todayCheckIns);
+    console.log("从API获取到的今日打卡记录:", todayCheckIns);
 
-    // 获取所有用户打卡记录
-    const year = dayjs().year();
-    const month = dayjs().month() + 1;
-    const userCheckInsData = await checkInStore.getUserCheckIns(year, month);
-    console.log("所有用户打卡记录:", userCheckInsData);
+    // 从API直接获取今天打卡的项目ID
+    const todayCompletedIds = todayCheckIns.map(checkIn => parseInt(checkIn.item_id));
+    console.log("今日已完成打卡项目ID:", todayCompletedIds);
 
-    // 处理时区问题：将UTC日期转换为本地日期进行比较
-    // 这里我们获取带有东八区偏移的"今天"日期
-    const today = dayjs().format("YYYY-MM-DD"); // 本地时间今天
-    const yesterday = dayjs().subtract(1, "day").format("YYYY-MM-DD"); // 昨天
-    console.log("本地时间 - 今天:", today, "昨天:", yesterday);
-
-    // 查找今天和昨天的打卡记录（考虑时区问题）
-    const todayAndYesterdayCheckIns = userCheckInsData.filter((checkIn) => {
-      const checkInLocalDate = dayjs(checkIn.date).format("YYYY-MM-DD");
-      const isToday = checkInLocalDate === today;
-      const isYesterday = checkInLocalDate === yesterday;
-
-      // 检查是否是昨天但是UTC时间已经是今天
-      const checkInUtcDate = new Date(checkIn.date);
-      const checkInUtcDateStr = checkInUtcDate.toISOString().split("T")[0];
-      const isYesterdayButUtcToday =
-        isYesterday && checkInUtcDate.getUTCHours() >= 16; // 如果UTC时间已经是第二天
-
-      console.log(`检查打卡: ID ${checkIn.item_id}, 日期 ${checkIn.date}`);
-      console.log(
-        `  本地日期: ${checkInLocalDate}, 是今天: ${isToday}, 是昨天: ${isYesterday}`
-      );
-      console.log(
-        `  UTC日期: ${checkInUtcDateStr}, 小时: ${checkInUtcDate.getUTCHours()}`
-      );
-
-      // 返回今天的打卡或者因为时区问题实际上是今天的打卡
-      return isToday || isYesterdayButUtcToday;
-    });
-
-    console.log("考虑时区后的今日打卡记录:", todayAndYesterdayCheckIns);
-
-    // 获取实际今天的打卡项目ID列表
-    const actualTodayCompletedIds = todayAndYesterdayCheckIns.map(
-      (checkIn) => checkIn.item_id
-    );
-    console.log("考虑时区后的今日已完成打卡项目ID:", actualTodayCompletedIds);
-
-    // 处理并检查每个打卡项目的completed状态
+    // 处理并检查每个打卡项目的completed状态，只关注今天的打卡
     checkInItems.value = data.map((item) => {
-      // 使用考虑时区的判断逻辑
-      const isCompleted = actualTodayCompletedIds.some(
-        (id) => String(id) === String(item.id)
-      );
+      // 使用严格类型转换确保比较正确，将字符串ID转换为数字进行比较
+      const intItemId = parseInt(item.id);
+      const isCompleted = todayCompletedIds.includes(intItemId);
 
       console.log(
-        `项目 ${item.name} (ID: ${item.id}) 完成状态: ${
+        `项目 ${item.name} (ID: ${item.id}/${intItemId}) 完成状态: ${
           isCompleted ? "已完成" : "未完成"
-        }`
+        }, 在今日完成列表中: ${todayCompletedIds.includes(intItemId)}`
       );
 
       return {
@@ -428,7 +505,8 @@ const loadCheckInItems = async () => {
       };
     });
 
-    console.log("最终处理后的打卡项目:", checkInItems.value);
+    console.log("最终处理后的打卡项目状态:", checkInItems.value);
+    console.log("== 加载打卡项目完成 ==");
   } catch (error) {
     console.error("加载打卡项目失败:", error);
     ElMessage.error("加载打卡项目失败");
