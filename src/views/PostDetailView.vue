@@ -1,5 +1,4 @@
 <template>
-  <TheNavBar />
   <div class="post-detail-page">
     <!-- 顶部导航栏 -->
     <div class="page-header">
@@ -7,48 +6,53 @@
       <h2>时光小镇</h2>
     </div>
 
-    <!-- 帖子内容 -->
-    <div class="post-content" v-if="post">
+    <!-- 帖子内容区 -->
+    <div class="post-container" v-if="post">
       <!-- 图片轮播 -->
-      <div class="image-slider" v-if="post.images?.length">
-        <el-carousel
-          :interval="4000"
-          :height="carouselHeight"
-          indicator-position="outside"
-          arrow="always"
-        >
-          <el-carousel-item v-for="image in post.images" :key="image">
-            <img :src="image" :alt="post.title" class="carousel-image" />
-          </el-carousel-item>
-        </el-carousel>
+      <div class="post-images" v-if="post.images?.length">
+        <div class="image-slider">
+          <div class="slider-arrows">
+            <div
+              class="arrow left"
+              @click="prevImage"
+              v-if="post.images.length > 1"
+            >
+              <el-icon><ArrowLeft /></el-icon>
+            </div>
+            <div
+              class="arrow right"
+              @click="nextImage"
+              v-if="post.images.length > 1"
+            >
+              <el-icon><ArrowRight /></el-icon>
+            </div>
+          </div>
+          <img
+            :src="post.images[currentImageIndex]"
+            :alt="post.title"
+            class="main-image"
+          />
+          <div class="image-indicator" v-if="post.images.length > 1">
+            {{ currentImageIndex + 1 }}/{{ post.images.length }}
+          </div>
+        </div>
       </div>
 
-      <!-- 作者信息 -->
+      <!-- 用户信息 -->
       <div class="user-info">
         <el-avatar
           :size="40"
           :src="getAvatarUrl(post.user?.avatar)"
           @error="() => true"
+          class="user-avatar"
           @click="navigateToUserProfile(post.user?.id)"
-          class="clickable-avatar"
         >
-          {{ getAvatarUrl(post.user?.avatar) || "?" }}
+          {{ post.user?.username?.charAt(0).toUpperCase() || "?" }}
         </el-avatar>
         <div class="user-meta">
           <div class="username">{{ post.user?.username || "匿名用户" }}</div>
           <div class="post-time">{{ formatTime(post.created_at) }}</div>
         </div>
-        <el-button
-          class="follow-btn"
-          type="primary"
-          round
-          size="small"
-          :class="{ following: isFollowing }"
-          @click.stop="toggleFollow"
-          v-if="!isOwnPost"
-        >
-          {{ isFollowing ? "已关注" : "关注" }}
-        </el-button>
         <div class="post-actions" v-if="isOwnPost">
           <el-dropdown trigger="click" @command="handlePostCommand">
             <el-icon class="more-icon"><More /></el-icon>
@@ -64,13 +68,12 @@
         </div>
       </div>
 
-      <!-- 标题和内容 -->
-      <div class="post-main">
-        <h1 class="post-title">{{ post.title }}</h1>
+      <!-- 帖子内容 -->
+      <div class="post-content">
+        <h3 class="post-title">{{ post.title }}</h3>
         <p class="post-text">{{ post.content }}</p>
       </div>
-
-      <!-- 互动统计 -->
+      <!-- 互动区域 -->
       <div class="interaction-stats">
         <div class="left-stats">
           <div class="stat-item">
@@ -95,115 +98,147 @@
     <div class="comments-section">
       <h3 class="section-title">评论 {{ post?.comments?.length || 0 }}</h3>
 
+      <!-- 无评论时显示 -->
+      <div v-if="!post?.comments?.length" class="no-comments">暂无评论</div>
+
       <!-- 评论列表 -->
-      <div class="comment-list" v-if="post?.comments?.length">
+      <div v-else class="comment-list">
         <div
           v-for="comment in post.comments"
           :key="comment.id"
           class="comment-item"
         >
-          <el-avatar
-            :size="32"
-            :src="getAvatarUrl(comment.user?.avatar)"
-            @error="() => true"
+          <div
+            class="comment-author"
             @click="navigateToUserProfile(comment.user?.id)"
-            class="clickable-avatar"
           >
-            {{ comment.user?.username?.charAt(0).toUpperCase() || "?" }}
-          </el-avatar>
-          <div class="comment-content">
-            <div class="comment-header">
-              <span class="username">{{
-                comment.user?.username || "匿名用户"
-              }}</span>
-              <span class="comment-time">{{
-                formatTime(comment.created_at)
-              }}</span>
-            </div>
-            <p class="comment-text">{{ comment.content }}</p>
-            <!-- 评论操作栏 -->
-            <div class="comment-actions">
-              <span
-                class="action-item"
-                @click.stop="toggleCommentLike(comment)"
-              >
-                <el-icon :class="{ active: comment.isLiked }"><Star /></el-icon>
-                <span>{{ comment.likes || 0 }}</span>
-              </span>
-              <span class="action-item" @click.stop="showReplyInput(comment)">
-                <el-icon><ChatDotRound /></el-icon>
-                <span>回复</span>
-              </span>
-            </div>
-            <!-- 回复列表 -->
-            <div v-if="comment.replies?.length" class="reply-list">
-              <div
-                v-for="reply in comment.replies"
-                :key="reply.id"
-                class="reply-item"
-              >
-                <div class="reply-header">
-                  <span class="username">{{ reply.user?.username }}</span>
-                  <template v-if="reply.replyTo">
-                    回复
-                    <span class="username">@{{ reply.replyTo?.username }}</span>
-                  </template>
-                </div>
-                <p class="reply-text">{{ reply.content }}</p>
+            <el-avatar
+              :size="36"
+              :src="getAvatarUrl(comment.user?.avatar)"
+              @error="() => true"
+              class="user-avatar"
+            >
+              {{ comment.user?.username?.charAt(0).toUpperCase() || "?" }}
+            </el-avatar>
+            <div class="comment-meta">
+              <div class="username">
+                {{ comment.user?.username || "匿名用户" }}
+              </div>
+              <div class="comment-time">
+                {{ formatTime(comment.created_at) }}
               </div>
             </div>
-            <!-- 回复输入框 -->
-            <div v-if="comment.showReplyInput" class="reply-input">
-              <el-input
-                v-model="comment.replyText"
-                placeholder="写下你的回复..."
-                :maxlength="200"
-                show-word-limit
-              >
-                <template #append>
-                  <el-button
-                    type="primary"
-                    :disabled="!comment.replyText?.trim()"
-                    :loading="submitting"
-                    @click.stop="submitReply(comment)"
-                  >
-                    回复
-                  </el-button>
-                </template>
-              </el-input>
+          </div>
+
+          <div class="comment-content">{{ comment.content }}</div>
+
+          <div class="comment-actions">
+            <div
+              class="action-item"
+              :class="{ active: comment.is_liked }"
+              @click="toggleCommentLike(comment)"
+            >
+              <el-icon><Star /></el-icon>
+              <span>{{ comment.likes || 0 }}</span>
             </div>
+            <div class="action-item" @click="showReplyInput(comment)">
+              <el-icon><ChatDotRound /></el-icon>
+              <span>回复</span>
+            </div>
+            <div
+              v-if="isOwnComment(comment)"
+              class="action-item delete-action"
+              @click="confirmDeleteComment(comment)"
+            >
+              <el-icon><Delete /></el-icon>
+              <span>删除</span>
+            </div>
+          </div>
+
+          <!-- 评论的回复 -->
+          <div class="replies" v-if="comment.replies?.length">
+            <div
+              v-for="reply in comment.replies"
+              :key="reply.id"
+              class="reply-item"
+            >
+              <div class="reply-author">
+                <el-avatar
+                  :size="28"
+                  :src="getAvatarUrl(reply.user?.avatar)"
+                  @error="() => true"
+                  class="user-avatar"
+                >
+                  {{ reply.user?.username?.charAt(0).toUpperCase() || "?" }}
+                </el-avatar>
+                <div class="reply-meta">
+                  <div class="username">
+                    {{ reply.user?.username || "匿名用户" }}
+                    <template v-if="reply.replyTo">
+                      <span class="reply-to"
+                        >回复 @{{ reply.replyTo?.username }}</span
+                      >
+                    </template>
+                  </div>
+                  <div class="reply-time">
+                    {{ formatTime(reply.created_at) }}
+                  </div>
+                </div>
+              </div>
+              <div class="reply-content">{{ reply.content }}</div>
+              <div class="reply-actions" v-if="isOwnComment(reply)">
+                <div
+                  class="action-item delete-action"
+                  @click="confirmDeleteReply(comment.id, reply.id)"
+                >
+                  <el-icon><Delete /></el-icon>
+                  <span>删除</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 回复输入框 -->
+          <div class="reply-input" v-if="comment.showReplyInput">
+            <el-input
+              v-model="comment.replyText"
+              placeholder="写下你的回复..."
+              :maxlength="200"
+              show-word-limit
+            >
+              <template #append>
+                <el-button
+                  @click="submitReply(comment)"
+                  :disabled="!comment.replyText?.trim()"
+                >
+                  回复
+                </el-button>
+              </template>
+            </el-input>
           </div>
         </div>
       </div>
-
-      <!-- 空评论状态 -->
-      <div v-else class="empty-comments">
-        <el-empty description="暂无评论" />
-      </div>
     </div>
 
-    <!-- 底部评论栏 -->
-    <div class="comment-bar">
-      <div class="comment-input">
-        <el-input
-          v-model="commentText"
-          placeholder="写下你的评论..."
-          :maxlength="200"
-          show-word-limit
-        >
-          <template #append>
-            <el-button
-              class="send-btn"
-              type="primary"
-              :disabled="!commentText.trim()"
-              :loading="submitting"
-              @click="submitComment"
-            >
-              发送
-            </el-button>
-          </template>
-        </el-input>
-      </div>
+    <!-- 底部评论输入框 -->
+    <div class="comment-input-area">
+      <el-input
+        v-model="commentText"
+        placeholder="写下你的评论..."
+        :maxlength="200"
+        show-word-limit
+      >
+        <template #append>
+          <el-button
+            class="send-btn"
+            :disabled="!commentText.trim()"
+            :loading="submitting"
+            @click="submitComment"
+          >
+            发送
+          </el-button>
+        </template>
+      </el-input>
     </div>
 
     <!-- 编辑帖子对话框 -->
@@ -211,7 +246,7 @@
       v-model="showEditPostDialog"
       title="编辑帖子"
       width="90%"
-      :close-on-click-modal="false"
+      class="dark-dialog"
     >
       <el-form :model="editPostForm" ref="editPostFormRef">
         <el-form-item
@@ -239,43 +274,11 @@
         </el-button>
       </template>
     </el-dialog>
-
-    <!-- 编辑评论对话框 -->
-    <el-dialog
-      v-model="showEditCommentDialog"
-      title="编辑评论"
-      width="90%"
-      :close-on-click-modal="false"
-    >
-      <el-form :model="editCommentForm" ref="editCommentFormRef">
-        <el-form-item
-          prop="content"
-          :rules="[{ required: true, message: '请输入评论内容' }]"
-        >
-          <el-input
-            v-model="editCommentForm.content"
-            type="textarea"
-            :rows="4"
-            placeholder="评论内容"
-          />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="showEditCommentDialog = false">取消</el-button>
-        <el-button
-          type="primary"
-          @click="submitEditComment"
-          :loading="submitting"
-        >
-          保存
-        </el-button>
-      </template>
-    </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted, computed, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { ElMessage, ElMessageBox } from "element-plus";
 import {
@@ -284,6 +287,8 @@ import {
   ChatDotRound,
   Star,
   More,
+  ArrowRight,
+  Delete,
 } from "@element-plus/icons-vue";
 import { useCommunityStore } from "../stores/community";
 import { useAuthStore } from "../stores/auth";
@@ -306,6 +311,8 @@ const showEditCommentDialog = ref(false);
 const editCommentForm = ref({ content: "", id: null });
 const editPostFormRef = ref(null);
 const editCommentFormRef = ref(null);
+const currentImageIndex = ref(0);
+const loading = ref(false);
 
 const formatTime = (time) => {
   return dayjs(time).format("YYYY-MM-DD HH:mm");
@@ -354,36 +361,27 @@ const getAvatarUrl = (avatar) => {
 
 const loadPost = async () => {
   try {
-    const response = await communityStore.getPost(route.params.id);
+    loading.value = true;
+    const postId = route.params.id;
+    const response = await communityStore.getPost(postId);
+    post.value = response;
 
-    // 处理帖子数据中的头像路径
-    post.value = {
-      ...response,
-      user: {
-        ...response.user,
-        avatar: getAvatarUrl(response.user?.avatar),
-      },
-      comments: response.comments?.map((comment) => ({
-        ...comment,
-        user: {
-          ...comment.user,
-          avatar: getAvatarUrl(comment.user?.avatar),
-        },
-        replies: comment.replies?.map((reply) => ({
-          ...reply,
-          user: {
-            ...reply.user,
-            avatar: getAvatarUrl(reply.user?.avatar),
-          },
-        })),
-      })),
-    };
+    // 确保评论中的回复数组已初始化
+    if (post.value.comments) {
+      post.value.comments.forEach((comment) => {
+        if (!comment.replies) {
+          comment.replies = [];
+        }
+      });
+    }
 
     isLiked.value = post.value.isLiked;
     isFollowing.value = post.value.user.isFollowing;
   } catch (error) {
     console.error("获取帖子详情失败:", error);
     ElMessage.error("获取帖子详情失败");
+  } finally {
+    loading.value = false;
   }
 };
 
@@ -586,171 +584,278 @@ const navigateToUserProfile = (userId) => {
   }
 };
 
+const nextImage = () => {
+  if (post.value?.images && post.value.images.length > 0) {
+    currentImageIndex.value =
+      (currentImageIndex.value + 1) % post.value.images.length;
+  }
+};
+
+const prevImage = () => {
+  if (post.value?.images && post.value.images.length > 0) {
+    currentImageIndex.value =
+      (currentImageIndex.value - 1 + post.value.images.length) %
+      post.value.images.length;
+  }
+};
+
+const isOwnComment = (comment) => {
+  const userId = authStore.user?.id;
+  return userId && comment.user?.id === userId;
+};
+
+const confirmDeleteComment = async (comment) => {
+  try {
+    await ElMessageBox.confirm("确定要删除这条评论吗？", "提示", {
+      type: "warning",
+      confirmButtonText: "删除",
+      cancelButtonText: "取消",
+    });
+    await communityStore.deleteComment(post.value.id, comment.id);
+    ElMessage.success("删除成功");
+    await loadPost();
+  } catch (error) {
+    if (error === "cancel") return;
+    ElMessage.error("删除失败");
+  }
+};
+
+const confirmDeleteReply = async (commentId, replyId) => {
+  try {
+    await ElMessageBox.confirm("确定要删除这条回复吗？", "提示", {
+      type: "warning",
+      confirmButtonText: "删除",
+      cancelButtonText: "取消",
+    });
+
+    console.log(`确认删除回复: commentId=${commentId}, replyId=${replyId}`);
+
+    await communityStore.deleteReply(post.value.id, commentId, replyId);
+    ElMessage.success("删除成功");
+    await loadPost();
+  } catch (error) {
+    if (error !== "cancel") {
+      console.error("删除回复时发生错误:", error);
+      ElMessage.error(`删除失败: ${error.message || "未知错误"}`);
+    }
+  }
+};
+
 onMounted(() => {
   loadPost();
 });
 </script>
 
 <style scoped>
+/* 基础样式 */
 .post-detail-page {
-  padding-top: 60px;
   min-height: 100vh;
-  background: #f5f7fa;
+  background-color: #000;
+  color: #fff;
   padding-bottom: 60px;
-  max-width: 600px;
-  margin: 0 auto;
-  text-align: left;
+  overflow-y: auto;
+  position: relative;
+}
+
+/* 顶部导航 */
+.page-header {
+  display: flex;
+  align-items: center;
+  height: 56px;
+  padding: 0 16px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background-color: #000;
+}
+
+.back-icon {
+  font-size: 20px;
+  color: #fff;
+  cursor: pointer;
+}
+
+.page-header h2 {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  font-size: 18px;
+  font-weight: 500;
+  color: #fff;
+}
+
+/* 帖子容器 */
+.post-container {
+  padding: 16px;
+}
+
+/* 图片轮播 */
+.image-slider {
+  position: relative;
+  margin-bottom: 20px;
+  overflow: hidden;
+  background-color: #111;
+  border-radius: 4px;
+  width: 100%;
+  max-height: 50vh;
+  aspect-ratio: 4/3;
+}
+
+.main-image {
+  width: 100%;
+  display: block;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.slider-arrows {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  width: 100%;
-  overflow-y: auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 16px;
+  pointer-events: none;
 }
 
-.page-header {
+.arrow {
+  width: 32px;
+  height: 32px;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 50%;
   display: flex;
   align-items: center;
-  padding: 16px;
-  background: #fff;
-  position: sticky;
-  top: 0;
-  z-index: 10;
-}
-
-.back-icon {
-  font-size: 20px;
-  color: #606266;
+  justify-content: center;
   cursor: pointer;
-  padding: 4px;
+  pointer-events: auto;
 }
 
-.page-header h2 {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 500;
-  flex: 1;
-  text-align: center;
+.image-indicator {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  background: rgba(0, 0, 0, 0.5);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
 }
 
-.post-content {
-  background: #fff;
-  padding: 24px 20px;
-  margin-bottom: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  position: relative;
-}
-
+/* 用户信息 */
 .user-info {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 20px;
-  position: relative;
+  margin-bottom: 16px;
 }
 
-.follow-btn {
-  position: absolute;
-  right: 0;
-  padding: 6px 16px;
+.user-avatar {
+  cursor: pointer;
 }
 
 .user-meta {
+  margin-left: 12px;
   flex: 1;
+  text-align: left;
 }
 
-.post-main {
-  text-align: center;
-  margin: 24px 0;
+.username {
+  font-weight: 500;
+  color: #fff;
+  margin-bottom: 4px;
+  text-align: left;
+}
+
+.post-time {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  text-align: left;
+}
+
+.post-actions {
+  padding: 8px;
+}
+
+.more-icon {
+  font-size: 20px;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+}
+
+/* 帖子内容 */
+.post-content {
+  margin-bottom: 16px;
 }
 
 .post-title {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 600;
-  color: #303133;
-  margin: 0 0 20px;
-  line-height: 1.4;
-  text-align: center;
+  color: #fff;
+  margin: 0 0 12px;
 }
 
 .post-text {
   font-size: 16px;
-  color: #606266;
   line-height: 1.6;
+  color: rgba(255, 255, 255, 0.9);
   margin: 0;
   white-space: pre-wrap;
-  text-align: left;
+  word-break: break-word;
 }
 
-.image-slider {
-  margin: 0 0 20px;
-  width: 100%;
-  background: #000;
+/* 字数统计 */
+.post-stats {
+  margin: 16px 0;
 }
 
-.carousel-image {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  background: #ffffff;
-}
-
-:deep(.el-carousel) {
-  background: #ffffff;
-}
-
-:deep(.el-carousel__arrow) {
-  background-color: rgba(0, 0, 0, 0.3);
-  border-radius: 50%;
-  border: none;
-  height: 36px;
-  width: 36px;
-}
-
-:deep(.el-carousel__arrow:hover) {
-  background-color: rgba(0, 0, 0, 0.5);
-}
-
-:deep(.el-carousel__indicators) {
-  bottom: -25px;
-}
-
-:deep(.el-carousel__indicators--outside button) {
-  background-color: rgba(0, 0, 0, 0.24);
-}
-
-:deep(.el-carousel__indicators--outside button.is-active) {
-  background-color: var(--el-color-primary);
-}
-
-.interaction-stats {
+.char-count {
   display: flex;
   align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 8px;
+}
+
+.dot {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.5);
+  margin: 0 3px;
+}
+
+.divider {
+  height: 1px;
+  background-color: rgba(255, 255, 255, 0.1);
+  margin: 16px 0;
+}
+
+/* 互动统计 */
+.interaction-stats {
+  display: flex;
   justify-content: space-between;
-  padding-top: 20px;
-  border-top: 1px solid #f0f2f5;
+  align-items: center;
 }
 
 .left-stats,
 .right-stats {
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 16px;
 }
 
 .stat-item {
   display: flex;
   align-items: center;
   gap: 4px;
-  color: #909399;
-  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 14px;
   cursor: pointer;
-  transition: color 0.2s;
-}
-
-.stat-item:hover {
-  color: var(--el-color-primary);
 }
 
 .stat-item .el-icon {
@@ -758,229 +863,305 @@ onMounted(() => {
 }
 
 .stat-item .active {
-  color: #409eff;
+  color: #ff9900;
 }
 
+/* 评论区 */
 .comments-section {
-  background: #fff;
-  padding: 20px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  padding: 16px;
+  background-color: #111;
+  margin-top: 16px;
 }
 
 .section-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
   margin: 0 0 16px;
-  font-size: 18px;
-  font-weight: 500;
-  color: #303133;
-  padding-bottom: 16px;
-  border-bottom: 1px solid #f0f2f5;
+  text-align: center;
 }
 
 .comment-list {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
 }
 
 .comment-item {
-  display: flex;
-  gap: 12px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid #f5f7fa;
+  background-color: #222;
+  border-radius: 8px;
+  padding: 12px;
 }
 
-.comment-content {
-  flex: 1;
-}
-
-.comment-header {
+.comment-author {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: 4px;
+  margin-bottom: 8px;
+  cursor: pointer;
+}
+
+.comment-meta {
+  margin-left: 8px;
+  flex: 1;
+  text-align: left;
 }
 
 .comment-time {
   font-size: 12px;
-  color: #909399;
+  color: rgba(255, 255, 255, 0.6);
+  text-align: left;
 }
 
-.comment-text {
-  margin: 0;
+.comment-content {
   font-size: 15px;
-  color: #606266;
   line-height: 1.5;
-}
-
-.empty-comments {
-  padding: 32px 0;
-}
-
-.comment-bar {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 8px 16px;
-  background: #fff;
-  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
-  z-index: 100;
-  max-width: 600px;
-  margin: 0 auto;
-}
-
-.comment-input {
-  padding-right: 8px;
-}
-
-:deep(.el-input-group__append) {
-  padding: 0;
-}
-
-:deep(.el-input__wrapper) {
-  padding-right: 8px;
-}
-
-:deep(.el-input__count) {
-  background: transparent;
-  right: 105px !important;
-}
-
-.comment-input .send-btn {
-  min-width: 70px;
-  background-color: #67c23a;
-  border-color: #67c23a;
-  color: #ffffff;
-}
-
-.comment-input .send-btn:hover {
-  background-color: #85ce61;
-  border-color: #85ce61;
-  color: #ffffff;
-}
-
-.comment-input .send-btn:active {
-  background-color: #529b2e;
-  border-color: #529b2e;
-  color: #ffffff;
-}
-
-@media screen and (min-width: 768px) {
-  .post-detail-page {
-    max-width: 600px;
-    margin: 0 auto;
-    position: relative;
-    height: auto;
-    min-height: 100vh;
-  }
-}
-
-:deep(.nav-bar) {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 100;
-}
-
-.post-actions {
-  position: absolute;
-  right: 0;
-  top: 0;
-}
-
-.more-icon {
-  font-size: 20px;
-  color: #909399;
-  cursor: pointer;
-  padding: 4px;
-}
-
-.more-icon:hover {
-  color: var(--el-color-primary);
-}
-
-.comment-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.comment-header .username {
-  flex: 1;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 12px;
+  word-break: break-word;
 }
 
 .comment-actions {
   display: flex;
-  align-items: center;
   gap: 16px;
-  margin-top: 8px;
 }
 
 .action-item {
   display: flex;
   align-items: center;
   gap: 4px;
-  color: #909399;
+  color: rgba(255, 255, 255, 0.6);
   font-size: 12px;
   cursor: pointer;
-  transition: color 0.2s;
 }
 
-.action-item:hover {
-  color: var(--el-color-primary);
+.action-item.active {
+  color: #ff9900;
 }
 
-.action-item .active {
-  color: var(--el-color-primary);
-}
-
-.reply-list {
+/* 回复区域 */
+.replies {
   margin-top: 12px;
-  padding: 8px 12px;
-  background: #f5f7fa;
-  border-radius: 4px;
+  margin-left: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .reply-item {
-  margin-bottom: 8px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  background-color: #333;
+  border-radius: 8px;
+  padding: 10px;
+  position: relative;
 }
 
-.reply-item:last-child {
-  margin-bottom: 0;
-  padding-bottom: 0;
-  border-bottom: none;
+.reply-author {
+  display: flex;
+  align-items: center;
+  margin-bottom: 6px;
 }
 
-.reply-header {
-  font-size: 13px;
-  margin-bottom: 4px;
+.reply-meta {
+  margin-left: 8px;
+  flex: 1;
+  text-align: left;
 }
 
-.reply-header .username {
-  color: var(--el-color-primary);
-  font-weight: 500;
+.reply-to {
+  color: #4080ff;
+  margin-left: 4px;
 }
 
-.reply-text {
-  margin: 0;
+.reply-time {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+  text-align: left;
+}
+
+.reply-content {
   font-size: 14px;
-  color: #606266;
   line-height: 1.5;
+  color: rgba(255, 255, 255, 0.9);
+  word-break: break-word;
 }
 
 .reply-input {
   margin-top: 12px;
 }
 
-.clickable-avatar {
-  cursor: pointer;
-  transition: transform 0.2s;
+.no-comments {
+  text-align: center;
+  padding: 32px 0;
+  color: rgba(255, 255, 255, 0.5);
 }
 
-.clickable-avatar:hover {
-  transform: scale(1.05);
+/* 底部评论输入 */
+.comment-input-area {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 12px 16px;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom));
+  background-color: #000;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  z-index: 10;
+  max-height: 64px;
+}
+
+/* 自定义Element Plus组件样式 */
+:deep(.el-input__wrapper) {
+  background-color: #222;
+  box-shadow: none !important;
+  border: none;
+}
+
+:deep(.el-input__inner) {
+  color: #fff;
+}
+
+:deep(.el-input__count) {
+  background: transparent;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.send-btn {
+  background-color: #ffaa00 !important;
+  color: #000 !important;
+  border: none !important;
+}
+
+.send-btn:hover {
+  background-color: #ffb52e !important;
+}
+
+/* 确保所有按钮使用橙黄色 */
+:deep(.el-button--primary),
+:deep(.el-button--default),
+:deep(.reply-input .el-button) {
+  background-color: #ffaa00 !important;
+  color: #000 !important;
+  border: none !important;
+}
+
+:deep(.el-button--primary:hover),
+:deep(.el-button--default:hover),
+:deep(.reply-input .el-button:hover) {
+  background-color: #ffb52e !important;
+}
+
+/* 对于禁用状态的按钮 */
+:deep(.el-button.is-disabled) {
+  background-color: rgba(255, 170, 0, 0.5) !important;
+  color: rgba(0, 0, 0, 0.5) !important;
+}
+
+/* 黑色对话框样式 */
+:deep(.dark-dialog .el-dialog) {
+  background-color: #222;
+  border-radius: 8px;
+}
+
+:deep(.dark-dialog .el-dialog__title) {
+  color: #fff;
+}
+
+:deep(.dark-dialog .el-dialog__header) {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+:deep(.dark-dialog .el-dialog__body),
+:deep(.dark-dialog .el-dialog__footer) {
+  color: #fff;
+}
+
+:deep(.dark-dialog .el-form-item__label) {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* 修复移动设备上的滚动问题 */
+@media screen and (max-width: 767px) {
+  html,
+  body {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .post-detail-page {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* 确保底部留出评论输入框的空间 */
+  .comments-section {
+    margin-bottom: 64px;
+  }
+}
+
+/* 修复图片滑动问题 */
+.main-image {
+  touch-action: pan-y;
+  user-select: none;
+}
+
+/* 回复按钮也使用橙黄色 */
+:deep(.el-button--primary),
+:deep(.reply-input .el-button),
+:deep(.cosmic-button) {
+  background-color: #ffaa00;
+  color: #000;
+  border: none;
+}
+
+:deep(.el-button--primary:hover),
+:deep(.reply-input .el-button:hover) {
+  background-color: #ffb52e;
+}
+
+/* 其他可能的按钮样式 */
+.action-item.active {
+  color: #ffaa00;
+}
+
+/* 回复链接颜色 */
+.reply-to {
+  color: #ffaa00;
+  margin-left: 4px;
+}
+
+/* 用户名也确保左对齐 */
+.comment-meta .username,
+.reply-meta .username {
+  text-align: left;
+  font-weight: 500;
+}
+
+/* 添加删除按钮样式 */
+.delete-action {
+  color: #ff4d4f; /* 使用红色表示删除 */
+}
+
+.delete-action:hover {
+  color: #ff7875;
+}
+
+/* 添加回复的操作样式 */
+.reply-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+
+.reply-item {
+  background-color: #333;
+  border-radius: 8px;
+  padding: 10px;
+  position: relative; /* 便于定位删除按钮 */
 }
 </style>

@@ -153,11 +153,43 @@ const forgotPassword = async (req, res) => {
   res.status(501).json({ message: "忘记密码功能尚未实现" });
 };
 
+// 重置密码
 const resetPassword = async (req, res) => {
-  // 实现重置密码逻辑
-  res.status(501).json({ message: "重置密码功能尚未实现" });
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { phone, newPassword } = req.body;
+
+    // 查找用户
+    const [users] = await db.execute(
+      "SELECT id FROM users WHERE phone = ?",
+      [phone]
+    );
+
+    if (users.length === 0) {
+      return res.status(404).json({ message: "该手机号未注册" });
+    }
+
+    // 加密新密码
+    const hashedPassword = await bcrypt.hash(newPassword, 12);
+
+    // 更新密码
+    await db.execute(
+      "UPDATE users SET password = ? WHERE phone = ?",
+      [hashedPassword, phone]
+    );
+
+    res.json({ message: "密码重置成功" });
+  } catch (error) {
+    console.error("重置密码错误:", error);
+    res.status(500).json({ message: "重置密码失败" });
+  }
 };
 
+// 获取当前用户信息
 const getUserInfo = async (req, res) => {
   try {
     const [users] = await db.execute(
@@ -291,15 +323,38 @@ const updateSettings = async (req, res) => {
 
 const logout = async (req, res) => {
   try {
-    // 更新用户状态为离线
-    await db.execute("UPDATE users SET status = 'offline' WHERE id = ?", [
-      req.user.id,
-    ]);
+    // 获取 token
+    const token = req.header("Authorization")?.replace("Bearer ", "");
+    let userId = null;
+    
+    if (token) {
+      try {
+        // 尝试解析 token 获取用户 ID，忽略过期验证
+        const jwt = require("jsonwebtoken");
+        const jwtSecret = process.env.JWT_SECRET;
+        
+        // 用 { ignoreExpiration: true } 选项解析 token
+        const decoded = jwt.verify(token, jwtSecret, { ignoreExpiration: true });
+        userId = decoded.userId || decoded.id;
+        
+        if (userId) {
+          // 更新用户状态为离线
+          await db.execute("UPDATE users SET status = 'offline' WHERE id = ?", [
+            userId,
+          ]);
+        }
+      } catch (error) {
+        // 即使解析 token 失败也正常返回成功
+        console.error("解析 token 错误:", error);
+      }
+    }
 
-    res.json({ message: "登出成功" });
+    // 无论是否有有效 token，都返回成功
+    res.status(200).json({ message: "登出成功" });
   } catch (error) {
     console.error("登出错误:", error);
-    res.status(500).json({ message: "登出失败" });
+    // 即使出错也返回成功，确保前端可以继续清理
+    res.status(200).json({ message: "登出成功" });
   }
 };
 

@@ -957,4 +957,30 @@ exports.replyToComment = async (req, res) => {
   }
 };
 
+// 删除回复
+exports.deleteReply = async (req, res) => {
+  try {
+    const { replyId } = req.params;
+    const userId = req.user.id;
+
+    // 检查回复是否存在且属于当前用户
+    const [replies] = await db.execute(
+      "SELECT * FROM comment_replies WHERE id = ? AND user_id = ?",
+      [replyId, userId]
+    );
+
+    if (replies.length === 0) {
+      return res.status(404).json({ message: "回复不存在或无权限删除" });
+    }
+
+    // 执行删除操作
+    await db.execute("DELETE FROM comment_replies WHERE id = ?", [replyId]);
+
+    res.json({ message: "删除成功" });
+  } catch (error) {
+    console.error("删除回复失败:", error);
+    res.status(500).json({ message: "删除失败" });
+  }
+};
+
 // ... 其他控制器方法

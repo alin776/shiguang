@@ -148,4 +148,27 @@ CREATE TABLE IF NOT EXISTS comment_replies (
   FOREIGN KEY (comment_id) REFERENCES comments(id) ON DELETE CASCADE,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
   FOREIGN KEY (reply_to_id) REFERENCES users(id) ON DELETE SET NULL
-); 
+);
+
+-- 打卡项目表
+CREATE TABLE IF NOT EXISTS `checkin_items` (
+  `id` INT PRIMARY KEY AUTO_INCREMENT,
+  `user_id` INT NOT NULL,
+  `name` VARCHAR(100) NOT NULL,
+  `color` VARCHAR(20) DEFAULT '#409EFF',
+  `enabled` TINYINT(1) DEFAULT 1,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 打卡记录表
+CREATE TABLE IF NOT EXISTS `checkins` (
+  `id` INT PRIMARY KEY AUTO_INCREMENT,
+  `user_id` INT NOT NULL,
+  `item_id` INT NOT NULL,
+  `date` DATE NOT NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY `user_item_date` (`user_id`, `item_id`, `date`),
+  FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`item_id`) REFERENCES `checkin_items` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci; 

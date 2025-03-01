@@ -29,6 +29,47 @@ instance.interceptors.request.use(
       请求头: config.headers,
       数据: config.data,
     });
+    
+    // 检查请求中是否包含 Authorization 头
+    if (config.headers.Authorization || config.headers.authorization) {
+      // 针对登出请求的特殊处理，即使token过期也允许发送
+      if (config.url === '/api/users/logout') {
+        return config;
+      }
+      
+      // 从 localStorage 获取 token
+      const token = localStorage.getItem("token");
+      if (token) {
+        try {
+          // 解析 JWT token
+          const base64Url = token.split('.')[1];
+          const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+          const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+          }).join(''));
+          
+          const payload = JSON.parse(jsonPayload);
+          const now = Math.floor(Date.now() / 1000);
+          
+          // 如果 token 已过期
+          if (payload.exp <= now) {
+            console.log('检测到请求使用了过期的 Token，清除 Token 并重定向到登录页面');
+            localStorage.removeItem("token");
+            localStorage.removeItem("user");
+            
+            // 如果不在登录页，则重定向到登录页
+            if (window.location.pathname !== "/login") {
+              window.location.href = "/login?expired=true";
+              // 阻止继续发送请求
+              return Promise.reject(new Error('Token 已过期'));
+            }
+          }
+        } catch (error) {
+          console.error('Token 解析错误:', error);
+        }
+      }
+    }
+    
     return config;
   },
   (error) => {
@@ -61,6 +102,20 @@ instance.interceptors.response.use(
       return Promise.reject(
         new Error("网络连接失败，请检查网络设置或稍后重试")
       );
+    }
+
+    // 处理 token 过期的情况
+    if (error.response?.status === 401 && error.response?.data?.message === "token无效") {
+      console.error("Token 已过期，需要重新登录");
+      
+      // 清除本地存储的 token 和用户信息
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      
+      // 如果不在登录页，则重定向到登录页
+      if (window.location.pathname !== "/login") {
+        window.location.href = "/login?expired=true";
+      }
     }
 
     console.error("请求失败:", {

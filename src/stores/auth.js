@@ -1,8 +1,8 @@
 import { defineStore } from "pinia";
 import axios from "axios";
+import { API_BASE_URL } from "../config";
+import { getAvatarUrl } from "../utils/imageHelpers";
 import { useCommunityStore } from "./community";
-
-const API_BASE_URL = "http://47.98.210.7:3000";
 
 const cleanupAvatarPath = (avatar) => {
   if (!avatar) return null;
@@ -25,18 +25,23 @@ export const useAuthStore = defineStore("auth", {
       token: localStorage.getItem("token") || null,
       user: storedUser,
       autoLogin: localStorage.getItem("autoLogin") === "true",
-      theme: localStorage.getItem("theme") || "light",
+      theme: "dark", // 固定为黑色主题
     };
   },
 
   getters: {
     isAuthenticated: (state) => !!state.token,
-    userAvatar: (state) => {
-      if (!state.user?.avatar) return "";
-      if (state.user.avatar.startsWith("http")) {
-        return state.user.avatar;
+    userAvatar: (state) => getAvatarUrl(state.user?.avatar),
+    userCover: (state) => {
+      if (!state.user?.coverImage) return '';
+      // 处理封面图URL
+      const coverUrl = state.user.coverImage;
+      if (coverUrl && coverUrl.startsWith('http')) {
+        return coverUrl;
+      } else if (coverUrl) {
+        return `${API_BASE_URL}${coverUrl}`;
       }
-      return `${API_BASE_URL}${state.user.avatar}`;
+      return '';
     },
   },
 
@@ -161,9 +166,19 @@ export const useAuthStore = defineStore("auth", {
 
     logout: async function () {
       try {
-        await axios.post("/api/users/logout", null, {
-          headers: { Authorization: `Bearer ${this.token}` },
-        });
+        // 只有当token存在且有效时，才尝试发送登出请求
+        if (this.token) {
+          try {
+            await axios.post("/api/users/logout", null, {
+              headers: { Authorization: `Bearer ${this.token}` },
+            });
+          } catch (error) {
+            // 如果登出请求失败，只记录错误但继续清理客户端状态
+            console.error("登出请求失败，但将继续清理本地状态:", error);
+          }
+        }
+        
+        // 无论服务器请求成功与否，都清理本地状态
         this.token = null;
         this.user = null;
         localStorage.removeItem("token");
@@ -172,8 +187,9 @@ export const useAuthStore = defineStore("auth", {
         communityStore.clearState();
         window.location.href = "/login";
       } catch (error) {
-        console.error("登出失败:", error);
-        throw error;
+        console.error("登出操作完全失败:", error);
+        // 即使清理本地状态失败，也尝试跳转到登录页
+        window.location.href = "/login";
       }
     },
 
@@ -265,10 +281,42 @@ export const useAuthStore = defineStore("auth", {
       }
     },
 
+    // 检查 token 是否有效
+    isTokenValid() {
+      const token = this.token;
+      if (!token) return false;
+      
+      try {
+        // 解析 JWT token（不需要验证签名）
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+        
+        const payload = JSON.parse(jsonPayload);
+        const now = Math.floor(Date.now() / 1000);
+        
+        // 检查过期时间
+        return payload.exp > now;
+      } catch (error) {
+        console.error('Token 解析错误:', error);
+        return false;
+      }
+    },
+
     async checkAuth() {
       if (!this.token) {
         throw new Error("No token found");
       }
+      
+      // 首先检查 token 是否已过期
+      if (!this.isTokenValid()) {
+        console.log('Token 已过期，执行登出操作');
+        this.logout();
+        return false;
+      }
+      
       try {
         await this.fetchUserInfo();
         return true;
@@ -279,24 +327,22 @@ export const useAuthStore = defineStore("auth", {
     },
 
     initializeTheme() {
-      const savedTheme = localStorage.getItem("theme") || "light";
-      this.theme = savedTheme;
-      this.applyTheme(savedTheme);
+      this.theme = "dark"; // 始终使用黑色主题
+      localStorage.setItem("theme", "dark"); // 保存设置到本地存储
+      this.applyTheme("dark");
     },
 
     setTheme(newTheme) {
-      this.theme = newTheme;
-      localStorage.setItem("theme", newTheme);
-      this.applyTheme(newTheme);
+      // 无论传入什么主题，都设置为dark
+      this.theme = "dark";
+      localStorage.setItem("theme", "dark");
+      this.applyTheme("dark");
     },
 
     applyTheme(theme) {
-      document.documentElement.setAttribute("data-theme", theme);
-      if (theme === "dark") {
-        document.documentElement.classList.add("dark");
-      } else {
-        document.documentElement.classList.remove("dark");
-      }
+      // 忽略传入的主题参数，始终应用dark
+      document.documentElement.setAttribute("data-theme", "dark");
+      document.documentElement.classList.add("dark");
     },
 
     checkSavedLogin() {

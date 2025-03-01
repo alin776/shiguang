@@ -119,9 +119,14 @@ import {
   Star,
   Check,
 } from "@element-plus/icons-vue";
-import { useAuthStore } from "../stores/auth";
-import { useCommunityStore } from "../stores/community";
-import TheNavBar from "../components/TheNavBar.vue";
+import { useAuthStore } from "@/stores/auth";
+import { useCommunityStore } from "@/stores/community";
+import TheNavBar from "@/components/TheNavBar.vue";
+import BottomNavBar from "@/components/BottomNavBar.vue";
+import axios from "axios";
+import { getAvatarUrl, getImageUrl } from "@/utils/imageHelpers";
+import formatTime from "@/utils/formatTime";
+import { API_BASE_URL } from "@/config";
 
 const route = useRoute();
 const router = useRouter();
@@ -132,9 +137,6 @@ const userProfile = ref({});
 const posts = ref([]);
 const isFollowing = ref(false);
 const defaultCover = "/default-cover.jpg";
-
-// 添加 API_BASE_URL 常量
-const API_BASE_URL = "http://47.98.210.7:3000";
 
 const isOwnProfile = computed(() => {
   return authStore.user?.id === userProfile.value?.id;
@@ -151,11 +153,7 @@ const loadUserProfile = async () => {
       followersCount: Number(response.user.followersCount),
       followingCount: Number(response.user.followingCount),
       postsCount: Number(response.user.postsCount),
-      coverImage: response.user.coverImage
-        ? response.user.coverImage.includes(`${API_BASE_URL}${API_BASE_URL}`)
-          ? response.user.coverImage.replace(API_BASE_URL, "")
-          : response.user.coverImage
-        : null,
+      coverImage: response.user.coverImage,
     };
     posts.value = response.posts;
     isFollowing.value = response.user.isFollowing;
@@ -251,74 +249,10 @@ const beforeCoverUpload = (file) => {
   return isJPGorPNG && isLt2M;
 };
 
-// 修改 getAvatarUrl 函数，确保正确处理头像 URL
-const getAvatarUrl = (avatar) => {
-  if (!avatar) return "";
-
-  // 处理重复的 URL 问题
-  if (avatar.includes(`${API_BASE_URL}/uploads/avatars/`)) {
-    // 提取实际的文件名
-    const matches = avatar.match(/avatar-[\w-]+\.\w+$/);
-    if (matches) {
-      return `${API_BASE_URL}/uploads/avatars/${matches[0]}`;
-    }
-  }
-
-  // 如果是以 http 开头的完整 URL，直接返回
-  if (avatar.startsWith("http")) return avatar;
-
-  // 否则，添加 API_BASE_URL 前缀
-  return `${API_BASE_URL}/uploads/avatars/${avatar}`;
-};
-
-// 添加获取图片 URL 的方法
-const getImageUrl = (image) => {
-  if (!image) return "";
-
-  // 处理重复的 URL 问题
-  if (image.includes(`${API_BASE_URL}`)) {
-    // 提取实际的文件名
-    const matches = image.match(/post-[\w-]+\.\w+$/);
-    if (matches) {
-      return `${API_BASE_URL}/uploads/posts/${matches[0]}`;
-    }
-  }
-
-  // 如果是以 http 开头的完整 URL，直接返回
-  if (image.startsWith("http")) return image;
-
-  // 否则，添加 API_BASE_URL 前缀
-  return `${API_BASE_URL}/uploads/posts/${image}`;
-};
-
-// 添加背景图处理函数
+// 获取用户封面图片URL
 const getCoverUrl = (cover) => {
   if (!cover) return defaultCover;
-
-  // 处理重复的 URL 问题
-  if (cover.includes(`${API_BASE_URL}/uploads/covers/`)) {
-    const matches = cover.match(/cover-[\w-]+\.\w+$/);
-    if (matches) {
-      return `${API_BASE_URL}/uploads/covers/${matches[0]}`;
-    }
-  }
-
-  // 如果是以 http 开头的完整 URL
-  if (cover.startsWith("http")) {
-    // 修复重复的 API_BASE_URL
-    if (cover.includes(`${API_BASE_URL}${API_BASE_URL}`)) {
-      return cover.replace(API_BASE_URL, "");
-    }
-    return cover;
-  }
-
-  // 如果是相对路径，添加完整路径
-  return `${API_BASE_URL}/uploads/covers/${cover}`;
-};
-
-const formatTime = (timestamp) => {
-  const date = new Date(timestamp);
-  return date.toLocaleString();
+  return getImageUrl(cover);
 };
 
 onMounted(() => {

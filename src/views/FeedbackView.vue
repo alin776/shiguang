@@ -7,7 +7,7 @@
     </div>
 
     <!-- 反馈列表 -->
-    <div class="feedback-list" v-if="feedbacks.length > 0">
+    <div class="feedback-list" v-if="!loading && feedbacks.length > 0">
       <div
         v-for="feedback in feedbacks"
         :key="feedback.id"
@@ -114,6 +114,7 @@ const feedbacks = ref([]);
 const showFeedbackDialog = ref(false);
 const feedbackFormRef = ref(null);
 const submitting = ref(false);
+const loading = ref(false);
 
 const feedbackForm = ref({
   type: "",
@@ -179,9 +180,15 @@ const submitFeedback = async () => {
 
 const loadFeedbacks = async () => {
   try {
+    loading.value = true;
+    console.log('开始加载反馈数据');
     feedbacks.value = await feedbackStore.getFeedbacks();
+    console.log('获取到反馈数据:', feedbacks.value);
   } catch (error) {
+    console.error('获取反馈列表失败:', error);
     ElMessage.error("获取反馈列表失败");
+  } finally {
+    loading.value = false;
   }
 };
 
@@ -194,14 +201,15 @@ onMounted(() => {
 .feedback-page {
   min-height: 100vh;
   padding-bottom: 80px;
-  background: #f5f7fa;
+  background: var(--bg-color);
 }
 
 .page-header {
   display: flex;
   align-items: center;
-  padding: 16px;
-  background: #fff;
+  padding: 15px;
+  background-color: var(--card-bg);
+  box-shadow: 0 1px 4px var(--shadow-color);
   position: sticky;
   top: 0;
   z-index: 10;
@@ -213,13 +221,14 @@ onMounted(() => {
   font-weight: 500;
   flex: 1;
   text-align: center;
+  color: var(--text-color);
 }
 
 .back-icon {
   font-size: 20px;
-  color: #606266;
+  margin-right: 10px;
   cursor: pointer;
-  padding: 4px;
+  color: var(--text-color);
 }
 
 .feedback-list {
@@ -227,12 +236,12 @@ onMounted(() => {
 }
 
 .feedback-item {
-  background: #fff;
-  border-radius: 8px;
-  padding: 16px;
   margin-bottom: 16px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-  transition: all 0.3s ease;
+  padding: 16px;
+  border-radius: 8px;
+  background-color: var(--card-bg);
+  box-shadow: 0 2px 8px var(--shadow-color);
+  overflow: hidden;
 }
 
 .feedback-item.has-reply {
@@ -243,32 +252,33 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 .feedback-type {
+  font-weight: 500;
   font-size: 14px;
-  color: #606266;
+  color: var(--text-color);
 }
 
 .feedback-content {
-  font-size: 15px;
-  color: #303133;
-  line-height: 1.5;
-  margin-bottom: 12px;
+  margin: 10px 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-color);
 }
 
 .feedback-time {
   font-size: 12px;
-  color: #909399;
+  color: var(--placeholder-color);
+  text-align: right;
 }
 
 .feedback-reply {
-  margin-top: 12px;
+  margin-top: 16px;
   padding: 12px;
-  background: var(--el-color-success-light-9);
-  border-radius: 4px;
-  border-left: 2px solid var(--el-color-success);
+  background-color: rgba(0, 0, 0, 0.03);
+  border-radius: 6px;
 }
 
 .reply-header {
@@ -279,52 +289,58 @@ onMounted(() => {
 }
 
 .reply-title {
-  font-size: 13px;
-  color: var(--el-color-success);
-  margin-bottom: 8px;
   font-weight: 500;
-}
-
-.reply-content {
   font-size: 14px;
-  color: #606266;
-  line-height: 1.5;
-  white-space: pre-wrap;
+  color: var(--primary-color);
 }
 
 .reply-time {
   font-size: 12px;
-  color: #909399;
+  color: var(--placeholder-color);
+}
+
+.reply-content {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-color);
 }
 
 .fab-button {
   position: fixed;
-  right: 16px;
-  bottom: 76px;
+  bottom: 80px;
+  right: 20px;
   width: 56px;
   height: 56px;
-  border-radius: 28px;
-  background: #409eff;
+  border-radius: 50%;
+  background-color: var(--primary-color);
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.4);
-  cursor: pointer;
-  transition: all 0.3s;
+  box-shadow: 0 3px 8px var(--shadow-color);
   z-index: 100;
-}
-
-.fab-button:active {
-  transform: scale(0.95);
 }
 
 .fab-button .el-icon {
   font-size: 24px;
 }
 
+.mobile-dialog {
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
 .empty-state {
+  display: flex;
+  justify-content: center;
+  align-items: center;
   padding: 40px 0;
+  color: var(--placeholder-color);
 }
 
 :deep(.el-select) {

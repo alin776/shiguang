@@ -66,4 +66,7 @@ router.post(
   communityController.replyToComment
 );
 
+// 删除回复
+router.delete("/replies/:replyId", communityController.deleteReply);
+
 module.exports = router;

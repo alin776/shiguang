@@ -8,17 +8,25 @@ export const useEventStore = defineStore("event", {
   state: () => ({
     events: [],
     loading: false,
+    authStore: null,
   }),
 
   actions: {
+    // 初始化 authStore
+    init() {
+      if (!this.authStore) {
+        this.authStore = useAuthStore();
+      }
+    },
+
     // 获取事件列表
     async getEvents(startDate, endDate) {
       try {
+        this.init();
         this.loading = true;
-        const authStore = useAuthStore();
         const response = await axios.get(`${API_BASE_URL}/api/events`, {
           params: { startDate, endDate },
-          headers: { Authorization: `Bearer ${authStore.token}` },
+          headers: { Authorization: `Bearer ${this.authStore.token}` },
         });
         return response.data;
       } catch (error) {
@@ -32,12 +40,12 @@ export const useEventStore = defineStore("event", {
     // 创建事件
     async createEvent(eventData) {
       try {
-        const authStore = useAuthStore();
+        this.init();
         const response = await axios.post(
           `${API_BASE_URL}/api/events`,
           eventData,
           {
-            headers: { Authorization: `Bearer ${authStore.token}` },
+            headers: { Authorization: `Bearer ${this.authStore.token}` },
           }
         );
         return response.data;
@@ -68,47 +76,29 @@ export const useEventStore = defineStore("event", {
     // 删除事件
     async deleteEvent(eventId) {
       try {
+        this.init();
         if (!eventId) {
-          throw new Error("事件ID不能为空");
+          throw new Error("事件ID无效");
         }
 
-        const authStore = useAuthStore();
-        if (!authStore.token) {
-          throw new Error("未登录或登录已过期");
-        }
+        console.log("删除事件，ID:", eventId);
 
         const response = await axios.delete(
           `${API_BASE_URL}/api/events/${eventId}`,
           {
             headers: {
-              Authorization: `Bearer ${authStore.token}`,
+              Authorization: `Bearer ${this.authStore.token}`,
             },
             params: {
-              userId: authStore.user?.id,
+              userId: this.authStore.user?.id,
             },
           }
         );
 
-        if (!response.data) {
-          throw new Error("删除失败：服务器未返回数据");
-        }
-
         return response.data;
       } catch (error) {
-        if (error.response?.status === 404) {
-          throw new Error("事件不存在或已被删除");
-        }
-
-        if (error.response?.status === 500) {
-          console.error("服务器错误详情:", error.response?.data);
-        }
-
-        const errorMessage =
-          error.response?.data?.message ||
-          error.message ||
-          "删除事件失败，请稍后重试";
-        console.error("删除事件失败:", error.response?.data || error.message);
-        throw new Error(errorMessage);
+        console.error("删除事件失败:", error);
+        throw error;
       }
     },
   },

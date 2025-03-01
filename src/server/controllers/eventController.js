@@ -135,17 +135,23 @@ exports.updateEvent = async (req, res) => {
     res.status(500).json({ message: "更新事件失败" });
   }
 };
-
 exports.deleteEvent = async (req, res) => {
   try {
-    const eventId = req.params.eventId;
+    const eventId = req.params.id;  // 从路由参数获取事件ID
+    const userId = req.user.id;     // 从认证中间件获取用户ID
+
+    // 检查参数
+    if (!eventId || !userId) {
+      return res.status(400).json({ message: "缺少必要参数" });
+    }
+
     const [result] = await db.execute(
       `DELETE FROM events WHERE id = ? AND user_id = ?`,
-      [eventId, req.userId]
+      [eventId, userId]
     );
 
     if (result.affectedRows === 0) {
-      return res.status(404).json({ message: "事件不存在" });
+      return res.status(404).json({ message: "事件不存在或无权限删除" });
     }
 
     res.json({ message: "删除成功" });

@@ -68,7 +68,7 @@ router.put("/profile", auth, userController.updateProfile);
 router.put("/password", auth, userController.changePassword);
 
 // 退出登录
-router.post("/logout", auth, userController.logout);
+router.post("/logout", userController.logout);
 
 // 获取在线用户列表
 router.get("/online", auth, userController.getOnlineUsers);
@@ -88,6 +88,18 @@ router.get("/me/settings", auth, userController.getSettings);
 
 // 更新用户设置
 router.put("/me/settings", auth, userController.updateSettings);
+
+// 重置密码路由
+router.post(
+  "/reset-password",
+  [
+    check("phone").notEmpty().withMessage("手机号不能为空"),
+    check("newPassword")
+      .isLength({ min: 6 })
+      .withMessage("新密码至少6个字符"),
+  ],
+  userController.resetPassword
+);
 
 // 添加头像上传路由
 router.post("/upload/avatar", auth, avatarUpload.single("file"), (req, res) => {

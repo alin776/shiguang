@@ -163,6 +163,10 @@ Copyright 2024 alin776
 
 详细说明请参考 [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0)
 
+本软件由 alin776 独立开发完成
+首次发布时间：2025 年 2 月 23 日
+GitHub: https://github.com/alin776/shiguang
+
 ## 联系方式
 
 项目作者 - [@alin776](https://github.com/alin776)

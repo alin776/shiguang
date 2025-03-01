@@ -1,12 +1,12 @@
 import { createRouter, createWebHistory } from "vue-router";
 import LoginView from "../views/LoginView.vue";
 import RegisterView from "../views/RegisterView.vue";
-import ProfileView from "../views/ProfileView.vue";
+import UserProfileView from "../views/UserProfileView.vue";
+import ProfileView from "../views/ProfileView.vue"; // Added ProfileView import
 import CommunityView from "../views/CommunityView.vue";
 import PostDetailView from "../views/PostDetailView.vue";
 import MyPostsView from "../views/MyPostsView.vue";
 import MyLikesView from "../views/MyLikesView.vue";
-import UserProfileView from "../views/UserProfileView.vue";
 import FollowersView from "../views/FollowersView.vue";
 import FollowingView from "../views/FollowingView.vue";
 

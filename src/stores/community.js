@@ -1,17 +1,8 @@
 import { defineStore } from "pinia";
 import axios from "axios";
 import { useAuthStore } from "./auth";
-
-const API_BASE_URL = "http://47.98.210.7:3000";
-
-const cleanupAvatarPath = (avatar) => {
-  if (!avatar) return null;
-  if (avatar.includes("//uploads")) {
-    const matches = avatar.match(/\/uploads\/avatars\/[^/]+$/);
-    return matches ? matches[0] : null;
-  }
-  return avatar;
-};
+import { API_BASE_URL } from "@/config";
+import { getAvatarUrl, getImageUrl } from "@/utils/imageHelpers";
 
 export const useCommunityStore = defineStore("community", {
   state: () => ({
@@ -51,13 +42,11 @@ export const useCommunityStore = defineStore("community", {
           response.data.posts = response.data.posts.map((post) => ({
             ...post,
             images: post.images
-              ? post.images.map((img) => `${API_BASE_URL}${img}`)
+              ? post.images.map((img) => getImageUrl(img))
               : [],
             user: {
               ...post.user,
-              avatar: post.user?.avatar
-                ? `${API_BASE_URL}${cleanupAvatarPath(post.user.avatar)}`
-                : null,
+              avatar: post.user?.avatar ? getAvatarUrl(post.user.avatar) : null,
             },
           }));
         }
@@ -89,14 +78,12 @@ export const useCommunityStore = defineStore("community", {
           response.data = {
             ...response.data,
             images: response.data.images
-              ? response.data.images.map((img) => `${API_BASE_URL}${img}`)
+              ? response.data.images.map((img) => getImageUrl(img))
               : [],
             user: {
               ...response.data.user,
               avatar: response.data.user?.avatar
-                ? `${API_BASE_URL}${cleanupAvatarPath(
-                    response.data.user.avatar
-                  )}`
+                ? getAvatarUrl(response.data.user.avatar)
                 : null,
             },
           };
@@ -284,10 +271,12 @@ export const useCommunityStore = defineStore("community", {
         // 处理用户头像和封面图片
         if (response.data.user) {
           if (response.data.user.avatar) {
-            response.data.user.avatar = `${API_BASE_URL}/uploads/avatars/${response.data.user.avatar}`;
+            response.data.user.avatar = getAvatarUrl(response.data.user.avatar);
           }
           if (response.data.user.coverImage) {
-            response.data.user.coverImage = `${API_BASE_URL}/uploads/covers/${response.data.user.coverImage}`;
+            response.data.user.coverImage = getImageUrl(
+              response.data.user.coverImage
+            );
           }
         }
 
@@ -296,7 +285,7 @@ export const useCommunityStore = defineStore("community", {
           response.data.posts = response.data.posts.map((post) => ({
             ...post,
             images: post.images
-              ? post.images.map((img) => `${API_BASE_URL}${img}`)
+              ? post.images.map((img) => getImageUrl(img))
               : [],
           }));
         }
@@ -461,17 +450,39 @@ export const useCommunityStore = defineStore("community", {
     // 删除评论
     async deleteComment(postId, commentId) {
       try {
-        const authStore = useAuthStore();
         const response = await axios.delete(
           `${API_BASE_URL}/api/community/posts/${postId}/comments/${commentId}`,
           {
-            headers: { Authorization: `Bearer ${authStore.token}` },
+            headers: {
+              Authorization: `Bearer ${useAuthStore().token}`,
+            },
           }
         );
         return response.data;
       } catch (error) {
         console.error("删除评论失败:", error);
-        throw error.response?.data || error;
+        throw error;
+      }
+    },
+
+    // 删除回复
+    async deleteReply(postId, commentId, replyId) {
+      try {
+        console.log(`正在删除回复，参数: replyId=${replyId}`);
+
+        const response = await axios.delete(
+          `${API_BASE_URL}/api/community/replies/${replyId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${useAuthStore().token}`,
+            },
+          }
+        );
+
+        return response.data;
+      } catch (error) {
+        console.error("删除回复失败:", error);
+        throw error;
       }
     },
 
@@ -544,26 +555,11 @@ export const useCommunityStore = defineStore("community", {
           response.data.posts = response.data.posts.map((post) => ({
             ...post,
             images: post.images
-              ? post.images.map((img) => {
-                  // 处理重复的 URL 问题
-                  if (img.includes(`${API_BASE_URL}`)) {
-                    const matches = img.match(/post-[\w-]+\.\w+$/);
-                    if (matches) {
-                      return `${API_BASE_URL}/uploads/posts/${matches[0]}`;
-                    }
-                    return img.replace(
-                      /\/uploads\/posts\/+/g,
-                      "/uploads/posts/"
-                    );
-                  }
-                  return `${API_BASE_URL}${img}`;
-                })
+              ? post.images.map((img) => getImageUrl(img))
               : [],
             user: {
               ...post.user,
-              avatar: post.user?.avatar
-                ? `${API_BASE_URL}${cleanupAvatarPath(post.user.avatar)}`
-                : null,
+              avatar: post.user?.avatar ? getAvatarUrl(post.user.avatar) : null,
             },
           }));
         }
@@ -591,26 +587,11 @@ export const useCommunityStore = defineStore("community", {
           response.data.posts = response.data.posts.map((post) => ({
             ...post,
             images: post.images
-              ? post.images.map((img) => {
-                  // 处理重复的 URL 问题
-                  if (img.includes(`${API_BASE_URL}`)) {
-                    const matches = img.match(/post-[\w-]+\.\w+$/);
-                    if (matches) {
-                      return `${API_BASE_URL}/uploads/posts/${matches[0]}`;
-                    }
-                    return img.replace(
-                      /\/uploads\/posts\/+/g,
-                      "/uploads/posts/"
-                    );
-                  }
-                  return `${API_BASE_URL}${img}`;
-                })
+              ? post.images.map((img) => getImageUrl(img))
               : [],
             user: {
               ...post.user,
-              avatar: post.user?.avatar
-                ? `${API_BASE_URL}${cleanupAvatarPath(post.user.avatar)}`
-                : null,
+              avatar: post.user?.avatar ? getAvatarUrl(post.user.avatar) : null,
             },
           }));
         }

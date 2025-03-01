@@ -242,20 +242,15 @@
 <script setup>
 import { ref, onMounted, computed, nextTick } from "vue";
 import { useRouter } from "vue-router";
-import { ElMessage } from "element-plus";
-import {
-  Plus,
-  Picture,
-  View,
-  ChatDotRound,
-  Star,
-  Search,
-} from "@element-plus/icons-vue";
-import BottomNavBar from "../components/BottomNavBar.vue";
-import TheNavBar from "../components/TheNavBar.vue";
-import { useCommunityStore } from "../stores/community";
-import { useAuthStore } from "../stores/auth";
-import { formatTime } from "../utils/time";
+import { ElMessage, ElMessageBox } from "element-plus";
+import { Search, Plus, Picture, View, ChatDotRound, Star } from "@element-plus/icons-vue";
+import TheNavBar from "@/components/TheNavBar.vue";
+import BottomNavBar from "@/components/BottomNavBar.vue";
+import formatTime from "@/utils/formatTime";
+import { useCommunityStore } from "@/stores/community";
+import { useAuthStore } from "@/stores/auth";
+import { API_BASE_URL } from "@/config";
+import { getAvatarUrl, getImageUrl } from "@/utils/imageHelpers";
 
 const router = useRouter();
 const communityStore = useCommunityStore();
@@ -325,57 +320,6 @@ const viewPost = (post) => {
   router.push(`/community/post/${post.id}`);
 };
 
-const getAvatarUrl = (avatar) => {
-  if (!avatar) return "";
-
-  // 处理重复的 URL 问题
-  if (avatar.includes(`${API_BASE_URL}/uploads/avatars/`)) {
-    // 提取实际的文件名
-    const matches = avatar.match(/avatar-[\w-]+\.\w+$/);
-    if (matches) {
-      return `${API_BASE_URL}/uploads/avatars/${matches[0]}`;
-    }
-  }
-
-  // 如果是以 http 开头的完整 URL，直接返回
-  if (avatar.startsWith("http")) {
-    // 修复重复的 API_BASE_URL
-    if (avatar.includes(`${API_BASE_URL}${API_BASE_URL}`)) {
-      return avatar.replace(API_BASE_URL, "");
-    }
-    return avatar;
-  }
-
-  // 否则，添加 API_BASE_URL 前缀
-  return `${API_BASE_URL}/uploads/avatars/${avatar}`;
-};
-
-const getImageUrl = (image) => {
-  if (!image) return "";
-
-  // 处理重复的 URL 问题
-  if (image.includes(`${API_BASE_URL}/uploads/posts/`)) {
-    const matches = image.match(/post-[\w-]+\.\w+$/);
-    if (matches) {
-      return `${API_BASE_URL}/uploads/posts/${matches[0]}`;
-    }
-  }
-
-  // 如果是以 http 开头的完整 URL，直接返回
-  if (image.startsWith("http")) {
-    // 修复重复的 API_BASE_URL
-    if (image.includes(`${API_BASE_URL}${API_BASE_URL}`)) {
-      return image.replace(API_BASE_URL, "");
-    }
-    return image;
-  }
-
-  // 否则，添加 API_BASE_URL 前缀
-  return `${API_BASE_URL}${image}`;
-};
-
-const API_BASE_URL = "http://47.98.210.7:3000";
-
 const loadPosts = async () => {
   try {
     loading.value = true;
@@ -386,22 +330,20 @@ const loadPosts = async () => {
       searchText.value
     );
 
+    // 调试输出原始数据
+    console.log('调试 - API_BASE_URL:', API_BASE_URL);
+    console.log('调试 - 原始帖子数据:', response.posts);
+    if (response?.posts && response.posts.length > 0) {
+      console.log('调试 - 第一个帖子的用户数据:', response.posts[0].user);
+      console.log('调试 - 第一个帖子的用户头像:', {
+        原始头像: response.posts[0].user?.avatar,
+      });
+    }
+
     // 处理帖子数据中的头像和图片路径
     if (response?.posts) {
-      posts.value = response.posts.map((post) => ({
-        ...post,
-        images: post.images?.map((img) => getImageUrl(img)),
-        user: {
-          ...post.user,
-          avatar: post.user?.avatar
-            ? post.user.avatar.includes(`${API_BASE_URL}${API_BASE_URL}`)
-              ? post.user.avatar.replace(API_BASE_URL, "")
-              : post.user.avatar.startsWith("http")
-              ? post.user.avatar
-              : `${API_BASE_URL}${post.user.avatar}`
-            : null,
-        },
-      }));
+      console.log('原始帖子数据:', response.posts);
+      posts.value = response.posts;
     } else {
       posts.value = [];
     }
@@ -429,20 +371,7 @@ const loadMorePosts = async () => {
     );
 
     if (response?.posts) {
-      const newPosts = response.posts.map((post) => ({
-        ...post,
-        images: post.images?.map((img) => getImageUrl(img)),
-        user: {
-          ...post.user,
-          avatar: post.user?.avatar
-            ? post.user.avatar.includes(`${API_BASE_URL}${API_BASE_URL}`)
-              ? post.user.avatar.replace(API_BASE_URL, "")
-              : post.user.avatar.startsWith("http")
-              ? post.user.avatar
-              : `${API_BASE_URL}${post.user.avatar}`
-            : null,
-        },
-      }));
+      const newPosts = response.posts;
       posts.value = [...posts.value, ...newPosts];
     }
 
@@ -511,6 +440,21 @@ const handleBeforeUpload = (file) => {
 onMounted(() => {
   console.log("当前用户头像URL:", authStore.user?.avatar);
   loadPosts();
+  
+  // 测试URL处理
+  console.log('URL处理测试结果:');
+  [
+    '/uploads/avatars/avatar-1234.jpg',
+    'http://47.98.210.7:3000/uploads/avatars/avatar-1234.jpg',
+    'http://47.98.210.7:3000http://localhost:3000/uploads/avatars/avatar-1234.jpg',
+    'avatar-1234.jpg'
+  ].forEach(url => {
+    console.log({
+      原始URL: url,
+      处理后URL: getAvatarUrl(url)
+    });
+  });
+
   const communityPage = document.querySelector(".community-page");
   if (communityPage) {
     communityPage.addEventListener("scroll", handleScroll);
@@ -524,12 +468,12 @@ onMounted(() => {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  background: #f5f7fa;
+  background: var(--bg-color);
 }
 
 .community-page {
   flex: 1;
-  background: #f5f7fa;
+  background: var(--bg-color);
   padding-bottom: 76px;
   width: 100%;
   max-width: 768px;
@@ -543,7 +487,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   padding: 16px;
-  background: #fff;
+  background: var(--card-bg);
   position: sticky;
   top: 0;
   z-index: 10;
@@ -559,7 +503,7 @@ onMounted(() => {
 
 .sort-tabs {
   display: flex;
-  background: #fff;
+  background: var(--card-bg);
   padding: 12px 16px;
   gap: 32px;
   border-bottom: 1px solid var(--el-border-color-light);
@@ -608,7 +552,7 @@ onMounted(() => {
 }
 
 .post-card {
-  background: #fff;
+  background: var(--card-bg);
   border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
@@ -637,7 +581,7 @@ onMounted(() => {
   width: 100%;
   height: 100%;
   object-fit: cover; /* 或者 contain，取决于你的需求 */
-  background-color: #f5f5f5; /* 图片加载前的背景色 */
+  background-color: var(--border-color); /* 图片加载前的背景色 */
 }
 
 .image-count {
@@ -666,7 +610,7 @@ onMounted(() => {
   margin: 0;
   font-size: 16px;
   font-weight: 500;
-  color: #303133;
+  color: var(--text-color);
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -677,7 +621,7 @@ onMounted(() => {
 .post-text {
   margin: 0;
   font-size: 12px;
-  color: #606266;
+  color: var(--placeholder-color);
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -688,14 +632,14 @@ onMounted(() => {
 .post-time {
   margin: 4px 0 0;
   font-size: 12px;
-  color: #909399;
+  color: var(--placeholder-color);
   margin-top: auto;
   text-align: right;
 }
 
 .post-footer {
   padding: 6px 8px;
-  border-top: 1px solid #f0f2f5;
+  border-top: 1px solid var(--border-color);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -708,14 +652,14 @@ onMounted(() => {
 }
 
 :deep(.el-avatar) {
-  border: 1px solid #f0f2f5;
+  border: 1px solid var(--border-color);
   width: 20px !important;
   height: 20px !important;
 }
 
 .username {
   font-size: 12px;
-  color: #606266;
+  color: var(--placeholder-color);
   max-width: 80px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -732,7 +676,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 4px;
-  color: #909399;
+  color: var(--placeholder-color);
   font-size: 11px;
   min-width: 32px;
 }
@@ -792,6 +736,12 @@ onMounted(() => {
   background-color: var(--el-fill-color-blank);
 }
 
+.el-upload__tip {
+  font-size: 12px;
+  color: var(--placeholder-color);
+  margin-top: 8px;
+}
+
 @media screen and (max-width: 480px) {
   .post-list {
     padding: 6px;
@@ -831,11 +781,5 @@ onMounted(() => {
   .post-text {
     font-size: 14px;
   }
-}
-
-.el-upload__tip {
-  font-size: 12px;
-  color: #909399;
-  margin-top: 8px;
 }
 </style>

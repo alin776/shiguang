@@ -62,21 +62,31 @@
 </template>
 
 <script setup>
-import { ref, reactive } from "vue";
-import { useRouter } from "vue-router";
+import { ref, reactive, onMounted } from "vue";
+import { useRouter, useRoute } from "vue-router";
 import { ElMessage } from "element-plus";
 import { useAuthStore } from "../stores/auth";
 import { User, Lock } from "@element-plus/icons-vue";
 
 const router = useRouter();
+const route = useRoute();
 const loginFormRef = ref(null);
 const loading = ref(false);
 const authStore = useAuthStore();
+const tokenExpired = ref(false);
 
 const loginForm = reactive({
   username: "",
   password: "",
   autoLogin: false,
+});
+
+// 检查URL参数，如果是因为token过期重定向过来的，显示提示信息
+onMounted(() => {
+  if (route.query.expired === 'true') {
+    tokenExpired.value = true;
+    ElMessage.warning("登录已过期，请重新登录");
+  }
 });
 
 const rules = {

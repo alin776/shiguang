@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="settings-page">
     <!-- 顶部标题 -->
     <div class="settings-header">
@@ -8,7 +8,7 @@
 
     <!-- 设置选项列表 -->
     <div class="settings-list">
-      <!-- 个人资料设置组 -->
+      <!-- 个人资料设置?-->
       <div class="settings-group">
         <div class="group-title">个人资料</div>
         <div class="settings-item avatar-item">
@@ -33,7 +33,7 @@
         </div>
       </div>
 
-      <!-- 账号设置组 -->
+      <!-- 账号设置�?-->
       <div class="settings-group">
         <div class="group-title">账号设置</div>
         <div class="settings-item link" @click="changePassword">
@@ -46,7 +46,7 @@
         </div>
       </div>
 
-      <!-- 主题设置组 -->
+      <!-- 主题设置�?-->
       <div class="settings-group">
         <div class="group-title">主题设置</div>
         <div class="settings-item">
@@ -55,9 +55,9 @@
         </div>
       </div>
 
-      <!-- 反馈与帮助 -->
+      <!-- 反馈与帮�?-->
       <div class="settings-group">
-        <div class="group-title">反馈与帮助</div>
+        <div class="group-title">反馈与帮�?/div>
         <div class="settings-item link" @click="goToFeedback">
           <span>问题反馈</span>
           <el-icon><ArrowRight /></el-icon>
@@ -79,12 +79,12 @@
       <!-- 账号操作 -->
       <div class="settings-group">
         <div class="settings-item logout" @click="handleLogout">
-          <span>退出登录</span>
+          <span>退出登�?/span>
         </div>
       </div>
     </div>
 
-    <!-- 联系我们对话框 -->
+    <!-- 联系我们对话-->
     <el-dialog
       v-model="showContact"
       title="联系我们"
@@ -93,7 +93,7 @@
     >
       <div class="contact-list">
         <div class="contact-item">
-          <div class="contact-label">QQ群</div>
+          <div class="contact-label">QQ/div>
           <div class="contact-value">
             <span>123456789</span>
             <el-button type="primary" link @click="copyText('123456789')">
@@ -154,8 +154,7 @@ const settings = reactive({
   },
 });
 
-// 用户头像计算属性
-const userAvatar = computed(() => authStore.userAvatar);
+// 用户头像计算属�?const userAvatar = computed(() => authStore.userAvatar);
 
 const userInitials = computed(() => {
   const username = authStore.user?.username || "";
@@ -189,8 +188,7 @@ const handleAvatarChange = async (event) => {
 
     console.log("头像上传响应:", response.data); // 添加日志
 
-    // 更新用户资料，确保所有必要字段都有值
-    const profileData = {
+    // 更新用户资料，确保所有必要字段都有�?    const profileData = {
       username: authStore.user.username,
       bio: authStore.user.bio || "",
       email: authStore.user.email,
@@ -237,7 +235,7 @@ const clearCache = async () => {
     loading.value = true;
     await new Promise((resolve) => setTimeout(resolve, 1000)); // 模拟清理过程
     cacheSize.value = "0.0MB";
-    ElMessage.success("缓存已清理");
+    ElMessage.success("缓存已清�?);
   } catch (error) {
     ElMessage.error("清除缓存失败");
   } finally {
@@ -275,9 +273,9 @@ const handleLogout = async () => {
   try {
     await authStore.logout();
     router.push("/login");
-    ElMessage.success("退出登录成功");
+    ElMessage.success("退出登录成�?);
   } catch (error) {
-    ElMessage.error("退出登录失败");
+    ElMessage.error("退出登录失�?);
   }
 };
 </script>
@@ -365,7 +363,7 @@ const handleLogout = async () => {
   width: 100px;
 }
 
-/* 移动端优化 */
+/* 移动端优�?*/
 @media screen and (max-width: 768px) {
   .settings-list {
     padding: 12px;
@@ -470,7 +468,7 @@ const handleLogout = async () => {
   transform: scale(1.05);
   border-color: var(--el-color-primary);
 }
-/* 主题信息样式 */
+/* ������Ϣ��ʽ */
 .theme-info {
   color: var(--el-color-primary);
   font-size: 14px;
@@ -490,3 +488,4 @@ const handleLogout = async () => {
   box-shadow: 0 0 5px var(--el-color-primary);
 }
 </style>
+

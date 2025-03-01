@@ -47,7 +47,9 @@
     <div class="form-actions">
       <el-button @click="$emit('cancel')">取消</el-button>
       <template v-if="type === 'edit'">
-        <el-button type="danger" @click="handleDelete"> 删除 </el-button>
+        <el-button type="danger" @click="$emit('delete', form.id)"
+          >删除</el-button
+        >
       </template>
       <el-button type="primary" @click="handleSubmit">
         {{ type === "add" ? "创建" : "保存" }}

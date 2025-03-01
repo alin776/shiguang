@@ -1,101 +1,86 @@
 <template>
   <div class="edit-profile-page">
+    <!-- 页面头部 -->
     <div class="page-header">
       <el-icon class="back-icon" @click="router.back()"><ArrowLeft /></el-icon>
-      <h2>编辑资料</h2>
-      <el-button
-        class="save-btn"
-        type="primary"
-        :loading="saving"
-        @click="saveProfile"
-        >保存</el-button
-      >
+      <h2>编辑个人资料</h2>
+      <button class="save-btn" :disabled="saving" @click="saveProfile">
+        {{ saving ? "保存中..." : "保存" }}
+      </button>
     </div>
 
-    <div class="edit-form">
-      <!-- 添加背景图部分 -->
-      <div class="cover-section">
-        <div class="cover-wrapper">
-          <div
-            class="cover-preview"
-            :style="{
-              backgroundImage: `url(${displayCover})`,
-            }"
-          >
-            <el-upload
-              class="cover-uploader"
-              :action="`${API_BASE_URL}/api/upload/cover`"
-              :headers="{ Authorization: `Bearer ${authStore.token}` }"
-              :show-file-list="false"
-              :on-success="handleCoverSuccess"
-              :before-upload="beforeCoverUpload"
-            >
-              <div class="upload-cover-label">
-                <el-icon><Camera /></el-icon>
-                <span>更换背景</span>
-              </div>
-            </el-upload>
+    <!-- 封面图片 -->
+    <div class="cover-image-wrapper">
+      <div
+        class="cover-image"
+        :style="{
+          backgroundImage: `url(${displayCover})`,
+        }"
+      >
+        <div class="dark-overlay"></div>
+        <el-upload
+          class="upload-cover"
+          :action="`${API_BASE_URL}/api/users/upload/cover`"
+          :headers="uploadHeaders"
+          :show-file-list="false"
+          :on-success="handleCoverSuccess"
+          :before-upload="beforeUpload"
+        >
+          <div class="cover-update-btn">
+            <el-icon><Camera /></el-icon>
+            <span>更换背景</span>
           </div>
-        </div>
+        </el-upload>
       </div>
+    </div>
 
-      <!-- 在 cover-section 后添加头像部分 -->
-      <div class="avatar-section">
-        <div class="avatar-wrapper">
-          <el-avatar :size="80" :src="displayAvatar" @error="() => true">
-            {{ form.username?.charAt(0).toUpperCase() || "?" }}
-          </el-avatar>
-          <div class="avatar-upload">
-            <el-upload
-              class="avatar-uploader"
-              :action="`${API_BASE_URL}/api/users/upload/avatar`"
-              :headers="{ Authorization: `Bearer ${authStore.token}` }"
-              :show-file-list="false"
-              :on-success="handleAvatarSuccess"
-              :before-upload="beforeAvatarUpload"
-              :on-error="handleUploadError"
-              name="file"
-            >
-              <div class="upload-label">
-                <el-icon><Camera /></el-icon>
-                <span>更换头像</span>
-              </div>
-            </el-upload>
-          </div>
-        </div>
+    <!-- 头像部分 -->
+    <div class="avatar-container">
+      <div class="avatar-wrapper">
+        <el-avatar :size="80" :src="displayAvatar" @error="() => true">
+          {{ form.username?.charAt(0).toUpperCase() || "?" }}
+        </el-avatar>
+        <el-upload
+          class="upload-avatar"
+          :action="`${API_BASE_URL}/api/users/upload/avatar`"
+          :headers="uploadHeaders"
+          :show-file-list="false"
+          :on-success="handleAvatarSuccess"
+          :before-upload="beforeUpload"
+        >
+          <div class="avatar-update-label">更换头像</div>
+        </el-upload>
       </div>
+    </div>
 
-      <div class="form-group">
-        <label>用户名</label>
-        <el-input
-          v-model="form.username"
-          placeholder="请输入用户名"
-          maxlength="20"
-          show-word-limit
-        />
-      </div>
+    <!-- 表单 -->
+    <div class="form-container">
+      <el-form
+        ref="formRef"
+        :model="form"
+        :rules="rules"
+        label-position="top"
+        class="profile-form"
+      >
+        <el-form-item label="用户名" prop="username">
+          <el-input v-model="form.username" placeholder="请输入用户名" />
+        </el-form-item>
 
-      <div class="form-group">
-        <label>个性签名</label>
-        <el-input
-          v-model="form.bio"
-          type="textarea"
-          placeholder="介绍一下自己吧"
-          maxlength="200"
-          show-word-limit
-          :rows="4"
-        />
-      </div>
+        <el-form-item label="电子邮箱" prop="email">
+          <el-input v-model="form.email" placeholder="请输入邮箱" />
+        </el-form-item>
 
-      <div class="form-group">
-        <label>邮箱</label>
-        <el-input
-          v-model="form.email"
-          placeholder="请输入邮箱"
-          type="email"
-          disabled
-        />
-      </div>
+        <el-form-item label="个人简介">
+          <el-input
+            v-model="form.bio"
+            type="textarea"
+            :rows="4"
+            placeholder="介绍一下自己吧..."
+            maxlength="200"
+            show-word-limit
+          />
+        </el-form-item>
+      </el-form>
     </div>
   </div>
 </template>
@@ -103,13 +88,15 @@
 <script setup>
 import { ref, onMounted, computed } from "vue";
 import { useRouter } from "vue-router";
-import { useAuthStore } from "../stores/auth";
+import { useAuthStore } from "@/stores/auth";
 import { ElMessage } from "element-plus";
 import { ArrowLeft, Camera } from "@element-plus/icons-vue";
+import { getAvatarUrl, getImageUrl } from "@/utils/imageHelpers";
+import { API_BASE_URL, UPLOAD_ENDPOINTS } from "@/config";
 
 const router = useRouter();
 const authStore = useAuthStore();
-const API_BASE_URL = "http://47.98.210.7:3000";
+
 const defaultCover = "../default-cover.jpg"; // 添加默认封面图
 
 const saving = ref(false);
@@ -234,213 +221,186 @@ const beforeAvatarUpload = (file) => {
 
 const displayAvatar = computed(() => {
   if (!form.value.avatar) return "";
-  return form.value.avatar.startsWith("http")
-    ? form.value.avatar
-    : `${API_BASE_URL}/uploads/avatars/${form.value.avatar}`;
+  return getAvatarUrl(form.value.avatar);
 });
 
 const displayCover = computed(() => {
   if (!form.value.coverImage) return defaultCover;
-  return form.value.coverImage.startsWith("http")
-    ? form.value.coverImage
-    : `${API_BASE_URL}/uploads/covers/${form.value.coverImage}`;
+  return getImageUrl(form.value.coverImage);
 });
 </script>
 
 <style scoped>
-.edit-profile-page {
-  min-height: 100vh;
-  background: #f6f7f9;
+/* 太空科技风格全局变量 */
+:root {
+  --primary-color: #8c52ff;
+  --secondary-color: #ff52aa;
+  --accent-color: #36f9f6;
+  --bg-color: #121212;
+  --card-bg: rgba(30, 30, 30, 0.8);
+  --text-color: #ffffff;
+  --border-color: #333333;
+  --hover-color: #373737;
 }
 
+/* 页面容器 */
+.edit-profile-page {
+  min-height: 100vh;
+  background-color: #1a1a1a;
+  color: #ffffff;
+  padding-bottom: 40px;
+}
+
+/* 页面头部 */
 .page-header {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  background: #fff;
-  height: 56px;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   padding: 0 16px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  height: 56px;
+  background-color: #1a1a1a;
+  position: relative;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .back-icon {
   font-size: 20px;
-  color: #333;
+  color: #ffffff;
   cursor: pointer;
-  padding: 8px;
-  margin-right: 8px;
 }
 
 .page-header h2 {
-  flex: 1;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
   margin: 0;
   font-size: 18px;
   font-weight: 500;
+  color: #ffffff;
 }
 
 .save-btn {
+  background-color: #4080ff;
+  color: #ffffff;
+  border: none;
+  padding: 6px 16px;
+  border-radius: 4px;
   font-size: 14px;
-  height: 32px;
-  padding: 0 16px;
+  cursor: pointer;
 }
 
-.edit-form {
-  padding: 20px 16px;
+.save-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
-.form-group {
-  margin-bottom: 24px;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 8px;
-  color: #606266;
-  font-size: 14px;
-}
-
-:deep(.el-input__wrapper) {
-  border-radius: 8px;
-}
-
-:deep(.el-textarea__wrapper) {
-  border-radius: 8px;
-}
-
-@media (prefers-color-scheme: dark) {
-  .edit-profile-page {
-    background: #1a1a1a;
-  }
-
-  .page-header {
-    background: #242424;
-  }
-
-  .page-header h2 {
-    color: #fff;
-  }
-
-  .back-icon {
-    color: #fff;
-  }
-
-  .form-group label {
-    color: #909399;
-  }
-}
-
-.cover-section {
-  margin-bottom: 24px;
-}
-
-.cover-wrapper {
-  width: 100%;
-  border-radius: 12px;
-  overflow: hidden;
-  background: #f5f7fa;
-}
-
-.cover-preview {
+/* 封面图片 */
+.cover-image-wrapper {
   position: relative;
   width: 100%;
-  height: 200px;
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  height: 170px;
+  overflow: hidden;
 }
 
-.cover-preview::before {
-  content: "";
+.cover-image {
+  width: 100%;
+  height: 100%;
+  background-size: cover;
+  background-position: center;
+  position: relative;
+}
+
+.dark-overlay {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.3);
-  opacity: 0;
-  transition: opacity 0.3s;
+  background-color: rgba(0, 0, 0, 0.3);
 }
 
-.cover-preview:hover::before {
-  opacity: 1;
-}
-
-.upload-cover-label {
+.cover-update-btn {
   position: absolute;
-  bottom: 16px;
   right: 16px;
-  background: rgba(0, 0, 0, 0.6);
-  color: #fff;
-  padding: 8px 16px;
-  border-radius: 20px;
+  bottom: 16px;
   display: flex;
   align-items: center;
   gap: 6px;
-  cursor: pointer;
-  transition: all 0.3s;
-  z-index: 2;
-}
-
-.upload-cover-label:hover {
-  background: rgba(0, 0, 0, 0.8);
-}
-
-.upload-cover-label .el-icon {
-  font-size: 16px;
-}
-
-.upload-cover-label span {
+  background-color: rgba(0, 0, 0, 0.5);
+  color: #ffffff;
+  padding: 6px 12px;
+  border-radius: 16px;
   font-size: 14px;
+  cursor: pointer;
 }
 
-@media (prefers-color-scheme: dark) {
-  .cover-wrapper {
-    background: #242424;
-  }
-
-  .upload-cover-label {
-    background: rgba(36, 36, 36, 0.9);
-    color: #fff;
-  }
-}
-
-.avatar-section {
+/* 头像部分 */
+.avatar-container {
   display: flex;
   justify-content: center;
-  margin-bottom: 32px;
+  margin-top: -40px;
+  margin-bottom: 24px;
+  position: relative;
 }
 
 .avatar-wrapper {
-  text-align: center;
-}
-
-.avatar-upload {
-  margin-top: 12px;
-}
-
-.upload-label {
+  position: relative;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 4px;
-  color: #409eff;
+}
+
+:deep(.el-avatar) {
+  border: 3px solid #1a1a1a;
+  background: #333;
+  margin-bottom: 8px;
+}
+
+.avatar-update-label {
+  color: #4080ff;
   font-size: 14px;
   cursor: pointer;
 }
 
-@media (prefers-color-scheme: dark) {
-  .avatar-wrapper {
-    background: #242424;
-  }
+/* 表单样式 */
+.form-container {
+  padding: 0 16px;
+}
 
-  .upload-label {
-    background: rgba(36, 36, 36, 0.9);
-    color: #fff;
-  }
+.profile-form {
+  background-color: #1a1a1a;
+}
+
+:deep(.el-form-item__label) {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 15px;
+  padding-bottom: 4px;
+}
+
+:deep(.el-input__wrapper),
+:deep(.el-textarea__wrapper) {
+  background-color: #2a2a2a;
+  box-shadow: none;
+  border-radius: 8px;
+}
+
+:deep(.el-input__inner),
+:deep(.el-textarea__inner) {
+  color: #ffffff;
+}
+
+:deep(.el-input__count) {
+  background: transparent;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* 确保渐变边框正确显示 */
+:deep(.el-input__wrapper:focus-within) {
+  box-shadow: 0 0 0 1px #4080ff inset;
+}
+
+/* 修复表单样式在暗色模式下的问题 */
+:deep(.el-form-item.is-error .el-input__wrapper) {
+  box-shadow: 0 0 0 1px #f56c6c inset;
 }
 </style>
