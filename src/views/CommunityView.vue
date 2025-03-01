@@ -1,5 +1,4 @@
 <template>
-  <TheNavBar />
   <div class="page-container">
     <div class="community-page">
       <!-- 顶部标题栏 -->
@@ -244,7 +243,6 @@ import { ref, onMounted, computed, nextTick } from "vue";
 import { useRouter } from "vue-router";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { Search, Plus, Picture, View, ChatDotRound, Star } from "@element-plus/icons-vue";
-import TheNavBar from "@/components/TheNavBar.vue";
 import BottomNavBar from "@/components/BottomNavBar.vue";
 import formatTime from "@/utils/formatTime";
 import { useCommunityStore } from "@/stores/community";
@@ -480,7 +478,6 @@ onMounted(() => {
   margin: 0 auto;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  padding-top: 60px; /* 为导航栏留出空间 */
 }
 
 .page-header {

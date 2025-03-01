@@ -1,5 +1,8 @@
 <template>
   <div class="settings-page">
+    <!-- 添加宇宙粒子背景 -->
+    <SpaceBackground />
+
     <!-- 顶部标题 -->
     <div class="settings-header">
       <el-icon class="back-icon" @click="router.back()"><ArrowLeft /></el-icon>
@@ -9,7 +12,7 @@
     <!-- 设置选项列表 -->
     <div class="settings-list">
       <!-- 个人资料设置组 -->
-      <div class="settings-group">
+      <div class="settings-group tech-card enhanced-border">
         <div class="group-title">个人资料</div>
         <div class="settings-item avatar-item">
           <span>头像</span>
@@ -34,7 +37,7 @@
       </div>
 
       <!-- 账号设置组 -->
-      <div class="settings-group">
+      <div class="settings-group tech-card enhanced-border">
         <div class="group-title">账号设置</div>
         <div class="settings-item link" @click="changePassword">
           <span>修改密码</span>
@@ -47,7 +50,7 @@
       </div>
 
       <!-- 主题设置组 -->
-      <div class="settings-group">
+      <div class="settings-group tech-card enhanced-border">
         <div class="group-title">主题设置</div>
         <div class="settings-item">
           <span>界面主题</span>
@@ -56,7 +59,7 @@
       </div>
 
       <!-- 反馈与帮助 -->
-      <div class="settings-group">
+      <div class="settings-group tech-card enhanced-border">
         <div class="group-title">反馈与帮助</div>
         <div class="settings-item link" @click="goToFeedback">
           <span>问题反馈</span>
@@ -77,7 +80,7 @@
       </div>
 
       <!-- 账号操作 -->
-      <div class="settings-group">
+      <div class="settings-group tech-card enhanced-border">
         <div class="settings-item logout" @click="handleLogout">
           <span>退出登录</span>
         </div>
@@ -135,6 +138,7 @@ import { useFeedbackStore } from "@/stores/feedback";
 import { useClipboard } from "@vueuse/core";
 import axios from "axios";
 import { getAvatarUrl } from "@/utils/imageHelpers";
+import SpaceBackground from "./calendar/components/SpaceBackground.vue";
 
 const router = useRouter();
 const route = useRoute();
@@ -285,54 +289,105 @@ const handleLogout = async () => {
 <style scoped>
 .settings-page {
   min-height: 100vh;
-  background: #f5f7fa;
-  padding-bottom: 20px;
-  overflow: scroll;
+  background-color: rgba(18, 18, 30, 0.9);
+  padding-bottom: 60px;
+  color: white;
+  position: relative;
+  overflow-x: hidden;
+  padding: 0 16px;
 }
 
 .settings-header {
-  display: flex;
-  align-items: center;
-  padding: 16px;
-  background: #fff;
   position: sticky;
   top: 0;
   z-index: 10;
-}
-
-.settings-header h2 {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 500;
-  flex: 1;
-  text-align: center;
+  background: transparent;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  width: 100%;
 }
 
 .back-icon {
   font-size: 20px;
-  color: #606266;
+  color: white;
   cursor: pointer;
-  padding: 4px;
+  padding: 8px;
+  margin-right: 8px;
+  transition: all 0.3s ease;
+}
+
+.back-icon:hover {
+  transform: translateX(-3px);
+  text-shadow: 0 0 8px rgba(147, 51, 234, 0.7);
+}
+
+.settings-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  flex: 1;
+  color: white;
+  text-shadow: 0 0 10px rgba(147, 51, 234, 0.7);
 }
 
 .settings-list {
-  padding: 16px;
+  padding: 12px;
+  max-width: 800px;
+  margin: 0 auto;
 }
 
 .settings-group {
-  background: var(--el-bg-color-overlay);
-  border-radius: 8px;
+  position: relative;
+  z-index: 0;
+  padding: 0;
+  border-radius: 16px;
   margin-bottom: 16px;
+  background: rgba(20, 20, 30, 0.7);
+  box-shadow: 0 0 20px rgba(147, 51, 234, 0.4);
   overflow: hidden;
-  border: 1px solid var(--el-border-color-light);
+}
+
+/* 添加渐变边框效果 */
+.tech-card {
+  background: rgba(30, 30, 40, 0.5);
+  border-radius: 16px;
+  overflow: hidden;
+  position: relative;
+  margin-bottom: 16px;
+}
+
+.enhanced-border {
+  position: relative;
+  z-index: 0;
+}
+
+.enhanced-border::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  padding: 2px;
+  border-radius: 16px;
+  background: linear-gradient(
+    45deg,
+    rgba(56, 189, 248, 0.6),
+    rgba(147, 51, 234, 0.6)
+  );
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
 }
 
 .group-title {
-  padding: 12px 16px;
-  color: var(--el-text-color-regular);
-  font-size: 14px;
-  background: var(--el-bg-color);
-  border-bottom: 1px solid var(--el-border-color-light);
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.9);
+  padding: 10px 16px;
+  background: rgba(147, 51, 234, 0.2);
+  text-shadow: 0 0 8px rgba(147, 51, 234, 0.5);
+  font-weight: 500;
 }
 
 .settings-item {
@@ -340,8 +395,12 @@ const handleLogout = async () => {
   align-items: center;
   justify-content: space-between;
   padding: 16px;
-  background: var(--el-bg-color-overlay);
-  border-bottom: 1px solid var(--el-border-color-light);
+  border-bottom: 1px solid rgba(147, 51, 234, 0.3);
+  transition: all 0.2s ease;
+}
+
+.settings-item:hover {
+  background: rgba(147, 51, 234, 0.1);
 }
 
 .settings-item:last-child {
@@ -349,16 +408,24 @@ const handleLogout = async () => {
 }
 
 .settings-item span {
-  color: var(--el-text-color-primary);
-  font-size: 15px;
+  color: white;
+  text-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
 }
 
 .settings-item.link {
   cursor: pointer;
 }
 
-.settings-item.link:active {
-  background: #f5f7fa;
+.settings-item.logout {
+  color: #ff5252;
+  justify-content: center;
+  background: rgba(255, 82, 82, 0.1);
+  transition: all 0.3s ease;
+}
+
+.settings-item.logout:hover {
+  background: rgba(255, 82, 82, 0.2);
+  box-shadow: 0 0 15px rgba(255, 82, 82, 0.4);
 }
 
 .el-select {
@@ -386,10 +453,11 @@ const handleLogout = async () => {
 }
 
 .settings-section {
-  background: var(--el-bg-color-overlay);
-  border-radius: 8px;
+  background: rgba(30, 30, 40, 0.7);
+  border-radius: 16px;
   padding: 16px;
   margin-bottom: 16px;
+  box-shadow: 0 0 20px rgba(147, 51, 234, 0.4);
 }
 
 .section-header {
@@ -398,16 +466,17 @@ const handleLogout = async () => {
 
 .section-header h3 {
   margin: 0;
-  color: var(--el-text-color-primary);
+  color: white;
+  text-shadow: 0 0 8px rgba(147, 51, 234, 0.7);
   font-size: 16px;
 }
 
 .section-content {
-  color: var(--el-text-color-regular);
+  color: white;
 }
 
 .version-text {
-  color: var(--el-text-color-secondary);
+  color: rgba(255, 255, 255, 0.7);
   font-size: 13px;
 }
 
@@ -427,7 +496,7 @@ const handleLogout = async () => {
   display: flex;
   align-items: center;
   padding: 16px 0;
-  border-bottom: 1px solid var(--el-border-color-light);
+  border-bottom: 1px solid rgba(147, 51, 234, 0.3);
 }
 
 .contact-item:last-child {
@@ -436,7 +505,7 @@ const handleLogout = async () => {
 
 .contact-label {
   font-size: 15px;
-  color: var(--el-text-color-regular);
+  color: white;
   width: 80px;
 }
 
@@ -446,7 +515,7 @@ const handleLogout = async () => {
   align-items: center;
   justify-content: space-between;
   font-size: 15px;
-  color: var(--el-text-color-primary);
+  color: white;
 }
 
 .avatar-item {
@@ -462,17 +531,21 @@ const handleLogout = async () => {
 
 :deep(.el-avatar) {
   cursor: pointer;
-  transition: transform 0.3s;
-  border: 2px solid transparent;
+  transition: all 0.3s;
+  border: 2px solid rgba(147, 51, 234, 0.3);
+  box-shadow: 0 0 10px rgba(147, 51, 234, 0.4);
 }
 
 :deep(.el-avatar:hover) {
   transform: scale(1.05);
-  border-color: var(--el-color-primary);
+  border-color: rgba(147, 51, 234, 0.8);
+  box-shadow: 0 0 15px rgba(147, 51, 234, 0.7);
 }
+
 /* 主题信息样式 */
 .theme-info {
-  color: var(--el-color-primary);
+  color: #8b5cf6;
+  text-shadow: 0 0 8px rgba(147, 51, 234, 0.7);
   font-size: 14px;
   display: flex;
   align-items: center;
@@ -483,10 +556,40 @@ const handleLogout = async () => {
   display: inline-block;
   width: 12px;
   height: 12px;
-  background: linear-gradient(135deg, #000 0%, #333 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(56, 189, 248, 0.8),
+    rgba(147, 51, 234, 0.8)
+  );
   border-radius: 50%;
   margin-right: 8px;
-  border: 2px solid var(--el-color-primary);
-  box-shadow: 0 0 5px var(--el-color-primary);
+  border: 2px solid rgba(147, 51, 234, 0.8);
+  box-shadow: 0 0 10px rgba(147, 51, 234, 0.7);
+}
+
+/* 对话框样式 */
+:deep(.el-dialog) {
+  background-color: rgba(20, 20, 30, 0.9);
+  border: 1px solid rgba(147, 51, 234, 0.3);
+  box-shadow: 0 0 20px rgba(147, 51, 234, 0.4);
+}
+
+:deep(.el-dialog__title) {
+  color: white;
+  text-shadow: 0 0 8px rgba(147, 51, 234, 0.7);
+}
+
+:deep(.el-button) {
+  transition: all 0.3s;
+}
+
+:deep(.el-switch.is-checked .el-switch__core) {
+  background-color: rgba(147, 51, 234, 0.8) !important;
+  border-color: rgba(147, 51, 234, 0.8) !important;
+}
+
+:deep(.el-switch__core) {
+  background-color: rgba(255, 255, 255, 0.2) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
 }
 </style>

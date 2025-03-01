@@ -7,7 +7,10 @@
           <div class="action-btn settings-btn" @click="goToSettings">
             <el-icon><Setting /></el-icon>
           </div>
-          <div class="action-btn edit-btn" @click="router.push('/profile/edit')">
+          <div
+            class="action-btn edit-btn"
+            @click="router.push('/profile/edit')"
+          >
             <el-icon><Edit /></el-icon>
             <span>编辑资料</span>
           </div>
@@ -45,11 +48,19 @@
       </div>
     </div>
     <div class="content-tabs">
-      <div class="tab-item" :class="{ active: activeTab === 'posts' }" @click="activeTab = 'posts'">
+      <div
+        class="tab-item"
+        :class="{ active: activeTab === 'posts' }"
+        @click="activeTab = 'posts'"
+      >
         <el-icon><Document /></el-icon>
         <span>帖子</span>
       </div>
-      <div class="tab-item" :class="{ active: activeTab === 'likes' }" @click="activeTab = 'likes'">
+      <div
+        class="tab-item"
+        :class="{ active: activeTab === 'likes' }"
+        @click="activeTab = 'likes'"
+      >
         <el-icon><Star /></el-icon>
         <span>喜欢</span>
       </div>
@@ -62,27 +73,42 @@
       </template>
       <template v-else>
         <div class="post-grid" v-if="activeTab === 'posts' && posts.length > 0">
-          <div 
-            class="post-item" 
-            v-for="post in posts" 
+          <div
+            class="post-item"
+            v-for="post in posts"
             :key="post.id"
             @click="router.push(`/community/post/${post.id}`)"
           >
             <!-- 有图片的帖子 -->
-            <div v-if="post.images && post.images.length > 0" class="post-item-with-image">
+            <div
+              v-if="post.images && post.images.length > 0"
+              class="post-item-with-image"
+            >
               <div class="post-image-container">
-                <img class="post-image" :src="post.images[0]" :alt="post.title || '无标题'" />
+                <img
+                  class="post-image"
+                  :src="post.images[0]"
+                  :alt="post.title || '无标题'"
+                />
                 <div v-if="post.images.length > 1" class="image-count-badge">
                   <el-icon><Picture /></el-icon>
                   <span>{{ post.images.length }}</span>
                 </div>
               </div>
-              <div class="post-title">{{ post.title || '无标题' }}</div>
+              <div class="post-title">{{ post.title || "无标题" }}</div>
             </div>
             <!-- 无图片的帖子 -->
             <div v-else class="post-item-text-only">
-              <div class="post-title-large">{{ post.title || '无标题' }}</div>
-              <div class="post-content">{{ post.content ? (post.content.length > 50 ? post.content.substring(0, 50) + '...' : post.content) : '' }}</div>
+              <div class="post-title-large">{{ post.title || "无标题" }}</div>
+              <div class="post-content">
+                {{
+                  post.content
+                    ? post.content.length > 50
+                      ? post.content.substring(0, 50) + "..."
+                      : post.content
+                    : ""
+                }}
+              </div>
             </div>
             <div class="post-footer">
               <div class="post-time">{{ formatTime(post.created_at) }}</div>
@@ -93,28 +119,46 @@
             </div>
           </div>
         </div>
-        <div class="post-grid" v-if="activeTab === 'likes' && likedPosts.length > 0">
-          <div 
-            class="post-item" 
-            v-for="post in likedPosts" 
+        <div
+          class="post-grid"
+          v-if="activeTab === 'likes' && likedPosts.length > 0"
+        >
+          <div
+            class="post-item"
+            v-for="post in likedPosts"
             :key="post.id"
             @click="router.push(`/community/post/${post.id}`)"
           >
             <!-- 有图片的帖子 -->
-            <div v-if="post.images && post.images.length > 0" class="post-item-with-image">
+            <div
+              v-if="post.images && post.images.length > 0"
+              class="post-item-with-image"
+            >
               <div class="post-image-container">
-                <img class="post-image" :src="post.images[0]" :alt="post.title || '无标题'" />
+                <img
+                  class="post-image"
+                  :src="post.images[0]"
+                  :alt="post.title || '无标题'"
+                />
                 <div v-if="post.images.length > 1" class="image-count-badge">
                   <el-icon><Picture /></el-icon>
                   <span>{{ post.images.length }}</span>
                 </div>
               </div>
-              <div class="post-title">{{ post.title || '无标题' }}</div>
+              <div class="post-title">{{ post.title || "无标题" }}</div>
             </div>
             <!-- 无图片的帖子 -->
             <div v-else class="post-item-text-only">
-              <div class="post-title-large">{{ post.title || '无标题' }}</div>
-              <div class="post-content">{{ post.content ? (post.content.length > 50 ? post.content.substring(0, 50) + '...' : post.content) : '' }}</div>
+              <div class="post-title-large">{{ post.title || "无标题" }}</div>
+              <div class="post-content">
+                {{
+                  post.content
+                    ? post.content.length > 50
+                      ? post.content.substring(0, 50) + "..."
+                      : post.content
+                    : ""
+                }}
+              </div>
             </div>
             <div class="post-footer">
               <div class="post-time">{{ formatTime(post.created_at) }}</div>
@@ -129,7 +173,10 @@
           <el-icon><Picture /></el-icon>
           <p>暂无帖子</p>
         </div>
-        <div class="empty-state" v-if="activeTab === 'likes' && !likedPosts.length">
+        <div
+          class="empty-state"
+          v-if="activeTab === 'likes' && !likedPosts.length"
+        >
           <el-icon><Picture /></el-icon>
           <p>暂无喜欢的帖子</p>
         </div>
@@ -147,14 +194,23 @@ import { useCommunityStore } from "../stores/community";
 import { ElMessageBox, ElMessage } from "element-plus";
 import BottomNavBar from "../components/BottomNavBar.vue";
 import {
-  Setting, InfoFilled, SwitchButton, ArrowRight,
-  Document, Star, Edit, Picture, Collection
+  Setting,
+  InfoFilled,
+  SwitchButton,
+  ArrowRight,
+  Document,
+  Star,
+  Edit,
+  Picture,
+  Collection,
 } from "@element-plus/icons-vue";
 import { API_BASE_URL } from "@/config";
+import { useUnmountDetection } from "../composables/useUnmountDetection";
 
 const router = useRouter();
 const authStore = useAuthStore();
 const communityStore = useCommunityStore();
+const { isMounted, checkMounted } = useUnmountDetection();
 
 // 用户数据
 const followingCount = ref(0);
@@ -162,9 +218,9 @@ const followersCount = ref(0);
 const likesCount = ref(0);
 const posts = ref([]);
 const likedPosts = ref([]);
-const bio = ref('');
-const activeTab = ref('posts');
-const userId = ref('');
+const bio = ref("");
+const activeTab = ref("posts");
+const userId = ref("");
 const loading = ref(false);
 
 // 计算属性
@@ -173,13 +229,13 @@ const email = computed(() => authStore.user?.email || "");
 const userAvatar = computed(() => authStore.userAvatar);
 const userInitials = computed(() => {
   const name = username.value;
-  return name ? name.charAt(0).toUpperCase() : '';
+  return name ? name.charAt(0).toUpperCase() : "";
 });
 const userCoverStyle = computed(() => {
   return {
     backgroundImage: `url(${authStore.userCover})`,
-    backgroundSize: 'cover',
-    backgroundPosition: 'center',
+    backgroundSize: "cover",
+    backgroundPosition: "center",
   };
 });
 
@@ -189,16 +245,16 @@ const loadUserStats = async () => {
     const userIdValue = authStore.user?.id;
     if (!userIdValue) return;
     userId.value = userIdValue;
-    
+
     const response = await communityStore.getUserProfile(userIdValue);
     followingCount.value = response.user.followingCount || 0;
     followersCount.value = response.user.followersCount || 0;
-    bio.value = response.user.bio || '';
-    
+    bio.value = response.user.bio || "";
+
     // 加载帖子和获赞数据
     await loadUserPosts();
     await loadLikedPosts();
-    
+
     // 计算总获赞数
     calculateTotalLikes();
   } catch (error) {
@@ -211,27 +267,28 @@ const loadUserPosts = async () => {
   try {
     const userIdValue = authStore.user?.id;
     if (!userIdValue) return;
-    
+
     // 使用状态变量跟踪加载状态
     loading.value = true;
     const response = await communityStore.getUserPosts(userIdValue);
-    
+
     // 处理帖子图片路径
-    posts.value = response.posts?.map(post => {
-      // 确保图片路径是完整的URL
-      if (post.images && post.images.length > 0) {
-        post.images = post.images.map(img => {
-          if (img && !img.startsWith('http')) {
-            return `${API_BASE_URL}${img}`;
-          }
-          return img;
-        });
-      }
-      return post;
-    }) || [];
-    
-    console.log('加载到的帖子数量:', posts.value.length);
-    console.log('第一个帖子图片:', posts.value[0]?.images);
+    posts.value =
+      response.posts?.map((post) => {
+        // 确保图片路径是完整的URL
+        if (post.images && post.images.length > 0) {
+          post.images = post.images.map((img) => {
+            if (img && !img.startsWith("http")) {
+              return `${API_BASE_URL}${img}`;
+            }
+            return img;
+          });
+        }
+        return post;
+      }) || [];
+
+    console.log("加载到的帖子数量:", posts.value.length);
+    console.log("第一个帖子图片:", posts.value[0]?.images);
   } catch (error) {
     console.error("加载用户帖子失败:", error);
     ElMessage.error("加载帖子失败");
@@ -245,25 +302,26 @@ const loadLikedPosts = async () => {
   try {
     const userIdValue = authStore.user?.id;
     if (!userIdValue) return;
-    
+
     loading.value = true;
     const response = await communityStore.getUserLikedPosts(userIdValue);
-    
+
     // 处理帖子图片路径
-    likedPosts.value = response.posts?.map(post => {
-      // 确保图片路径是完整的URL
-      if (post.images && post.images.length > 0) {
-        post.images = post.images.map(img => {
-          if (img && !img.startsWith('http')) {
-            return `${API_BASE_URL}${img}`;
-          }
-          return img;
-        });
-      }
-      return post;
-    }) || [];
-    
-    console.log('加载到的喜欢帖子数量:', likedPosts.value.length);
+    likedPosts.value =
+      response.posts?.map((post) => {
+        // 确保图片路径是完整的URL
+        if (post.images && post.images.length > 0) {
+          post.images = post.images.map((img) => {
+            if (img && !img.startsWith("http")) {
+              return `${API_BASE_URL}${img}`;
+            }
+            return img;
+          });
+        }
+        return post;
+      }) || [];
+
+    console.log("加载到的喜欢帖子数量:", likedPosts.value.length);
   } catch (error) {
     console.error("加载喜欢的帖子失败:", error);
     ElMessage.error("加载喜欢的帖子失败");
@@ -281,7 +339,7 @@ const calculateTotalLikes = () => {
 
 // 前往设置页面
 const goToSettings = () => {
-  router.push('/settings');
+  router.push("/settings");
 };
 
 const handleLogout = () => {
@@ -313,7 +371,11 @@ const formatTime = (time) => {
   const day = date.getDate();
   const hour = date.getHours();
   const minute = date.getMinutes();
-  return `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')} ${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+  return `${year}-${month.toString().padStart(2, "0")}-${day
+    .toString()
+    .padStart(2, "0")} ${hour.toString().padStart(2, "0")}:${minute
+    .toString()
+    .padStart(2, "0")}`;
 };
 
 onMounted(() => {
@@ -323,7 +385,6 @@ onMounted(() => {
 
 <style scoped>
 .profile-page {
-  padding-bottom: 76px;
   background-color: var(--bg-color);
   min-height: 100vh;
   display: flex;
@@ -660,36 +721,36 @@ onMounted(() => {
     gap: 10px;
     padding: 10px;
   }
-  
+
   .post-item {
     margin-bottom: 0;
     min-height: 180px;
   }
-  
+
   .post-item-text-only .post-title-large {
     font-size: 14px;
     padding: 0 0 5px 0;
   }
-  
+
   .post-item-text-only .post-content {
     font-size: 12px;
     -webkit-line-clamp: 2;
     margin-bottom: 5px;
   }
-  
+
   .post-item-with-image .post-title {
     font-size: 12px;
     padding: 5px;
   }
-  
+
   .post-footer {
     padding: 5px 10px;
   }
-  
+
   .post-image-container {
     height: 120px;
   }
-  
+
   /* 移动设备滚动优化 */
   .content-area {
     max-height: calc(100vh - 300px); /* 移动设备上调整高度 */

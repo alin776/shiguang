@@ -1,19 +1,25 @@
 <template>
-  <div class="bottom-nav">
-    <div
-      v-for="item in navItems"
-      :key="item.path"
-      class="nav-item"
-      :class="{ active: currentRoute === item.path }"
-      @click="navigate(item.path)"
-    >
-      <img
-        :src="currentRoute === item.path ? item.activeIcon : item.icon"
-        class="nav-icon"
-        :alt="item.label"
-      />
-      <span>{{ item.label }}</span>
+  <div>
+    <!-- 底部导航栏 -->
+    <div class="bottom-nav">
+      <div
+        v-for="item in navItems"
+        :key="item.path"
+        class="nav-item"
+        :class="{ active: currentRoute === item.path }"
+        @click="navigate(item.path)"
+      >
+        <img
+          :src="currentRoute === item.path ? item.activeIcon : item.icon"
+          class="nav-icon"
+          :alt="item.label"
+        />
+        <span>{{ item.label }}</span>
+      </div>
     </div>
+    
+    <!-- 底部导航栏占位元素 -->
+    <div class="bottom-nav-placeholder"></div>
   </div>
 </template>
 
@@ -114,5 +120,12 @@ const navigate = (path) => {
   .nav-item.active {
     color: var(--el-color-primary);
   }
+}
+
+/* 底部导航栏占位元素 */
+.bottom-nav-placeholder {
+  height: 56px;
+  width: 100%;
+  margin-bottom: 0;
 }
 </style>

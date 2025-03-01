@@ -1,5 +1,4 @@
 <template>
-  <TheNavBar />
   <div class="followers-page">
     <div class="page-header">
       <el-icon class="back-icon" @click="router.back()"><ArrowLeft /></el-icon>
@@ -49,7 +48,6 @@ import { ElMessage } from "element-plus";
 import { ArrowLeft } from "@element-plus/icons-vue";
 import { useAuthStore } from "../stores/auth";
 import { useCommunityStore } from "../stores/community";
-import TheNavBar from "../components/TheNavBar.vue";
 
 const router = useRouter();
 const route = useRoute();

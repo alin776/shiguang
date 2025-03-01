@@ -1,5 +1,4 @@
 <template>
-  <TheNavBar />
   <div class="user-profile-page">
     <!-- 背景图和用户信息 -->
     <div class="profile-header">
@@ -121,17 +120,18 @@ import {
 } from "@element-plus/icons-vue";
 import { useAuthStore } from "@/stores/auth";
 import { useCommunityStore } from "@/stores/community";
-import TheNavBar from "@/components/TheNavBar.vue";
 import BottomNavBar from "@/components/BottomNavBar.vue";
 import axios from "axios";
 import { getAvatarUrl, getImageUrl } from "@/utils/imageHelpers";
 import formatTime from "@/utils/formatTime";
 import { API_BASE_URL } from "@/config";
+import { useUnmountDetection } from "../composables/useUnmountDetection";
 
 const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
 const communityStore = useCommunityStore();
+const { isMounted, checkMounted } = useUnmountDetection();
 
 const userProfile = ref({});
 const posts = ref([]);
@@ -146,6 +146,7 @@ const userAvatar = computed(() => authStore.userAvatar);
 
 const loadUserProfile = async () => {
   try {
+    if (!checkMounted()) return;
     const userId = route.params.id;
     const response = await communityStore.getUserProfile(userId);
     userProfile.value = {
@@ -176,6 +177,7 @@ const loadUserProfile = async () => {
     console.log("完整的用户数据:", userProfile.value);
     console.log("完整的帖子数据:", posts.value);
   } catch (error) {
+    if (!checkMounted()) return;
     ElMessage.error("获取用户资料失败");
   }
 };
@@ -211,6 +213,7 @@ const toggleFollow = async () => {
     await loadUserProfile();
   } catch (error) {
     if (error === "cancel") return; // 用户取消操作
+    if (!checkMounted()) return;
     ElMessage.error(error.message || "操作失败");
   }
 };
@@ -262,7 +265,6 @@ onMounted(() => {
 
 <style scoped>
 .user-profile-page {
-  padding-top: 60px;
   min-height: 100vh;
   background: #f6f7f9;
   overflow-y: auto;

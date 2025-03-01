@@ -4,11 +4,15 @@ import RegisterView from "../views/RegisterView.vue";
 import UserProfileView from "../views/UserProfileView.vue";
 import ProfileView from "../views/ProfileView.vue"; // Added ProfileView import
 import CommunityView from "../views/CommunityView.vue";
-import PostDetailView from "../views/PostDetailView.vue";
+import { PostDetailView } from "../views/post";
 import MyPostsView from "../views/MyPostsView.vue";
 import MyLikesView from "../views/MyLikesView.vue";
 import FollowersView from "../views/FollowersView.vue";
 import FollowingView from "../views/FollowingView.vue";
+import CalendarSettingsView from "../views/calendar/CalendarSettingsView.vue";
+import CalendarView from "../views/calendar/CalendarView.vue";
+import CalendarEventView from "../views/calendar/CalendarEventView.vue";
+import { ref } from "vue";
 
 const routes = [
   {
@@ -19,7 +23,7 @@ const routes = [
   {
     path: "/calendar",
     name: "Calendar",
-    component: () => import("../views/CalendarView.vue"),
+    component: CalendarView,
     meta: { requiresAuth: true },
   },
   {
@@ -127,11 +131,32 @@ const routes = [
     },
   },
   {
+    path: "/calendar/settings",
+    name: "CalendarSettings",
+    component: CalendarSettingsView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: "/calendar/event/:id",
+    name: "CalendarEvent",
+    component: CalendarEventView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: "/calendar/event/new",
+    name: "NewCalendarEvent",
+    component: CalendarEventView,
+    meta: { requiresAuth: true },
+  },
+  {
     path: "/:pathMatch(.*)*",
     name: "NotFound",
     component: () => import("../views/NotFoundView.vue"),
   },
 ];
+
+// 全局加载状态
+export const isRouteLoading = ref(false);
 
 const router = createRouter({
   history: createWebHistory("/"),
@@ -140,14 +165,26 @@ const router = createRouter({
 
 // 路由守卫
 router.beforeEach((to, from, next) => {
+  isRouteLoading.value = true;
   const token = localStorage.getItem("token");
+
   if (to.meta.requiresAuth && !token) {
     next("/login");
   } else if (token && to.path === "/login") {
     next("/calendar");
   } else {
-    next();
+    // 添加小延迟，避免快速导航造成的组件更新问题
+    setTimeout(() => {
+      next();
+    }, 50);
   }
+});
+
+router.afterEach(() => {
+  // 导航完成后重置加载状态
+  setTimeout(() => {
+    isRouteLoading.value = false;
+  }, 100);
 });
 
 export default router;

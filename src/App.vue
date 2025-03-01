@@ -38,9 +38,9 @@ onMounted(async () => {
 
     // 检查 token 是否有效
     if (authStore.token && !authStore.isTokenValid()) {
-      console.log('App 挂载时检测到 Token 已过期，执行登出操作');
+      console.log("App 挂载时检测到 Token 已过期，执行登出操作");
       authStore.logout();
-    } 
+    }
     // 检查是否有保存的登录状态
     else if (authStore.checkSavedLogin()) {
       await authStore.fetchUserInfo();
@@ -94,6 +94,12 @@ body {
   color: var(--text-color);
   background-color: var(--bg-color);
   transition: background-color 0.3s, color 0.3s;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* 深色模式下的ElementPlus组件样式调整 */
@@ -154,9 +160,10 @@ body {
 
 #app {
   width: 100%;
-  height: auto; /* 改为自动高度，允许内容撑开并滚动 */
-  min-height: 100vh; /* 最小高度100vh */
-  overflow: visible; /* 改为visible */
+  height: auto;
+  min-height: 100vh;
+  overflow: auto;
+  position: relative;
 }
 
 /* 重置一些基础样式 */
@@ -165,7 +172,6 @@ body {
   margin: 0;
   padding: 0;
   width: 100%;
-  height: 100%;
   overflow-y: auto;
 }
 
@@ -248,13 +254,5 @@ a {
 a {
   text-decoration: none;
   color: inherit;
-}
-body {
-  overscroll-behavior: none; /* 防止页面反弹 */
-  -webkit-overflow-scrolling: touch; /* iOS 滚动优化 */
-  /* 移除position: fixed，允许滚动 */
-  width: 100%;
-  height: 100%;
-  overflow: auto; /* 明确设置为auto */
 }
 </style>

@@ -138,13 +138,13 @@ export const useCommunityStore = defineStore("community", {
     },
 
     // 创建评论
-    async createComment(commentData) {
+    async createComment(postId, content) {
       try {
         this.loading = true;
         const authStore = useAuthStore();
         const response = await axios.post(
-          `/api/community/posts/${commentData.postId}/comments`,
-          { content: commentData.content },
+          `${API_BASE_URL}/api/community/posts/${postId}/comments`,
+          { content },
           {
             headers: { Authorization: `Bearer ${authStore.token}` },
           }
@@ -466,7 +466,7 @@ export const useCommunityStore = defineStore("community", {
     },
 
     // 删除回复
-    async deleteReply(postId, commentId, replyId) {
+    async deleteReply(replyId) {
       try {
         console.log(`正在删除回复，参数: replyId=${replyId}`);
 
@@ -522,9 +522,14 @@ export const useCommunityStore = defineStore("community", {
     },
 
     // 回复评论
-    async replyToComment(postId, commentId, data) {
+    async replyToComment(postId, commentId, content, replyToUserId = null) {
       try {
         const authStore = useAuthStore();
+        const data = { content };
+        if (replyToUserId) {
+          data.reply_to_user_id = replyToUserId;
+        }
+        
         const response = await axios.post(
           `${API_BASE_URL}/api/community/posts/${postId}/comments/${commentId}/replies`,
           data,

@@ -53,6 +53,56 @@ export const useCheckInStore = defineStore("checkIn", {
         throw error;
       }
     },
+    
+    // 获取今天的打卡记录 - 考虑时区问题
+    async getTodayCheckIns() {
+      try {
+        this.init();
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = today.getMonth() + 1;
+        
+        // 获取当月打卡记录
+        const checkIns = await this.getUserCheckIns(year, month);
+        
+        // 获取东八区的今天日期
+        const todayLocal = new Date().toLocaleDateString("zh-CN").replace(/\//g, "-");
+        const yesterdayLocal = new Date(today.getTime() - 86400000).toLocaleDateString("zh-CN").replace(/\//g, "-");
+        
+        console.log("getTodayCheckIns - 本地今天日期:", todayLocal);
+        console.log("getTodayCheckIns - 本地昨天日期:", yesterdayLocal);
+        console.log("getTodayCheckIns - 所有打卡记录:", checkIns);
+        
+        // 修改比较逻辑，适应API返回的日期格式并考虑时区差异
+        const todayCheckIns = checkIns.filter(checkIn => {
+          // 将API日期转换为本地日期进行比较
+          const date = new Date(checkIn.date);
+          
+          // 提取日期部分（东八区）
+          const localDateStr = date.toLocaleDateString("zh-CN").replace(/\//g, "-");
+          
+          // 检查是否是昨天晚上但对应UTC已经是今天
+          const isYesterday = localDateStr === yesterdayLocal;
+          const utcHours = date.getUTCHours();
+          const isYesterdayButUtcToday = isYesterday && utcHours >= 16; // UTC时间晚上8点后
+          
+          // 输出每条记录的日期比较详情
+          console.log(`比较打卡记录: ${checkIn.item_id}, API日期: ${checkIn.date}`);
+          console.log(`  本地日期: ${localDateStr}, UTC小时: ${utcHours}`);
+          console.log(`  是今天: ${localDateStr === todayLocal}, 是昨天但UTC今天: ${isYesterdayButUtcToday}`);
+          
+          // 返回本地今天的打卡或因时区问题实际应计入今天的打卡
+          return localDateStr === todayLocal || isYesterdayButUtcToday;
+        });
+        
+        console.log("getTodayCheckIns - 考虑时区后的今日打卡记录:", todayCheckIns);
+        
+        return todayCheckIns;
+      } catch (error) {
+        console.error("获取今日打卡记录失败:", error);
+        throw error;
+      }
+    },
 
     // 打卡
     async checkIn(itemId, date = new Date()) {
