@@ -108,7 +108,7 @@ const currentMonthYear = computed(() => {
 });
 
 const selectedDateDisplay = computed(() => {
-  return selectedDate.value.format("MM月DD日");
+  return dayjs(selectedDate.value).format("MM月DD日");
 });
 
 // 生成日历网格数据
@@ -177,7 +177,7 @@ const calendarDays = computed(() => {
 
 // 选中日期的事件
 const selectedDayEvents = computed(() => {
-  // 确保selectedDate.value是dayjs对象
+  // 确保 selectedDate.value 是 dayjs 对象
   const selectedDateObj = dayjs(selectedDate.value);
   
   return events.value
@@ -236,7 +236,7 @@ const nextMonth = () => {
 };
 
 const selectDay = (day) => {
-  selectedDate.value = day.date;
+  selectedDate.value = dayjs(day.date);
   updateSelectedDayEvents();
 };
 
@@ -352,7 +352,7 @@ const forceCheckIn = async (item) => {
       if (error.response && error.response.data) {
         ElMessage.error(`打卡失败: ${error.response.data.message || "未知错误"}`);
       } else {
-        ElMessage.error("打卡失败，请稍后重试");
+        ElMessage.error("打卡失败，请稍后再试");
       }
     }
   } catch (e) {
@@ -550,7 +550,9 @@ const loadUserCheckIns = async () => {
 
 // 更新选中日的事件列表
 const updateSelectedDayEvents = () => {
-  const selectedDayStr = selectedDate.value.format("YYYY-MM-DD");
+  // 确保 selectedDate 是 dayjs 对象
+  const selectedDateObj = dayjs(selectedDate.value);
+  const selectedDayStr = selectedDateObj.format("YYYY-MM-DD");
 
   // 确保events.value是数组
   if (!Array.isArray(events.value)) {
