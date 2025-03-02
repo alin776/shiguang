@@ -377,9 +377,17 @@ const formatTime = (time) => {
     .toString()
     .padStart(2, "0")}`;
 };
-
-onMounted(() => {
-  loadUserStats();
+onMounted(async () => {
+  console.log("ProfileView mounted, 开始加载...");
+  try {
+    // 先获取完整的用户信息（包括封面图）
+    await authStore.fetchUserInfo();
+    console.log("用户信息已加载，封面图URL:", authStore.userCover);
+    // 然后加载其他用户数据
+    loadUserStats();
+  } catch (error) {
+    console.error("加载用户数据失败:", error);
+  }
 });
 </script>
 
