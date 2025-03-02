@@ -8,9 +8,9 @@
     
     <div class="analysis-content">
       <div class="analysis-summary" :class="getSummaryClass">
-        <el-icon class="summary-icon" :size="48">
-          <component :is="summaryIcon" />
-        </el-icon>
+        <div class="summary-icon-container">
+          <component :is="summaryIcon" class="summary-icon" />
+        </div>
         <div class="summary-text">
           <h4>{{ summaryTitle }}</h4>
           <p>{{ summaryDescription }}</p>
@@ -22,7 +22,7 @@
       <div class="analysis-details">
         <h4>详细分析</h4>
         <div class="analysis-item" v-for="(item, index) in analysisPoints" :key="index">
-          <el-icon><InfoFilled /></el-icon>
+          <el-icon><Connection /></el-icon>
           <span>{{ item }}</span>
         </div>
       </div>
@@ -32,7 +32,7 @@
       <div class="suggestions">
         <h4>改进建议</h4>
         <div class="suggestion-item" v-for="(item, index) in suggestions" :key="index">
-          <el-icon><Check /></el-icon>
+          <el-icon><Bell /></el-icon>
           <span>{{ item }}</span>
         </div>
       </div>
@@ -42,7 +42,7 @@
 
 <script setup>
 import { computed, onMounted } from 'vue';
-import { InfoFilled, Connection, Star, TrendCharts, Trophy, WarningFilled, Check } from '@element-plus/icons-vue';
+import { InfoFilled, Connection, Star, TrendCharts, Trophy, WarningFilled, Check, Menu, Bell, Opportunity } from '@element-plus/icons-vue';
 
 const props = defineProps({
   completionRate: {
@@ -79,7 +79,7 @@ const summaryIcon = computed(() => {
   if (rate >= 90) return Trophy;
   if (rate >= 70) return Star;
   if (rate >= 50) return TrendCharts;
-  return WarningFilled;
+  return Opportunity;
 });
 
 // 计算属性：总结样式类名
@@ -225,94 +225,75 @@ const suggestions = computed(() => {
 
 <style scoped>
 .analysis-card {
-  width: 100%;
-  margin-bottom: 16px;
-  background-color: var(--card-bg);
-  border-radius: 12px;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  border-radius: 16px;
   overflow: hidden;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  border: none;
+  background-color: rgba(var(--card-bg-rgb), 0.8);
+  margin-bottom: 10px;
 }
 
 .analysis-card:hover {
   transform: translateY(-3px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12);
 }
 
 .card-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  background: linear-gradient(to right, rgba(75, 108, 183, 0.05), rgba(24, 63, 72, 0.1));
+  justify-content: center;
   padding: 16px 20px;
+  background: linear-gradient(90deg, rgba(75, 108, 183, 0.1), rgba(24, 40, 72, 0.2));
+  text-align: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .card-header h3 {
   margin: 0;
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 600;
-  color: var(--text-color);
-  position: relative;
-  display: inline-block;
-}
-
-.card-header h3::after {
-  content: '';
-  position: absolute;
-  bottom: -5px;
-  left: 0;
-  width: 40px;
-  height: 3px;
-  background: linear-gradient(135deg, #4b6cb7, #182848);
-  border-radius: 3px;
+  background: linear-gradient(135deg, #4b6cb7, #42b5ca);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  letter-spacing: 1px;
 }
 
 .analysis-content {
-  padding: 20px;
+  padding: 24px;
 }
 
 .analysis-summary {
   display: flex;
   align-items: center;
   gap: 20px;
-  margin-bottom: 20px;
   padding: 20px;
-  border-radius: 10px;
-  background-color: rgba(245, 247, 250, 0.6);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  border-radius: 12px;
+  margin-bottom: 20px;
   transition: all 0.3s ease;
 }
 
-.summary-excellent {
-  background: linear-gradient(145deg, rgba(103, 194, 58, 0.1), rgba(103, 194, 58, 0.2));
-  border-left: 4px solid #67c23a;
-}
-
-.summary-good {
-  background: linear-gradient(145deg, rgba(230, 162, 60, 0.1), rgba(230, 162, 60, 0.2));
-  border-left: 4px solid #e6a23c;
-}
-
-.summary-average {
-  background: linear-gradient(145deg, rgba(64, 158, 255, 0.1), rgba(64, 158, 255, 0.2));
-  border-left: 4px solid #409eff;
-}
-
-.summary-needs-improvement {
-  background: linear-gradient(145deg, rgba(245, 108, 108, 0.1), rgba(245, 108, 108, 0.2));
-  border-left: 4px solid #f56c6c;
-}
-
-.summary-icon {
-  position: relative;
+.summary-icon-container {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 72px;
-  height: 72px;
+  width: 70px;
+  height: 70px;
   border-radius: 50%;
-  background-color: rgba(255, 255, 255, 0.8);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  font-size: 30px;
+  color: white;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.1));
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+  transition: all 0.3s ease;
+  transform: rotate(0deg);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
 }
 
 .summary-text {
@@ -320,171 +301,138 @@ const suggestions = computed(() => {
 }
 
 .summary-text h4 {
-  margin: 0 0 10px 0;
-  font-size: 20px;
+  margin: 0 0 8px 0;
+  font-size: 18px;
   font-weight: 600;
-  color: var(--text-color);
 }
 
 .summary-text p {
   margin: 0;
-  color: var(--text-secondary);
   line-height: 1.6;
-  font-size: 15px;
+  font-size: 14px;
+  opacity: 0.9;
 }
 
-.analysis-details,
-.suggestions {
-  padding: 15px 0;
+/* 不同状态的样式 */
+.summary-excellent {
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.15), rgba(76, 175, 80, 0.05));
+  border-left: 4px solid #4CAF50;
 }
 
-.analysis-details h4,
-.suggestions h4 {
+.summary-excellent .summary-icon-container {
+  background: linear-gradient(135deg, #4CAF50, #2E7D32);
+}
+
+.summary-excellent h4 {
+  color: #2E7D32;
+}
+
+.summary-good {
+  background: linear-gradient(135deg, rgba(33, 150, 243, 0.15), rgba(33, 150, 243, 0.05));
+  border-left: 4px solid #2196F3;
+}
+
+.summary-good .summary-icon-container {
+  background: linear-gradient(135deg, #2196F3, #1976D2);
+}
+
+.summary-good h4 {
+  color: #1976D2;
+}
+
+.summary-average {
+  background: linear-gradient(135deg, rgba(255, 152, 0, 0.15), rgba(255, 152, 0, 0.05));
+  border-left: 4px solid #FF9800;
+}
+
+.summary-average .summary-icon-container {
+  background: linear-gradient(135deg, #FF9800, #F57C00);
+}
+
+.summary-average h4 {
+  color: #F57C00;
+}
+
+.summary-needs-improvement {
+  background: linear-gradient(135deg, rgba(103, 58, 183, 0.15), rgba(103, 58, 183, 0.05));
+  border-left: 4px solid #673AB7;
+}
+
+.summary-needs-improvement .summary-icon-container {
+  background: linear-gradient(135deg, #673AB7, #512DA8);
+}
+
+.summary-needs-improvement h4 {
+  color: #512DA8;
+}
+
+.analysis-details, .suggestions {
+  margin-top: 20px;
+}
+
+.analysis-details h4, .suggestions h4 {
   margin: 0 0 15px 0;
   font-size: 18px;
   font-weight: 600;
   color: var(--text-color);
-  position: relative;
-  display: inline-block;
+  background: linear-gradient(90deg, rgba(75, 108, 183, 0.5), rgba(75, 108, 183, 0.1));
+  padding: 8px 12px;
+  border-radius: 8px;
 }
 
-.analysis-details h4::after,
-.suggestions h4::after {
-  content: '';
-  position: absolute;
-  bottom: -5px;
-  left: 0;
-  width: 30px;
-  height: 2px;
-  background: linear-gradient(135deg, #4b6cb7, #182848);
-  border-radius: 2px;
-}
-
-.analysis-item,
-.suggestion-item {
+.analysis-item, .suggestion-item {
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  margin-bottom: 15px;
-  color: var(--text-secondary);
-  line-height: 1.6;
-  padding: 12px 16px;
-  border-radius: 10px;
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background-color: rgba(255, 255, 255, 0.05);
   transition: all 0.3s ease;
-  background-color: transparent;
-  position: relative;
-  overflow: hidden;
 }
 
-.analysis-item::after,
-.suggestion-item::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: 10px;
-  padding: 1.5px; /* 控制边框粗细 */
-  background: linear-gradient(135deg, var(--primary-lighter, #5470c6), var(--primary-darker, #182848));
-  -webkit-mask: 
-    linear-gradient(#fff 0 0) content-box, 
-    linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  pointer-events: none;
-  z-index: 1;
-}
-
-.analysis-item:hover::after,
-.suggestion-item:hover::after {
-  background: linear-gradient(135deg, 
-    var(--primary-lighter, #5470c6) 20%, 
-    var(--primary-color, #4b6cb7) 50%, 
-    var(--primary-darker, #182848) 80%);
-  background-size: 200% 200%;
-  animation: borderGradient 2s linear infinite;
-}
-
-.suggestion-item::after {
-  background: linear-gradient(135deg, rgba(103, 194, 58, 0.8), rgba(62, 143, 18, 0.4));
-}
-
-.suggestion-item:hover::after {
-  background: linear-gradient(135deg, 
-    rgba(103, 194, 58, 1) 20%, 
-    rgba(84, 173, 45, 0.8) 50%, 
-    rgba(62, 143, 18, 0.6) 80%);
-  background-size: 200% 200%;
-  animation: borderGradient 2s linear infinite;
-}
-
-@keyframes borderGradient {
-  0% {
-    background-position: 0% 0%;
-  }
-  50% {
-    background-position: 100% 100%;
-  }
-  100% {
-    background-position: 0% 0%;
-  }
-}
-
-.analysis-item:hover,
-.suggestion-item:hover {
+.analysis-item:hover, .suggestion-item:hover {
+  background-color: rgba(255, 255, 255, 0.1);
   transform: translateX(5px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-.analysis-item .el-icon {
-  margin-top: 3px;
-  color: var(--primary-color);
-  flex-shrink: 0;
+.analysis-item .el-icon, .suggestion-item .el-icon {
+  margin-top: 2px;
+  font-size: 16px;
+  color: #4b6cb7;
 }
 
 .suggestion-item .el-icon {
-  font-size: 16px;
-  width: 20px;
-  height: 20px;
-  background-color: rgba(103, 194, 58, 0.1);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2px;
-  color: #67c23a;
+  color: #673AB7;
 }
 
-.suggestion-item {
-  border-image: linear-gradient(135deg, rgba(103, 194, 58, 0.6), rgba(62, 143, 18, 0.3)) 1;
-}
-
-.suggestion-item:hover {
-  border-image: linear-gradient(135deg, rgba(103, 194, 58, 0.8), rgba(62, 143, 18, 0.5)) 1;
-}
-
-.suggestion-item::before {
-  background: linear-gradient(135deg, rgba(103, 194, 58, 0.1), rgba(62, 143, 18, 0.05));
+.el-divider {
+  margin: 24px 0;
+  opacity: 0.6;
 }
 
 /* 响应式样式 */
 @media screen and (max-width: 768px) {
-  .analysis-content {
-    padding: 15px;
-  }
-  
   .analysis-summary {
     flex-direction: column;
     text-align: center;
-    padding: 15px;
-    gap: 15px;
+    padding: 16px;
   }
   
-  .summary-icon {
-    margin: 0 auto;
+  .summary-icon-container {
+    margin: 0 auto 15px;
   }
   
-  .analysis-item,
-  .suggestion-item {
-    padding: 8px 12px;
+  .card-header h3 {
+    font-size: 18px;
+  }
+  
+  .analysis-content {
+    padding: 16px;
+  }
+  
+  .summary-text h4 {
+    font-size: 16px;
   }
 }
 </style>
