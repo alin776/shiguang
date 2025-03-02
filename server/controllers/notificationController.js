@@ -8,13 +8,14 @@ const createNotification = async ({
   sourceId,
   sourceType,
   actorId,
+  relatedId = null,
 }) => {
   try {
     await db.execute(
       `INSERT INTO notifications 
-       (user_id, type, content, source_id, source_type, actor_id)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [userId, type, content, sourceId, sourceType, actorId]
+       (user_id, type, content, source_id, source_type, actor_id, related_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [userId, type, content, sourceId, sourceType, actorId, relatedId]
     );
   } catch (error) {
     console.error("创建通知失败:", error);
@@ -29,7 +30,22 @@ exports.getNotifications = async (req, res) => {
       `SELECT 
         n.*,
         u.username as actor_name,
-        u.avatar as actor_avatar
+        u.avatar as actor_avatar,
+        CASE 
+          WHEN n.source_type = 'post' THEN (SELECT p.title FROM posts p WHERE p.id = n.source_id)
+          ELSE NULL
+        END as source_title,
+        CASE
+          WHEN n.type = 'comment' THEN (
+            SELECT c.content FROM comments c 
+            WHERE c.id = n.related_id
+          )
+          WHEN n.type = 'reply' THEN (
+            SELECT cr.content FROM comment_replies cr 
+            WHERE cr.id = n.related_id
+          )
+          ELSE NULL
+        END as detail_content
       FROM notifications n
       LEFT JOIN users u ON n.actor_id = u.id
       WHERE n.user_id = ?
@@ -44,16 +60,27 @@ exports.getNotifications = async (req, res) => {
     );
 
     res.json({
-      notifications: notifications.map((notification) => ({
-        ...notification,
-        actor: notification.actor_id
-          ? {
-              id: notification.actor_id,
-              username: notification.actor_name,
-              avatar: notification.actor_avatar,
-            }
-          : null,
-      })),
+      notifications: notifications.map((notification) => {
+        // 根据通知类型构建增强的内容
+        let enhancedContent = notification.content;
+        
+        // 添加详细内容（如果有）
+        if ((notification.type === 'comment' || notification.type === 'reply') && notification.detail_content) {
+          enhancedContent += `: "${notification.detail_content}"`;
+        }
+        
+        return {
+          ...notification,
+          content: enhancedContent,
+          actor: notification.actor_id
+            ? {
+                id: notification.actor_id,
+                username: notification.actor_name,
+                avatar: notification.actor_avatar,
+              }
+            : null,
+        };
+      }),
       unreadCount: unreadCount[0].count,
     });
   } catch (error) {

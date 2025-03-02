@@ -39,7 +39,7 @@
           <el-avatar
             :size="40"
             :src="notification.actor?.avatar"
-            @error="() => true"
+            @error="handleAvatarError"
             class="actor-avatar"
           >
             {{ notification.actor?.username?.charAt(0).toUpperCase() || "?" }}
@@ -135,6 +135,10 @@ const handleNotificationClick = async (notification) => {
     );
   }
   drawerVisible.value = false;
+};
+
+const handleAvatarError = (e) => {
+  console.error("用户头像加载失败:", e);
 };
 
 onMounted(() => {

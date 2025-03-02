@@ -153,13 +153,21 @@ const toggleFollow = async () => {
   if (!post.value?.user?.id) return;
 
   try {
+    console.log("当前关注状态:", post.value.user.is_following);
+    
     if (post.value.user.is_following) {
+      console.log("正在取消关注用户:", post.value.user.id);
       await communityStore.unfollowUser(post.value.user.id);
     } else {
+      console.log("正在关注用户:", post.value.user.id);
       await communityStore.followUser(post.value.user.id);
     }
+    
+    // 切换关注状态
     post.value.user.is_following = !post.value.user.is_following;
+    console.log("关注状态已更新为:", post.value.user.is_following);
   } catch (error) {
+    console.error("关注操作失败:", error);
     ElMessage.error("操作失败: " + (error.message || "未知错误"));
   }
 };
@@ -222,7 +230,7 @@ const handleLikeComment = async ({ commentId, liked }) => {
     } else {
       await communityStore.unlikeComment(post.value.id, commentId);
     }
-
+    
     // 更新评论列表
     const commentIndex = comments.value.findIndex((c) => c.id === commentId);
     if (commentIndex !== -1) {

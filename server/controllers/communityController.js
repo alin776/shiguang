@@ -175,7 +175,7 @@ exports.getPost = async (req, res) => {
         id: posts[0].author_id,
         username: posts[0].username || "匿名用户",
         avatar: posts[0].avatar,
-        isFollowing: Boolean(posts[0].is_following),
+        is_following: Boolean(posts[0].is_following),
       },
       is_liked: Boolean(posts[0].is_liked),
     };
@@ -324,26 +324,31 @@ exports.createComment = async (req, res) => {
       return res.status(404).json({ message: "帖子不存在" });
     }
 
-    if (postResult[0].user_id !== userId) {
-      // 创建评论通知
-      await createNotification({
-        userId: postResult[0].user_id,
-        type: "comment",
-        content: "评论了你的帖子",
-        sourceId: postId,
-        sourceType: "post",
-        actorId: userId,
-      });
-    }
-
+    // 先创建评论
     const [result] = await db.execute(
       "INSERT INTO comments (post_id, user_id, content) VALUES (?, ?, ?)",
       [postId, userId, content]
     );
+    
+    const commentId = result.insertId;
+
+    // 如果不是评论自己的帖子，才发送通知
+    if (postResult[0].user_id !== userId) {
+      // 创建评论通知，添加评论ID作为relatedId
+      await createNotification({
+        userId: postResult[0].user_id,
+        type: "comment",
+        content: `评论了你的帖子"${postResult[0].title}"`,
+        sourceId: postId,
+        sourceType: "post",
+        actorId: userId,
+        relatedId: commentId
+      });
+    }
 
     res.status(201).json({
       message: "评论创建成功",
-      commentId: result.insertId,
+      commentId: commentId,
     });
   } catch (error) {
     console.error("创建评论错误:", error);
@@ -491,7 +496,7 @@ exports.likePost = async (req, res) => {
       await createNotification({
         userId: posts[0].user_id,
         type: "like",
-        content: "赞了你的帖子",
+        content: `赞了你的帖子"${posts[0].title}"`,
         sourceId: postId,
         sourceType: "post",
         actorId: userId,
@@ -844,7 +849,7 @@ exports.likeComment = async (req, res) => {
     }
 
     if (comments[0].user_id !== userId) {
-      // 创建点赞通知
+      // 创建点赞通知，添加评论ID作为relatedId
       await createNotification({
         userId: comments[0].user_id,
         type: "like",
@@ -906,9 +911,8 @@ exports.replyToComment = async (req, res) => {
 
     // 获取评论作者ID和帖子信息
     const [commentResult] = await db.execute(
-      `SELECT c.user_id, p.title 
-       FROM comments c 
-       JOIN posts p ON c.post_id = p.id 
+      `SELECT c.user_id, p.title FROM comments c
+       JOIN posts p ON c.post_id = p.id
        WHERE c.id = ?`,
       [commentId]
     );
@@ -922,7 +926,7 @@ exports.replyToComment = async (req, res) => {
       await createNotification({
         userId: commentResult[0].user_id,
         type: "reply",
-        content: `在《${commentResult[0].title}》中回复了你的评论`,
+        content: `回复了你在《${commentResult[0].title}》中的评论`,
         sourceId: postId,
         sourceType: "comment",
         actorId: userId,
@@ -980,6 +984,83 @@ exports.deleteReply = async (req, res) => {
   } catch (error) {
     console.error("删除回复失败:", error);
     res.status(500).json({ message: "删除失败" });
+  }
+};
+
+// 创建评论回复
+exports.createCommentReply = async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { postId, commentId } = req.params;
+    const { content, replyToId } = req.body;
+    const userId = req.user.id;
+
+    // 检查帖子是否存在
+    const [postExists] = await db.execute("SELECT title FROM posts WHERE id = ?", [
+      postId,
+    ]);
+
+    if (postExists.length === 0) {
+      return res.status(404).json({ message: "帖子不存在" });
+    }
+
+    // 获取评论信息和帖子标题
+    const [commentResult] = await db.execute(
+      `SELECT c.*, p.title FROM comments c
+       JOIN posts p ON c.post_id = p.id
+       WHERE c.id = ? AND c.post_id = ?`,
+      [commentId, postId]
+    );
+
+    if (!commentResult.length) {
+      return res.status(404).json({ message: "评论不存在" });
+    }
+
+    // 创建回复
+    const [result] = await db.execute(
+      "INSERT INTO comment_replies (comment_id, user_id, reply_to_id, content) VALUES (?, ?, ?, ?)",
+      [commentId, userId, replyToId || null, content]
+    );
+    
+    const replyId = result.insertId;
+
+    // 如果不是回复自己的评论，才发送通知
+    if (commentResult[0].user_id !== userId) {
+      await createNotification({
+        userId: commentResult[0].user_id,
+        type: "reply",
+        content: `回复了你在《${commentResult[0].title}》中的评论`,
+        sourceId: postId,
+        sourceType: "comment",
+        actorId: userId,
+        relatedId: replyId
+      });
+    }
+
+    // 如果指定了回复对象，且不是自己，也要通知
+    if (replyToId && replyToId !== userId && replyToId !== commentResult[0].user_id) {
+      await createNotification({
+        userId: replyToId,
+        type: "reply",
+        content: `在《${commentResult[0].title}》中提到了你`,
+        sourceId: postId,
+        sourceType: "comment",
+        actorId: userId,
+        relatedId: replyId
+      });
+    }
+
+    res.status(201).json({
+      message: "回复成功",
+      replyId: replyId,
+    });
+  } catch (error) {
+    console.error("创建评论回复失败:", error);
+    res.status(500).json({ message: "创建回复失败" });
   }
 };
 

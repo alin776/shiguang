@@ -76,6 +76,7 @@ CREATE TABLE IF NOT EXISTS notifications (
   source_id INT,  -- 来源ID(帖子ID、评论ID等)
   source_type VARCHAR(50), -- 来源类型(post、comment等)
   actor_id INT,   -- 触发者ID
+  related_id INT, -- 关联ID(具体评论ID、回复ID等)
   is_read BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,

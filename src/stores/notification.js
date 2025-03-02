@@ -1,6 +1,7 @@
 import { defineStore } from "pinia";
 import axios from "axios";
 import { useAuthStore } from "./auth";
+import { getAvatarUrl } from "@/utils/imageHelpers";
 
 const API_BASE_URL = "http://47.98.210.7:3000";
 
@@ -18,6 +19,17 @@ export const useNotificationStore = defineStore("notification", {
         const response = await axios.get(`${API_BASE_URL}/api/notifications`, {
           headers: { Authorization: `Bearer ${authStore.token}` },
         });
+        
+        // 处理头像URL
+        if (response.data && response.data.notifications) {
+          response.data.notifications = response.data.notifications.map(notification => {
+            if (notification.actor && notification.actor.avatar) {
+              notification.actor.avatar = getAvatarUrl(notification.actor.avatar);
+            }
+            return notification;
+          });
+        }
+        
         return response.data;
       } catch (error) {
         console.error("获取通知列表失败:", error);
