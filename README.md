@@ -1,17 +1,23 @@
 # 时光 (shiguang)
 
-一个基于 Vue 3 的移动端日程管理+日常分享应用，帮助用户记录和管理每一刻美好时光。
+一个精心设计的移动端日程管理与社交分享应用，助您记录生活中每一个珍贵时刻。
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
+## 应用概述
+
+"时光"是一款集日程管理、社区互动于一体的多功能应用，让您能够轻松规划日常、记录生活点滴并与朋友分享美好时光。应用采用现代化设计，支持多种实用功能，致力于提升您的日常生活体验。
+
 ## 功能特点
 
-- 📅 日程管理：创建、编辑、删除日程安排
-- 👥 社区互动：发帖分享、评论互动、关注用户
-- 👤 个人中心：个人资料管理、我的帖子、我的点赞
-- 🌓 深色模式：自动适配系统深色模式
-- 📱 响应式设计：完美适配移动端和桌面端
-- 🔔 消息通知：实时接收互动消息提醒
+- 📅 **日程管理**：创建、编辑、删除日程安排
+- ✓ **打卡习惯**：创建个人打卡项目，跟踪连续打卡天数
+- 👥 **社区互动**：发帖分享、评论互动、关注用户
+- 👤 **个人中心**：个人资料管理、我的帖子、我的点赞
+- 🌓 **深色模式**：自动适配系统深色模式
+- 📱 **响应式设计**：完美适配移动端和桌面端
+- 🔔 **消息通知**：实时接收互动消息提醒
+- 💾 **数据备份**：备份个人重要数据，随时恢复
 
 ## 技术栈
 
@@ -23,6 +29,7 @@
 - Element Plus
 - Axios
 - Dayjs
+- Capacitor
 
 ### 后端
 
@@ -30,6 +37,7 @@
 - Express
 - MySQL
 - JWT
+- Multer
 
 ## 安装步骤
 
@@ -91,45 +99,57 @@ node app.js
 ### 前端配置
 
 编辑 `vite.config.js` 文件，修改后端 API 地址：
-javascript
+
+```javascript
 server: {
-proxy: {
-'/api': {
-target: 'http://your-api-domain:3000',
-changeOrigin: true,
+  proxy: {
+    '/api': {
+      target: 'http://你的域名:3000',
+      changeOrigin: true,
+    }
+  }
 }
-}
-}
-搜索所有前端文件中的 `target: 'http://47.98.210.7:3000'` 并替换为 `target: 'http://你的后端域名:3000'`
+```
+
+同时，需要更新所有前端文件中的 API 地址：
+
+- 将`http://47.98.210.7:3000`替换为`http://你的域名:3000`
+- 可以在`src/config.js`和`src/config/index.js`中进行集中管理
 
 ### 后端配置
 
 在 `server/config` 目录下创建 `.env` 文件：
 
-env
+```
 DB_HOST=localhost
 DB_USER=your_username
 DB_PASSWORD=your_password
 DB_NAME=time_calendar
 JWT_SECRET=your_jwt_secret
+```
 
 ## 目录结构
 
-├── public/ # 静态资源
+```
+├── public/            # 静态资源
 ├── src/
-│ ├── assets/ # 项目资源文件
-│ ├── components/ # 公共组件
-│ ├── router/ # 路由配置
-│ ├── stores/ # Pinia 状态管理
-│ ├── utils/ # 工具函数
-│ └── views/ # 页面组件
-├── server/ # 后端服务
-│ ├── config/ # 配置文件
-│ ├── controllers/ # 控制器
-│ ├── database/ # 数据库文件
-│ ├── middleware/ # 中间件
-│ └── routes/ # 路由
-└── package.json
+│   ├── assets/        # 项目资源文件
+│   ├── components/    # 公共组件
+│   ├── config/        # 全局配置
+│   ├── router/        # 路由配置
+│   ├── stores/        # Pinia状态管理
+│   ├── utils/         # 工具函数
+│   └── views/         # 页面组件
+├── server/            # 后端服务
+│   ├── config/        # 配置文件
+│   ├── controllers/   # 控制器
+│   ├── database/      # 数据库文件
+│   ├── middleware/    # 中间件
+│   ├── routes/        # 路由
+│   └── app.js         # 主程序
+├── android/           # Android应用配置
+└── package.json       # 项目配置
+```
 
 ## 浏览器支持
 
