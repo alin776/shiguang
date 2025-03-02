@@ -1,0 +1,387 @@
+.profile-page {
+  background-color: var(--bg-color);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 顶部个人资料区域 */
+.profile-header {
+  position: relative;
+  margin-bottom: 20px;
+}
+
+.cover-image {
+  height: 150px;
+  background: linear-gradient(45deg, #fe2c55, #f85e7c);
+  position: relative;
+  background-position: center;
+  background-size: cover;
+}
+
+.header-content {
+  position: relative;
+  background-color: var(--card-bg);
+  border-radius: 20px 20px 0 0;
+  margin-top: -20px;
+  padding: 20px;
+  padding-top: 10px;
+  box-shadow: 0 2px 10px var(--shadow-color);
+}
+
+.user-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 5px;
+  gap: 10px;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  background: var(--timeline-bg);
+  border-radius: 20px;
+  font-size: 14px;
+  color: var(--text-color);
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.settings-btn {
+  padding: 6px;
+}
+
+.action-btn:active {
+  transform: scale(0.95);
+}
+
+.user-basic-info {
+  display: flex;
+  align-items: center;
+  margin-top: 15px;
+}
+
+.user-id {
+  margin-left: 15px;
+}
+
+.user-id h2 {
+  margin: 0 0 4px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.user-id .uid {
+  margin: 0;
+  font-size: 14px;
+  color: var(--placeholder-color);
+}
+
+/* 用户统计数据 */
+.user-stats {
+  display: flex;
+  justify-content: space-around;
+  margin: 15px 0;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+}
+
+.count {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.label {
+  font-size: 14px;
+  color: var(--placeholder-color);
+  margin-top: 4px;
+}
+
+/* 用户简介 */
+.user-bio {
+  margin-top: 15px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-color);
+}
+
+.empty-bio {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--placeholder-color);
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+/* 内容标签页 */
+.content-tabs {
+  display: flex;
+  justify-content: space-around;
+  padding: 0 20px;
+  background-color: var(--card-bg);
+  box-shadow: 0 1px 4px var(--shadow-color);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.tab-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 0;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--placeholder-color);
+  transition: color 0.3s;
+}
+
+.tab-item.active {
+  color: var(--primary-color);
+  font-weight: 500;
+  position: relative;
+}
+
+.tab-item.active::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 24px;
+  height: 3px;
+  background-color: var(--primary-color);
+  border-radius: 2px;
+}
+
+.tab-item .el-icon {
+  font-size: 20px;
+  margin-bottom: 4px;
+}
+
+/* 内容区域 */
+.content-area {
+  background-color: var(--card-bg);
+  min-height: 300px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  max-height: calc(100vh - 350px); /* 调整高度计算，给顶部和底部留出空间 */
+  flex: 1;
+  -webkit-overflow-scrolling: touch; /* 增强iOS的滚动体验 */
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  color: var(--placeholder-color);
+  height: 100%;
+  min-height: 200px;
+}
+
+.empty-state .el-icon {
+  font-size: 48px;
+  margin-bottom: 15px;
+  color: #dcdfe6;
+}
+
+.empty-state p {
+  margin: 10px 0 20px;
+  font-size: 15px;
+}
+
+.post-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding: 8px;
+}
+
+.post-item {
+  background-color: var(--card-bg);
+  border-radius: 10px;
+  margin-bottom: 15px;
+  box-shadow: 0 1px 3px var(--shadow-color);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+}
+
+.post-item:active {
+  transform: scale(0.98);
+}
+
+.post-image-container {
+  position: relative;
+  width: 100%;
+  height: 0;
+  padding-bottom: 100%; /* 保持1:1的宽高比 */
+  background-color: var(--border-color);
+  border-radius: 10px 10px 0 0;
+  overflow: hidden;
+}
+
+.post-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.image-count-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background-color: rgba(0, 0, 0, 0.4);
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.post-title {
+  margin: 0;
+  padding: 10px;
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--text-color);
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+}
+
+.post-item-text-only {
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+  flex: 1;
+}
+
+.post-item-with-image {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.post-item-text-only .post-title-large {
+  margin: 0;
+  padding: 0 0 10px 0;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text-color);
+  line-height: 1.4;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.post-item-text-only .post-content {
+  font-size: 14px;
+  color: #666;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  margin-bottom: 10px;
+  flex: 1;
+}
+
+.post-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 10px;
+  border-top: 1px solid var(--border-color);
+  width: 100%;
+  background-color: var(--card-bg);
+  margin-top: auto;
+  min-height: 36px;
+}
+
+.post-time {
+  font-size: 12px;
+  color: var(--placeholder-color);
+  max-width: 65%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.likes-count {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--placeholder-color);
+  min-width: 35px;
+}
+
+/* 移动端适配 */
+@media screen and (max-width: 768px) {
+  .post-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    padding: 10px;
+  }
+
+  .post-item {
+    margin-bottom: 0;
+    min-height: 200px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .post-image-container {
+    flex: 0 0 auto;
+  }
+
+  .post-title {
+    flex: 1;
+    min-height: 40px;
+    padding: 8px 10px;
+  }
+
+  .post-item-text-only .post-title-large {
+    font-size: 14px;
+    padding: 0 0 5px 0;
+  }
+
+  .post-item-text-only .post-content {
+    font-size: 12px;
+    -webkit-line-clamp: 2;
+  }
+
+  .post-footer {
+    flex-shrink: 0;
+  }
+}
+
+.loading-state {
+  padding: 15px;
+  background-color: var(--card-bg-color);
+  border-radius: 8px;
+  margin: 10px;
+  box-shadow: 0 1px 3px var(--shadow-color);
+}
