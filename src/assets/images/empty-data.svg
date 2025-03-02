@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="200px" height="200px" viewBox="0 0 200 200" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>empty-data</title>
+    <defs>
+        <linearGradient x1="0%" y1="0%" x2="100%" y2="100%" id="linearGradient-1">
+            <stop stop-color="#4B6CB7" offset="0%"></stop>
+            <stop stop-color="#182848" offset="100%"></stop>
+        </linearGradient>
+        <linearGradient x1="50%" y1="0%" x2="50%" y2="100%" id="linearGradient-2">
+            <stop stop-color="#E0E7FF" offset="0%"></stop>
+            <stop stop-color="#B8C4FF" offset="100%"></stop>
+        </linearGradient>
+        <filter x="-19.2%" y="-19.2%" width="138.3%" height="138.3%" filterUnits="objectBoundingBox" id="filter-3">
+            <feGaussianBlur stdDeviation="5" in="SourceGraphic"></feGaussianBlur>
+        </filter>
+    </defs>
+    <g id="empty-data" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <circle id="shadow" fill="#4B6CB7" opacity="0.2" filter="url(#filter-3)" cx="100" cy="120" r="52"></circle>
+        <!-- 底部装饰 -->
+        <ellipse id="base" fill="#E9EEFF" cx="100" cy="140" rx="60" ry="12"></ellipse>
+        
+        <!-- 图表元素 -->
+        <g id="chart-container" transform="translate(50, 65)">
+            <!-- 图表框架 -->
+            <rect id="chart-bg" fill="url(#linearGradient-2)" x="0" y="0" width="100" height="70" rx="8"></rect>
+            <rect id="chart-header" fill="#F0F3FF" x="10" y="10" width="80" height="8" rx="4"></rect>
+            
+            <!-- 条形图 -->
+            <rect id="bar-1" fill="#C2CBFF" x="15" y="30" width="15" height="25" rx="2"></rect>
+            <rect id="bar-2" fill="#A5B2FF" x="35" y="25" width="15" height="30" rx="2"></rect>
+            <rect id="bar-3" fill="#8A9AFF" x="55" y="35" width="15" height="20" rx="2"></rect>
+            <rect id="bar-4" fill="#6D82FF" x="75" y="40" width="15" height="15" rx="2"></rect>
+        </g>
+        
+        <!-- 放大镜元素 -->
+        <g id="magnifier" transform="translate(90, 50)">
+            <circle id="magnifier-glass" stroke="url(#linearGradient-1)" stroke-width="4" fill="#FFFFFF" cx="25" cy="25" r="20"></circle>
+            <line id="magnifier-handle" stroke="url(#linearGradient-1)" stroke-width="4" stroke-linecap="round" x1="10" y1="40" x2="0" y2="50"></line>
+            
+            <!-- 问号 -->
+            <text id="question-mark" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="url(#linearGradient-1)" x="18" y="33">?</text>
+        </g>
+        
+        <!-- 装饰元素 -->
+        <circle id="dot-1" fill="#4B6CB7" opacity="0.2" cx="55" cy="50" r="5"></circle>
+        <circle id="dot-2" fill="#4B6CB7" opacity="0.15" cx="150" cy="70" r="7"></circle>
+        <circle id="dot-3" fill="#4B6CB7" opacity="0.1" cx="40" cy="100" r="4"></circle>
+        <circle id="dot-4" fill="#4B6CB7" opacity="0.15" cx="160" cy="120" r="6"></circle>
+    </g>
+</svg>

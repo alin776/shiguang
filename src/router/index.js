@@ -12,6 +12,7 @@ import FollowingView from "../views/FollowingView.vue";
 import CalendarSettingsView from "../views/calendar/CalendarSettingsView.vue";
 import CalendarView from "../views/calendar/CalendarView.vue";
 import CalendarEventView from "../views/calendar/CalendarEventView.vue";
+import CalendarStatisticsView from "../views/calendar/statistics/StatisticsView.vue";
 import AboutView from "../views/AboutView.vue";
 import { ref } from "vue";
 
@@ -147,6 +148,12 @@ const routes = [
     path: "/calendar/event/new",
     name: "NewCalendarEvent",
     component: CalendarEventView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: "/calendar/statistics",
+    name: "CalendarStatistics",
+    component: CalendarStatisticsView,
     meta: { requiresAuth: true },
   },
   {

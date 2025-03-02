@@ -5,6 +5,15 @@
         ><el-icon><Calendar /></el-icon
       ></span>
       每日打卡
+      <el-button
+        class="statistics-btn"
+        type="primary"
+        size="small"
+        @click="$emit('go-to-statistics')"
+      >
+        <el-icon><DataAnalysis /></el-icon>
+        现状总结
+      </el-button>
     </h3>
     <div class="check-in-list">
       <div
@@ -51,6 +60,7 @@
 
 <script setup>
 import { Calendar } from "@element-plus/icons-vue";
+import { DataAnalysis } from "@element-plus/icons-vue";
 import { ref } from "vue";
 
 defineProps({
@@ -70,7 +80,7 @@ defineProps({
   },
 });
 
-const emit = defineEmits(["toggle-check-in", "go-to-settings", "force-check-in"]);
+const emit = defineEmits(["toggle-check-in", "go-to-settings", "force-check-in", "go-to-statistics"]);
 
 // 十六进制转RGB辅助函数
 const hexToRgb = (hex) => {
@@ -140,6 +150,7 @@ const clearPressTimer = () => {
   margin-bottom: 16px;
   display: flex;
   align-items: center;
+  justify-content: space-between;
 }
 
 .section-icon {
@@ -157,6 +168,10 @@ const clearPressTimer = () => {
   margin-right: 8px;
   color: white;
   box-shadow: 0 0 5px rgba(147, 51, 234, 0.7);
+}
+
+.statistics-btn {
+  margin-left: 8px;
 }
 
 .check-in-item {

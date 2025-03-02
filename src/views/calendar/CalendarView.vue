@@ -43,6 +43,7 @@
           @toggle-check-in="toggleCheckIn"
           @force-check-in="forceCheckIn"
           @go-to-settings="router.push('/settings')"
+          @go-to-statistics="router.push('/calendar/statistics')"
         />
 
         <!-- 右侧事件区域 -->
