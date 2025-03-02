@@ -34,8 +34,12 @@
             <span class="label">粉丝</span>
           </div>
           <div class="stat-item">
-            <span class="count">{{ likesCount }}</span>
+            <span class="count">{{ totalLikesCount }}</span>
             <span class="label">获赞</span>
+          </div>
+          <div class="stat-item">
+            <span class="count">{{ postsCount }}</span>
+            <span class="label">帖子</span>
           </div>
         </div>
         <div class="user-bio">
@@ -206,6 +210,7 @@ import {
 } from "@element-plus/icons-vue";
 import { API_BASE_URL } from "@/config";
 import { useUnmountDetection } from "../composables/useUnmountDetection";
+import axios from "axios";
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -215,13 +220,14 @@ const { isMounted, checkMounted } = useUnmountDetection();
 // 用户数据
 const followingCount = ref(0);
 const followersCount = ref(0);
-const likesCount = ref(0);
+const postsCount = ref(0);
 const posts = ref([]);
 const likedPosts = ref([]);
 const bio = ref("");
 const activeTab = ref("posts");
 const userId = ref("");
 const loading = ref(false);
+const totalLikesCount = ref(0); // 新增：总获赞数
 
 // 计算属性
 const username = computed(() => authStore.user?.username || "");
@@ -268,9 +274,11 @@ const loadUserPosts = async () => {
     const userIdValue = authStore.user?.id;
     if (!userIdValue) return;
 
-    // 使用状态变量跟踪加载状态
     loading.value = true;
     const response = await communityStore.getUserPosts(userIdValue);
+
+    // 输出原始数据结构以检查
+    console.log("接收到的原始帖子数据:", JSON.stringify(response, null, 2));
 
     // 处理帖子图片路径
     posts.value =
@@ -287,8 +295,21 @@ const loadUserPosts = async () => {
         return post;
       }) || [];
 
+    // 检查帖子数据中是否包含点赞数
+    console.log("处理后的帖子数据 (简要):", posts.value.map(post => ({
+      id: post.id,
+      likesCount: post.likesCount,
+      likes_count: post.likes_count // 检查可能的属性名差异
+    })));
+    
+    // 设置帖子数量
+    postsCount.value = posts.value.length;
+    
+    // 计算帖子总获赞数
+    calculateTotalLikes();
+
     console.log("加载到的帖子数量:", posts.value.length);
-    console.log("第一个帖子图片:", posts.value[0]?.images);
+    console.log("当前帖子数:", postsCount.value);
   } catch (error) {
     console.error("加载用户帖子失败:", error);
     ElMessage.error("加载帖子失败");
@@ -332,9 +353,20 @@ const loadLikedPosts = async () => {
 
 // 计算总获赞数
 const calculateTotalLikes = () => {
-  likesCount.value = posts.value.reduce((total, post) => {
-    return total + (post.likesCount || 0);
+  // 计算所有帖子的获赞数总和，使用正确的属性名likes_count
+  const postLikes = posts.value.reduce((total, post) => {
+    // 后端返回的是likes_count而不是likesCount
+    const likeCount = post.likes_count || 0;
+    console.log(`帖子ID ${post.id} 获赞数:`, likeCount);
+    return total + likeCount;
   }, 0);
+  
+  // 设置总获赞数 
+  totalLikesCount.value = postLikes;
+  
+  console.log("帖子获赞数:", postLikes);
+  console.log("总获赞数:", totalLikesCount.value);
+  console.log("当前帖子数量:", postsCount.value);
 };
 
 // 前往设置页面
@@ -377,14 +409,16 @@ const formatTime = (time) => {
     .toString()
     .padStart(2, "0")}`;
 };
+
 onMounted(async () => {
   console.log("ProfileView mounted, 开始加载...");
   try {
     // 先获取完整的用户信息（包括封面图）
     await authStore.fetchUserInfo();
     console.log("用户信息已加载，封面图URL:", authStore.userCover);
-    // 然后加载其他用户数据
-    loadUserStats();
+
+    // 使用原来的loadUserStats函数加载用户数据
+    await loadUserStats();
   } catch (error) {
     console.error("加载用户数据失败:", error);
   }
