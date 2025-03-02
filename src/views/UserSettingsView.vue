@@ -271,8 +271,7 @@ const copyText = async (text) => {
 };
 
 const showAbout = () => {
-  // TODO: 实现关于我们页面跳转
-  ElMessage.info("关于我们页面暂未实现");
+  router.push("/about");
 };
 
 const handleLogout = async () => {
