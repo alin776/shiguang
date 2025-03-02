@@ -205,7 +205,7 @@ defineEmits(["prev-month", "next-month", "select-day"]);
   font-weight: bold;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 0 8px rgba(147, 51, 234, 0.4);
+  box-shadow: 0 0 8px rgba(2, 255, 234, 0.635);
 }
 
 .day-cell.has-checkins {
@@ -224,7 +224,7 @@ defineEmits(["prev-month", "next-month", "select-day"]);
     bottom: 2px;
     gap: 2px;
   }
-  
+
   .checkin-indicator {
     width: 6px;
     height: 6px;
