@@ -7,8 +7,12 @@ const { createNotification } = require("../controllers/notificationController");
 
 // 确保上传目录存在
 const uploadDir = "public/uploads/posts";
+const audioDir = "public/uploads/audio";
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
+}
+if (!fs.existsSync(audioDir)) {
+  fs.mkdirSync(audioDir, { recursive: true });
 }
 
 // 配置图片上传
@@ -33,6 +37,29 @@ const upload = multer({
     }
   },
 }).single("file"); // Element Plus Upload 组件默认使用 'file' 作为字段名
+
+// 配置音频上传
+const audioStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, audioDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    cb(null, "audio-" + uniqueSuffix + path.extname(file.originalname));
+  },
+});
+
+const uploadAudio = multer({
+  storage: audioStorage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith("audio/")) {
+      cb(null, true);
+    } else {
+      cb(new Error("只允许上传音频文件"));
+    }
+  },
+}).single("audio");
 
 exports.getPosts = async (req, res) => {
   try {
@@ -258,7 +285,7 @@ exports.createPost = async (req, res) => {
       return res.status(400).json({ message: "标题和内容不能为空" });
     }
 
-    const { title, content, images } = req.body;
+    const { title, content, images, audio } = req.body;
     let parsedImages = [];
 
     try {
@@ -277,6 +304,7 @@ exports.createPost = async (req, res) => {
       title.trim(),
       content.trim(),
       JSON.stringify(parsedImages || []), // 确保不会是 undefined
+      audio || null, // 添加音频字段
     ];
 
     // 检查参数是否包含 undefined
@@ -285,7 +313,7 @@ exports.createPost = async (req, res) => {
     }
 
     const [result] = await db.execute(
-      "INSERT INTO posts (user_id, title, content, images) VALUES (?, ?, ?, ?)",
+      "INSERT INTO posts (user_id, title, content, images, audio) VALUES (?, ?, ?, ?, ?)",
       params
     );
 
@@ -311,8 +339,13 @@ exports.createComment = async (req, res) => {
     }
 
     const { postId } = req.params;
-    const { content } = req.body;
+    const { content, audio } = req.body;
     const userId = req.user.id;
+
+    // 确保评论至少有文字内容或音频内容
+    if (!content && !audio) {
+      return res.status(400).json({ message: "评论必须包含文字或音频内容" });
+    }
 
     // 获取帖子作者ID
     const [postResult] = await db.execute(
@@ -326,8 +359,8 @@ exports.createComment = async (req, res) => {
 
     // 先创建评论
     const [result] = await db.execute(
-      "INSERT INTO comments (post_id, user_id, content) VALUES (?, ?, ?)",
-      [postId, userId, content]
+      "INSERT INTO comments (post_id, user_id, content, audio) VALUES (?, ?, ?, ?)",
+      [postId, userId, content || '', audio || null]
     );
     
     const commentId = result.insertId;
@@ -906,8 +939,13 @@ exports.unlikeComment = async (req, res) => {
 exports.replyToComment = async (req, res) => {
   try {
     const { postId, commentId } = req.params;
-    const { content, replyToId } = req.body;
+    const { content, replyToId, audio } = req.body;
     const userId = req.user.id;
+    
+    // 确保回复至少有文字内容或音频内容
+    if (!content && !audio) {
+      return res.status(400).json({ message: "回复必须包含文字或音频内容" });
+    }
 
     // 获取评论作者ID和帖子信息
     const [commentResult] = await db.execute(
@@ -947,8 +985,8 @@ exports.replyToComment = async (req, res) => {
 
     // 创建回复
     const [result] = await db.execute(
-      "INSERT INTO comment_replies (comment_id, user_id, reply_to_id, content) VALUES (?, ?, ?, ?)",
-      [commentId, userId, replyToId || null, content]
+      "INSERT INTO comment_replies (comment_id, user_id, reply_to_id, content, audio) VALUES (?, ?, ?, ?, ?)",
+      [commentId, userId, replyToId || null, content || '', audio || null]
     );
 
     res.status(201).json({
@@ -996,8 +1034,13 @@ exports.createCommentReply = async (req, res) => {
     }
 
     const { postId, commentId } = req.params;
-    const { content, replyToId } = req.body;
+    const { content, replyToId, audio } = req.body;
     const userId = req.user.id;
+    
+    // 确保回复至少有文字内容或音频内容
+    if (!content && !audio) {
+      return res.status(400).json({ message: "回复必须包含文字或音频内容" });
+    }
 
     // 检查帖子是否存在
     const [postExists] = await db.execute("SELECT title FROM posts WHERE id = ?", [
@@ -1022,8 +1065,8 @@ exports.createCommentReply = async (req, res) => {
 
     // 创建回复
     const [result] = await db.execute(
-      "INSERT INTO comment_replies (comment_id, user_id, reply_to_id, content) VALUES (?, ?, ?, ?)",
-      [commentId, userId, replyToId || null, content]
+      "INSERT INTO comment_replies (comment_id, user_id, reply_to_id, content, audio) VALUES (?, ?, ?, ?, ?)",
+      [commentId, userId, replyToId || null, content || '', audio || null]
     );
     
     const replyId = result.insertId;
@@ -1062,6 +1105,49 @@ exports.createCommentReply = async (req, res) => {
     console.error("创建评论回复失败:", error);
     res.status(500).json({ message: "创建回复失败" });
   }
+};
+
+// 上传音频文件
+exports.uploadAudio = (req, res) => {
+  uploadAudio(req, res, (err) => {
+    if (err) {
+      console.error("音频上传错误:", err);
+      return res.status(400).json({
+        message: err.message || "音频上传失败",
+      });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ message: "请选择要上传的音频文件" });
+    }
+
+    // 获取客户端传递的音频持续时间并确保它是数字
+    const duration = req.body.duration ? parseInt(req.body.duration) : 0;
+    
+    // 验证持续时间是否合理
+    const validDuration = (duration > 0 && duration < 600) ? duration : 0; // 最长10分钟
+    
+    console.log("接收到的音频实际持续时间:", validDuration, "秒", "请求体:", req.body);
+    
+    // 确保持续时间参数被添加到URL（即使为0也添加，便于前端识别）
+    const audioUrl = `/uploads/audio/${req.file.filename}?duration=${validDuration}`;
+    console.log("生成的音频URL(包含持续时间):", audioUrl);
+    
+    // 为确保客户端能正确访问音频文件，使用绝对URL
+    const protocol = req.secure ? 'https' : 'http';
+    const host = req.get('host');
+    const fullUrl = `${protocol}://${host}${audioUrl}`;
+    console.log("完整的音频URL:", fullUrl);
+
+    // 返回响应，包含持续时间信息
+    res.json({
+      url: audioUrl,
+      fullUrl: fullUrl,
+      filename: req.file.filename,
+      duration: validDuration,
+      message: "音频上传成功",
+    });
+  });
 };
 
 // ... 其他控制器方法

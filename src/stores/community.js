@@ -115,6 +115,11 @@ export const useCommunityStore = defineStore("community", {
           data.images = JSON.stringify(imageUrls);
         }
 
+        // 添加音频数据
+        if (postData.audio) {
+          data.audio = postData.audio;
+        }
+
         const response = await axios.post(
           `${API_BASE_URL}/api/community/posts`,
           data,
@@ -138,13 +143,20 @@ export const useCommunityStore = defineStore("community", {
     },
 
     // 创建评论
-    async createComment(postId, content) {
+    async createComment(postId, content, audio = null) {
       try {
         this.loading = true;
         const authStore = useAuthStore();
+        const data = { content };
+        
+        // 添加音频数据
+        if (audio) {
+          data.audio = audio;
+        }
+        
         const response = await axios.post(
           `${API_BASE_URL}/api/community/posts/${postId}/comments`,
-          { content },
+          data,
           {
             headers: { Authorization: `Bearer ${authStore.token}` },
           }
@@ -522,12 +534,17 @@ export const useCommunityStore = defineStore("community", {
     },
 
     // 回复评论
-    async replyToComment(postId, commentId, content, replyToUserId = null) {
+    async replyToComment(postId, commentId, content, replyToId = null, audio = null) {
       try {
         const authStore = useAuthStore();
-        const data = { content };
-        if (replyToUserId) {
-          data.reply_to_user_id = replyToUserId;
+        const data = {
+          content,
+          replyToId,
+        };
+        
+        // 添加音频数据
+        if (audio) {
+          data.audio = audio;
         }
         
         const response = await axios.post(

@@ -220,6 +220,10 @@
               </template>
             </el-upload>
           </el-form-item>
+
+          <el-form-item label="语音">
+            <AudioRecorder v-model:value="postForm.audio" />
+          </el-form-item>
         </el-form>
 
         <template #footer>
@@ -248,6 +252,7 @@ import { ElMessage, ElMessageBox } from "element-plus";
 import { Search, Plus, Picture, View, ChatDotRound, Star } from "@element-plus/icons-vue";
 import BottomNavBar from "@/components/BottomNavBar.vue";
 import NotificationBadge from "@/components/NotificationBadge.vue";
+import AudioRecorder from "@/components/AudioRecorder.vue";
 import formatTime from "@/utils/formatTime";
 import { useCommunityStore } from "@/stores/community";
 import { useAuthStore } from "@/stores/auth";
@@ -273,6 +278,7 @@ const postForm = ref({
   title: "",
   content: "",
   images: [],
+  audio: null,
 });
 
 const postRules = {

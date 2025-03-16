@@ -194,20 +194,29 @@ const cancelReply = () => {
 };
 
 // 提交评论
-const submitComment = async (content) => {
+const submitComment = async (commentData) => {
   try {
+    console.log('准备提交评论:', commentData);
+    // 确保音频路径正确
+    const audioPath = commentData.audio;
+    
     if (replyMode.value && replyToCommentId.value) {
       // 回复评论
       await communityStore.replyToComment(
         post.value.id,
         replyToCommentId.value,
-        content,
-        replyToUserId.value
+        commentData.content || '', // 确保空内容传递为空字符串而不是null或undefined
+        replyToUserId.value,
+        audioPath
       );
       ElMessage.success("回复成功");
     } else {
       // 新评论
-      await communityStore.createComment(post.value.id, content);
+      await communityStore.createComment(
+        post.value.id, 
+        commentData.content || '', // 确保空内容传递为空字符串而不是null或undefined
+        audioPath
+      );
       ElMessage.success("评论成功");
     }
 
@@ -218,6 +227,7 @@ const submitComment = async (content) => {
     // 重置回复状态
     cancelReply();
   } catch (error) {
+    console.error('评论提交失败:', error);
     ElMessage.error("评论失败: " + (error.message || "未知错误"));
   }
 };

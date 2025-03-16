@@ -37,13 +37,30 @@
         @input="adjustTextareaHeight"
         ref="inputRef"
       />
+      
+      <!-- 语音录制按钮 -->
+      <el-button 
+        type="text" 
+        :icon="recordingAudio ? 'Close' : 'Microphone'" 
+        @click="toggleAudioRecording"
+        class="audio-button"
+        :class="{ 'recording': recordingAudio }"
+      >
+        {{ recordingAudio ? '取消' : '语音' }}
+      </el-button>
+      
       <el-button
         type="primary"
-        :disabled="!commentContent.trim()"
+        :disabled="(!commentContent.trim() && !commentAudio) || recordingAudio"
         @click="handleSubmit"
       >
         发送
       </el-button>
+    </div>
+    
+    <!-- 音频录制组件 (只在录音模式显示) -->
+    <div v-if="recordingAudio" class="audio-recorder-container">
+      <AudioRecorder v-model:value="commentAudio" @audio-deleted="commentAudio = null" @audio-recorded="onAudioRecorded" />
     </div>
   </div>
 </template>
@@ -51,6 +68,7 @@
 <script setup>
 import { ref, computed, nextTick, watch } from "vue";
 import CommentItem from "./CommentItem.vue";
+import AudioRecorder from "../../../components/AudioRecorder.vue";
 
 const props = defineProps({
   comments: {
@@ -82,6 +100,8 @@ const emit = defineEmits([
 ]);
 
 const commentContent = ref("");
+const commentAudio = ref(null);
+const recordingAudio = ref(false);
 const inputRef = ref(null);
 
 const totalComments = computed(() => {
@@ -108,11 +128,35 @@ const adjustTextareaHeight = () => {
   }
 };
 
+// 切换录音模式
+const toggleAudioRecording = () => {
+  recordingAudio.value = !recordingAudio.value;
+  if (!recordingAudio.value) {
+    // 不要在此处清除音频，避免切换录音模式时丢失已录制的音频
+    // commentAudio.value = null;
+  }
+};
+
+// 音频录制完成的回调
+const onAudioRecorded = (audioUrl) => {
+  console.log("音频录制完成:", audioUrl);
+  commentAudio.value = audioUrl;
+  // 录音完成后自动关闭录音界面但保留录制的音频
+  recordingAudio.value = false;
+};
+
 // 提交评论
 const handleSubmit = () => {
-  if (commentContent.value.trim()) {
-    emit("submit-comment", commentContent.value);
+  // 检查是否有文字评论或音频评论
+  if (commentContent.value.trim() || commentAudio.value) {
+    console.log("提交评论:", { text: commentContent.value, audio: commentAudio.value });
+    emit("submit-comment", {
+      content: commentContent.value,
+      audio: commentAudio.value
+    });
     commentContent.value = "";
+    commentAudio.value = null;
+    recordingAudio.value = false;
   }
 };
 
@@ -165,8 +209,27 @@ watch(
   z-index: 10;
 }
 
+.audio-recorder-container {
+  position: fixed;
+  bottom: 60px;
+  left: 0;
+  right: 0;
+  background-color: var(--card-bg);
+  padding: 10px;
+  border-top: 1px solid var(--border-color);
+  z-index: 9;
+}
+
+.audio-button {
+  margin: 0 5px;
+}
+
+.audio-button.recording {
+  color: #f56c6c;
+}
+
 @media screen and (min-width: 768px) {
-  .reply-input {
+  .reply-input, .audio-recorder-container {
     max-width: 480px;
     left: 50%;
     transform: translateX(-50%);

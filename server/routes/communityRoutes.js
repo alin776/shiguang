@@ -24,6 +24,9 @@ router.delete("/posts/:postId", communityController.deletePost);
 // 上传图片
 router.post("/upload", communityController.uploadImage);
 
+// 上传音频
+router.post("/upload-audio", communityController.uploadAudio);
+
 // 创建评论
 router.post("/posts/:postId/comments", communityController.createComment);
 
@@ -41,6 +44,9 @@ router.delete(
 
 // 点赞帖子
 router.post("/posts/:postId/like", communityController.likePost);
+
+// 取消点赞帖子
+router.delete("/posts/:postId/like", communityController.likePost);
 
 // 获取我的帖子
 router.get("/my-posts", communityController.getMyPosts);
