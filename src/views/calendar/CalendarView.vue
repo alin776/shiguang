@@ -5,6 +5,15 @@
 
     <!-- 内容主体 -->
     <div class="calendar-content">
+      <!-- 顶部切换按钮 -->
+      <div class="header-switch">
+        <div class="switch-button" @click="toggleView">
+          <div :class="['option', { active: currentView === 'note' }]">小记</div>
+          <div :class="['divider']"></div>
+          <div :class="['option', { active: currentView === 'calendar' }]">记事打卡</div>
+        </div>
+      </div>
+
       <!-- 顶部工具栏 -->
       <div class="toolbar">
         <div class="title">
@@ -105,6 +114,9 @@ const checkInColors = {
 
 // 添加一个状态用于触发动画
 const recentlyCompleted = ref({});
+
+// 添加视图切换功能
+const currentView = ref('calendar');
 
 // 计算属性
 const currentMonthYear = computed(() => {
@@ -606,6 +618,15 @@ const updateSelectedDayEvents = () => {
   console.log(`${selectedDayStr}有${selectedDayEvents.value.length}个事件`);
 };
 
+// 切换视图函数
+const toggleView = () => {
+  if (currentView.value === 'calendar') {
+    router.push('/note');
+  } else {
+    currentView.value = 'calendar';
+  }
+};
+
 // 生命周期钩子
 onMounted(() => {
   loadEvents();
@@ -641,44 +662,73 @@ watch(
 <style scoped>
 .calendar-page {
   min-height: 100vh;
-  color: var(--text-color);
-  padding-bottom: 60px;
-  overflow-x: hidden; /* 防止水平滚动 */
-  padding: 0 16px; /* 添加左右内边距 */
+  padding-bottom: 70px;
+  background: linear-gradient(135deg, #f0f7ff, #e6f2ff);
+  position: relative;
+  overflow: hidden;
 }
 
 .calendar-content {
   width: 100%;
-  max-width: 1200px;
+  max-width: 100%;
   margin: 0 auto;
   position: relative;
   z-index: 5;
+  padding: 0;
 }
 
 .toolbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  margin-bottom: 10px;
   position: relative;
   z-index: 5;
+  background-color: rgba(255, 255, 255, 0.85);
+  padding: 12px 16px;
+  border-radius: 0;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
+  backdrop-filter: blur(10px);
+  border: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.8);
+}
+
+.title {
+  display: flex;
+  align-items: center;
 }
 
 .page-title {
   margin: 0;
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: white;
-  text-shadow: 0 0 10px rgba(147, 51, 234, 0.7);
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #333;
+  text-shadow: none;
+  position: relative;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.page-title::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 30px;
+  height: 2px;
+  background: linear-gradient(90deg, #333, #555);
+  border-radius: 2px;
 }
 
 .actions {
   display: flex;
-  gap: 8px;
+  gap: 14px;
 }
 
 .mobile-button {
-  padding: 8px;
+  padding: 10px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -686,69 +736,152 @@ watch(
 }
 
 .text-button {
-  padding: 8px 16px;
-  border-radius: 20px;
-  font-size: 14px;
-  margin-left: 8px;
+  padding: 6px 12px;
+  border-radius: 16px;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0;
 }
 
 .glow-button {
-  background: rgba(147, 51, 234, 0.1);
-  border: 1px solid rgba(147, 51, 234, 0.3);
-  color: white;
+  background: rgba(51, 51, 51, 0.08);
+  border: 1px solid rgba(51, 51, 51, 0.15);
+  color: #333;
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
 }
 
 .glow-button::before {
-  content: "";
+  content: '';
   position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: radial-gradient(
-    circle at center,
-    rgba(147, 51, 234, 0.5) 0%,
-    transparent 60%
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
   );
-  opacity: 0;
-  transform: scale(0.5);
-  transition: all 0.5s ease;
+  transition: left 0.7s ease;
+}
+
+.glow-button:hover {
+  background: rgba(51, 51, 51, 0.12);
+  transform: translateY(-3px);
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
 }
 
 .glow-button:hover::before {
-  opacity: 0.3;
-  transform: scale(1);
+  left: 100%;
+}
+
+.glow-button:active {
+  transform: translateY(0) scale(0.98);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .content-area {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-}
-
-@media screen and (min-width: 768px) {
-  .content-area {
-    flex-direction: row;
-  }
-
-  .check-in-area,
-  .events-area {
-    flex: 1;
-  }
+  gap: 10px;
+  background-color: rgba(255, 255, 255, 0.75);
+  border-radius: 0;
+  padding: 10px 0;
+  box-shadow: none;
+  backdrop-filter: blur(10px);
+  border: none;
+  max-height: none;
+  height: auto;
+  overflow: visible;
 }
 
 .tech-row {
   display: flex;
   flex-direction: column;
+  gap: 10px;
 }
 
 @media screen and (min-width: 768px) {
   .tech-row {
     flex-direction: row;
-    gap: 16px;
   }
+  
+  .toolbar {
+    padding: 20px 24px;
+    margin-bottom: 10px;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .page-title {
+    font-size: 1.2rem;
+  }
+  
+  .text-button {
+    padding: 5px 10px;
+    font-size: 12px;
+  }
+  
+  .toolbar {
+    padding: 10px 12px;
+  }
+  
+  .actions {
+    gap: 6px;
+  }
+}
+
+@media screen and (max-width: 360px) {
+  .page-title {
+    font-size: 1rem;
+  }
+  
+  .text-button {
+    padding: 4px 8px;
+    font-size: 11px;
+  }
+}
+
+/* 顶部切换按钮样式 */
+.header-switch {
+  display: flex;
+  justify-content: center;
+  padding: 16px 0;
+  margin-top: 10px;
+}
+
+.switch-button {
+  display: flex;
+  background-color: rgba(255, 255, 255, 0.8);
+  border-radius: 20px;
+  padding: 3px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(236, 240, 241, 0.9);
+  overflow: hidden;
+}
+
+.option {
+  padding: 8px 20px;
+  font-size: 14px;
+  cursor: pointer;
+  color: #7f8c8d;
+  transition: all 0.3s ease;
+  border-radius: 18px;
+  white-space: nowrap;
+}
+
+.option.active {
+  background-color: #2c3e50;
+  color: white;
+  font-weight: 500;
+}
+
+.divider {
+  width: 1px;
+  background-color: #e0e0e0;
+  margin: 8px 0;
 }
 </style>

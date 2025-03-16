@@ -13,19 +13,33 @@ import CalendarSettingsView from "../views/calendar/CalendarSettingsView.vue";
 import CalendarView from "../views/calendar/CalendarView.vue";
 import CalendarEventView from "../views/calendar/CalendarEventView.vue";
 import CalendarStatisticsView from "../views/calendar/statistics/StatisticsView.vue";
+import NoteView from "../views/NoteView.vue"; // 添加小记页面组件导入
+import NoteSubmitView from "../views/NoteSubmitView.vue"; // 添加小记投稿页面组件导入
 import AboutView from "../views/AboutView.vue";
 import { ref } from "vue";
 
 const routes = [
   {
     path: "/",
-    redirect: "/calendar",
+    redirect: "/note",
     meta: { requiresAuth: true },
   },
   {
     path: "/calendar",
     name: "Calendar",
     component: CalendarView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: "/note",
+    name: "Note",
+    component: NoteView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: "/note/submit",
+    name: "NoteSubmit",
+    component: NoteSubmitView,
     meta: { requiresAuth: true },
   },
   {

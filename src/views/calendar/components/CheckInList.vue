@@ -131,112 +131,160 @@ const clearPressTimer = () => {
 
 <style scoped>
 .check-in-area {
-  display: flex;
-  flex-direction: column;
-  margin-bottom: 16px;
-}
-
-.check-in-list {
   flex: 1;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  padding: 10px 0;
+  margin-bottom: 0;
+  position: relative;
+  border-radius: 0;
+  max-height: none;
+  height: auto;
+  overflow: visible;
+  background: transparent;
+  box-shadow: none;
+  border: none;
 }
 
 .section-title {
-  color: white;
-  font-weight: 500;
-  margin-bottom: 16px;
+  color: #333;
+  font-size: 16px;
+  font-weight: 600;
+  margin-top: 0;
+  margin-bottom: 10px;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  padding: 0 5px;
 }
 
 .section-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  background: linear-gradient(
-    135deg,
-    var(--primary-color),
-    var(--secondary-color)
-  );
+  width: 26px;
+  height: 26px;
+  background: linear-gradient(135deg, #333, #555);
   border-radius: 50%;
-  margin-right: 8px;
+  margin-right: 6px;
   color: white;
-  box-shadow: 0 0 5px rgba(147, 51, 234, 0.7);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  flex-shrink: 0;
 }
 
 .statistics-btn {
-  margin-left: 8px;
+  margin-left: 5px;
+  background: rgba(51, 51, 51, 0.08);
+  border: 1px solid rgba(51, 51, 51, 0.15);
+  color: #333;
+  border-radius: 14px;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.check-in-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow: visible;
+  max-height: none;
 }
 
 .check-in-item {
   display: flex;
   align-items: center;
-  padding: 12px;
-  border-radius: var(--small-radius);
+  padding: 14px;
+  border-radius: 12px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
-  min-height: 48px;
-  background: rgba(30, 30, 40, 0.85);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-  margin-bottom: 8px;
+  min-height: 60px;
+  background: #FFFFFF;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.04);
+  margin-bottom: 0;
+  border: 1px solid rgba(0, 0, 0, 0.03);
 }
 
 .item-pending {
-  background: rgba(30, 30, 40, 0.85);
-  border: 1px solid rgba(147, 51, 234, 0.3);
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(74, 144, 226, 0.15);
   transition: all 0.3s ease;
+}
+
+.item-pending:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.08);
 }
 
 .item-pending:active {
   transform: scale(0.98);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
 }
 
 .check-in-info {
   flex: 1;
   z-index: 2;
   position: relative;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+  text-shadow: none;
 }
 
 .check-in-name {
-  font-weight: 500;
-  margin-bottom: 4px;
+  font-weight: 600;
+  margin-bottom: 6px;
   display: flex;
   align-items: center;
-  color: white !important;
+  color: #333 !important;
+  font-size: 16px;
 }
 
 .check-in-streak {
-  font-size: 0.8rem;
-  opacity: 0.8;
-  color: var(--text-secondary);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+  font-size: 14px;
+  color: #666;
+  text-shadow: none;
+  display: flex;
+  align-items: center;
+}
+
+.check-in-streak::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #555;
+  margin-right: 6px;
+  opacity: 0.7;
 }
 
 .status-indicator {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
-  margin-right: 8px;
-  background-color: transparent;
-  border: 2px solid var(--completion-color, rgba(255, 255, 255, 0.2));
+  margin-right: 10px;
+  background-color: #f8f8f8;
+  border: 2px solid var(--completion-color, rgba(74, 144, 226, 0.3));
   transition: all 0.3s ease;
   display: inline-block;
+  position: relative;
 }
 
 .status-indicator.active {
-  background-color: var(--completion-color, var(--accent-color));
-  border-color: var(--completion-color, var(--accent-color));
-  box-shadow: 0 0 8px var(--completion-color, var(--accent-color));
+  background-color: var(--completion-color, #4A90E2);
+  border-color: var(--completion-color, #4A90E2);
+  box-shadow: 0 0 8px var(--completion-color, rgba(74, 144, 226, 0.5));
+}
+
+.status-indicator.active::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 6px;
+  height: 6px;
+  background-color: white;
+  border-radius: 50%;
 }
 
 .animate-pulse {
@@ -247,103 +295,141 @@ const clearPressTimer = () => {
   0%,
   100% {
     opacity: 1;
+    transform: scale(1);
   }
   50% {
-    opacity: 0.7;
+    opacity: 0.85;
+    transform: scale(0.98);
   }
 }
 
 .item-completed {
   background: linear-gradient(
-    90deg,
-    rgba(56, 189, 248, 0.3),
-    rgba(147, 51, 234, 0.35)
+    135deg,
+    rgba(255, 255, 255, 0.95),
+    rgba(247, 247, 247, 0.95)
   );
-  border: none;
-  box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+  border: 1px solid rgba(51, 51, 51, 0.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   position: relative;
   overflow: hidden;
-  z-index: 0;
 }
 
 .item-completed::before {
   content: "";
   position: absolute;
-  top: -1px;
-  left: -1px;
-  right: -1px;
-  bottom: -1px;
-  background: var(--gradient-2);
-  border-radius: calc(var(--small-radius) + 1px);
-  z-index: -1;
-  opacity: 0.5;
-  animation: task-complete-glow 3s infinite ease-in-out;
-}
-
-@keyframes task-complete-glow {
-  0%,
-  100% {
-    opacity: 0.5;
-  }
-  50% {
-    opacity: 0.8;
-  }
+  top: 0;
+  left: 0;
+  width: 6px;
+  height: 100%;
+  background: linear-gradient(to bottom, #333, #555);
+  border-radius: 3px;
 }
 
 .item-completed::after {
-  content: "";
+  content: "已完成";
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-image: radial-gradient(
-      circle at 20% 50%,
-      rgba(56, 189, 248, 0.8) 0%,
-      transparent 5%
-    ),
-    radial-gradient(
-      circle at 80% 30%,
-      rgba(147, 51, 234, 0.8) 0%,
-      transparent 4%
-    ),
-    radial-gradient(
-      circle at 40% 70%,
-      rgba(56, 189, 248, 0.8) 0%,
-      transparent 6%
-    ),
-    radial-gradient(
-      circle at 60% 20%,
-      rgba(236, 72, 153, 0.8) 0%,
-      transparent 4%
-    ),
-    radial-gradient(
-      circle at 10% 10%,
-      rgba(56, 189, 248, 0.8) 0%,
-      transparent 3%
-    ),
-    radial-gradient(
-      circle at 90% 90%,
-      rgba(147, 51, 234, 0.8) 0%,
-      transparent 5%
-    );
-  z-index: 1;
-  opacity: 0.2;
-  animation: tech-particles 10s infinite linear;
+  top: 14px;
+  right: 16px;
+  padding: 3px 8px;
+  background-color: rgba(51, 51, 51, 0.08);
+  border-radius: 12px;
+  font-size: 12px;
+  color: #333;
+  font-weight: 500;
 }
 
-@keyframes tech-particles {
-  0% {
-    transform: translateY(0) rotate(0deg);
-  }
-  100% {
-    transform: translateY(-10px) rotate(360deg);
-  }
+.item-completed .check-in-name {
+  color: #333 !important;
+}
+
+.item-completed:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(74, 144, 226, 0.15);
 }
 
 .empty-checkins {
-  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   padding: 20px;
-  color: var(--text-secondary);
+  text-align: center;
+  color: #888;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+}
+
+.empty-checkins p {
+  margin-bottom: 16px;
+  font-size: 15px;
+}
+
+.empty-checkins .el-button {
+  background: rgba(51, 51, 51, 0.08);
+  border-color: rgba(51, 51, 51, 0.15);
+  color: #333;
+  border-radius: 20px;
+  padding: 10px 20px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.empty-checkins .el-button:hover {
+  background: rgba(51, 51, 51, 0.12);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+@media (max-width: 480px) {
+  .check-in-area {
+    padding: 5px 0;
+  }
+  
+  .check-in-item {
+    padding: 12px;
+    min-height: 55px;
+  }
+  
+  .check-in-name {
+    font-size: 15px;
+  }
+  
+  .check-in-streak {
+    font-size: 13px;
+  }
+  
+  .section-title {
+    font-size: 14px;
+  }
+  
+  .section-icon {
+    width: 22px;
+    height: 22px;
+  }
+  
+  .statistics-btn {
+    font-size: 11px;
+    padding: 3px 6px;
+  }
+  
+  .item-completed::after {
+    top: 10px;
+    right: 12px;
+    padding: 2px 6px;
+    font-size: 10px;
+  }
+}
+
+@media (max-width: 360px) {
+  .section-title {
+    font-size: 13px;
+  }
+  
+  .statistics-btn {
+    font-size: 10px;
+    padding: 2px 5px;
+  }
 }
 </style>

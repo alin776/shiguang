@@ -1,16 +1,26 @@
 <template>
-  <div class="login-container page-container">
-    <!-- 添加宇宙粒子背景 -->
-    <SpaceBackground />
-
-    <div class="login-header cosmic-header">
-      <img src="../assets/logo.png" alt="Logo" class="logo" />
-      <h1 class="app-title cosmic-text">时光日历</h1>
-      <p>记录每一刻美好时光</p>
+  <div class="login-container">
+    <!-- 简约风格背景 -->
+    <div class="background-elements">
+      <div class="circle circle-1"></div>
+      <div class="circle circle-2"></div>
+      <div class="circle circle-3"></div>
     </div>
+    
+    <div class="login-content">
+      <div class="login-header">
+        <img src="../assets/logo.png" alt="时光" class="logo" />
+        <h1 class="login-title">时光</h1>
+        <p class="login-subtitle">记录美好，分享生活</p>
+      </div>
 
-    <div class="login-form tech-card enhanced-border">
-      <el-form :model="loginForm" :rules="rules" ref="loginFormRef">
+      <el-form
+        ref="loginFormRef"
+        :model="loginForm"
+        :rules="rules"
+        class="login-form focus-glow"
+        @keyup.enter="handleLogin"
+      >
         <el-form-item prop="username">
           <el-input
             v-model="loginForm.username"
@@ -43,15 +53,16 @@
         </el-form-item>
 
         <el-form-item>
-          <el-button
-            class="login-button glow-button"
-            @click="handleLogin"
-            :loading="loading"
-            round
-            block
-          >
-            登录
-          </el-button>
+          <div class="button-container">
+            <el-button
+              class="login-button glow-button pulse-on-click"
+              @click="handleLogin"
+              :loading="loading"
+              round
+            >
+              登录
+            </el-button>
+          </div>
         </el-form-item>
 
         <div class="register-link">
@@ -69,7 +80,6 @@ import { useRouter, useRoute } from "vue-router";
 import { ElMessage } from "element-plus";
 import { Lock, User } from "@element-plus/icons-vue";
 import { useAuthStore } from "@/stores/auth";
-import SpaceBackground from "./calendar/components/SpaceBackground.vue";
 
 const router = useRouter();
 const route = useRoute();
@@ -144,103 +154,231 @@ const goToRegister = () => {
 
 <style scoped>
 .login-container {
-  min-height: 100vh;
   display: flex;
   flex-direction: column;
-  align-items: center;
   justify-content: center;
+  align-items: center;
+  min-height: 100vh;
   padding: 20px;
-  background: rgba(18, 18, 30, 0.9);
-  color: white;
+  background: linear-gradient(135deg, #e0f7fa, #bbdefb);
+  background-size: cover;
+  overflow: hidden;
   position: relative;
+}
+
+.login-content {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 400px;
+  background-color: rgba(255, 255, 255, 0.95);
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  padding: 30px;
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.login-content:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
 }
 
 .login-header {
   text-align: center;
-  margin-bottom: 40px;
+  margin-bottom: 24px;
 }
 
-.cosmic-header {
-  position: relative;
-  z-index: 2;
+.login-title {
+  font-size: 32px;
+  color: var(--primary-color);
+  font-weight: 700;
+  margin-top: 12px;
+  letter-spacing: 1px;
+  text-shadow: 1px 1px 0 rgba(255, 255, 255, 0.8);
 }
 
-.app-title {
-  font-size: 36px;
-  margin: 16px 0 8px;
-  text-shadow: 0 0 10px rgba(147, 51, 234, 0.8);
-  letter-spacing: 2px;
+.login-subtitle {
+  font-size: 16px;
+  color: var(--text-color-light);
+  margin-top: 8px;
 }
 
-.cosmic-text {
-  background: linear-gradient(45deg, #38bdf8, #9333ea);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  text-shadow: 0 0 8px rgba(147, 51, 234, 0.4);
+.login-button {
+  height: 44px;
+  font-size: 16px;
+  width: 80%;
+  max-width: 300px;
+  background: linear-gradient(135deg, var(--primary-color), #2980b9);
+  border: none;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3);
+  transition: all 0.3s ease;
+  color: white;
+  border-radius: 8px;
+}
+
+.glow-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(74, 144, 226, 0.5);
+}
+
+.glow-button:active {
+  transform: translateY(1px);
+  box-shadow: 0 2px 5px rgba(74, 144, 226, 0.3);
+}
+
+.register-link {
+  text-align: center;
+  margin-top: 24px;
+}
+
+.register-link span {
+  color: var(--text-color-light);
+  margin-right: 8px;
+}
+
+/* 输入框样式调整 - 提高优先级 */
+:deep(.el-form .el-input .el-input__wrapper) {
+  background-color: white !important;
+  border: 1px solid rgba(74, 144, 226, 0.2) !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05) !important;
+  border-radius: 8px !important;
+  height: 44px;
+  transition: all 0.3s ease;
+}
+
+:deep(.el-input .el-input__inner) {
+  color: #333333 !important;
+  background-color: white !important;
+  font-weight: 500 !important;
+  font-size: 15px !important;
+}
+
+:deep(.el-form .el-input .el-input__wrapper:hover) {
+  border-color: rgba(74, 144, 226, 0.5) !important;
+  background-color: white !important;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08) !important;
+}
+
+:deep(.el-form .el-input .el-input__wrapper:focus-within) {
+  border-color: var(--primary-color) !important;
+  background-color: white !important;
+  box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2) !important;
+}
+
+/* 图标颜色 */
+:deep(.el-input__prefix-inner svg) {
+  color: var(--primary-color);
+}
+
+/* 表单标签样式 */
+:deep(.el-form-item__label) {
+  padding-bottom: 8px;
+  font-size: 15px;
+  color: #333333 !important;
+  font-weight: 600;
+}
+
+/* 复选框样式 */
+:deep(.el-checkbox__inner) {
+  background-color: white !important;
+  border-color: var(--primary-color) !important;
+}
+
+:deep(.el-checkbox__input.is-checked .el-checkbox__inner) {
+  background-color: var(--primary-color) !important;
+}
+
+:deep(.el-checkbox__label) {
+  color: var(--text-color) !important;
+}
+
+/* 链接颜色 */
+:deep(.el-link) {
+  color: var(--primary-color) !important;
+}
+
+:deep(.el-link:hover) {
+  color: var(--accent-color) !important;
+}
+
+.background-elements {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.circle {
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0.6;
+}
+
+.circle-1 {
+  width: 300px;
+  height: 300px;
+  background: linear-gradient(45deg, #4A90E2, #56CCF2);
+  top: -100px;
+  right: -50px;
+  filter: blur(30px);
+}
+
+.circle-2 {
+  width: 200px;
+  height: 200px;
+  background: linear-gradient(45deg, #F5A623, #F8E71C);
+  bottom: -50px;
+  left: -60px;
+  filter: blur(25px);
+}
+
+.circle-3 {
+  width: 150px;
+  height: 150px;
+  background: linear-gradient(45deg, #4CD964, #B8E986);
+  top: 60%;
+  right: 10%;
+  filter: blur(20px);
 }
 
 .logo {
   width: 80px;
   height: 80px;
-  margin-bottom: 16px;
-  filter: drop-shadow(0 0 8px rgba(147, 51, 234, 0.6));
-  background-color: aliceblue;
-  border-radius: 50%;
-  object-fit: cover;
-  box-shadow: 0 0 0 2px rgba(147, 51, 234, 0.5);
+  object-fit: contain;
+  margin-bottom: 12px;
+  border-radius: 16px;
+  background-color: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  padding: 10px;
 }
 
-.login-header h1 {
-  font-size: 28px;
-  margin: 0 0 8px;
+/* 错误提示样式 */
+:deep(.el-form-item__error) {
+  color: var(--danger-color);
+  font-size: 12px;
+  margin-top: 4px;
 }
 
-.login-header p {
-  font-size: 16px;
-  color: rgba(255, 255, 255, 0.7);
-  margin: 0;
+/* 输入框验证失败状态 */
+:deep(.el-form-item.is-error .el-input__wrapper) {
+  border-color: var(--danger-color) !important;
+  box-shadow: 0 0 0 1px rgba(255, 59, 48, 0.1) !important;
 }
 
 .login-form {
   width: 100%;
-  max-width: 400px;
-  background: rgba(30, 30, 40, 0.6);
-  border-radius: 16px;
-  border: 1px solid rgba(147, 51, 234, 0.2);
-  padding: 30px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
-  position: relative;
-  z-index: 1;
-}
-
-.enhanced-border {
-  position: relative;
-  z-index: 0;
-}
-
-.enhanced-border::before {
-  content: "";
-  position: absolute;
-  z-index: -1;
-  inset: 0;
-  padding: 2px;
-  border-radius: 16px;
-  background: linear-gradient(
-    45deg,
-    rgba(56, 189, 248, 0.6),
-    rgba(147, 51, 234, 0.6)
-  );
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
+  margin-top: 10px;
 }
 
 .login-options {
   display: flex;
   justify-content: space-between;
-  margin: 20px 0;
   align-items: center;
+  margin: 10px 0;
 }
 
 .left-option {
@@ -251,90 +389,11 @@ const goToRegister = () => {
   text-align: right;
 }
 
-.login-button {
-  height: 44px;
-  font-size: 16px;
+/* 按钮容器 */
+.button-container {
+  display: flex;
+  justify-content: center;
   margin-top: 20px;
-  background: linear-gradient(45deg, #8b5cf6, #d946ef);
-  border: none;
-  font-weight: 600;
-  box-shadow: 0 4px 10px rgba(147, 51, 234, 0.4);
-  transition: all 0.3s ease;
-  color: white;
-}
-
-.glow-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 15px rgba(147, 51, 234, 0.6);
-}
-
-.glow-button:active {
-  transform: translateY(1px);
-  box-shadow: 0 2px 5px rgba(147, 51, 234, 0.4);
-}
-
-.register-link {
-  text-align: center;
-  margin-top: 24px;
-}
-
-.register-link span {
-  color: rgba(255, 255, 255, 0.7);
-  margin-right: 8px;
-}
-
-/* 输入框样式调整 */
-:deep(.el-input__wrapper) {
-  background-color: rgba(30, 30, 40, 0.6) !important;
-  border: 1px solid rgba(147, 51, 234, 0.3) !important;
-  box-shadow: none !important;
-  border-radius: 8px !important;
-  height: 44px;
-}
-
-:deep(.el-input__inner) {
-  color: white !important;
-}
-
-:deep(.el-input__wrapper:hover) {
-  border-color: rgba(147, 51, 234, 0.7) !important;
-  background-color: rgba(147, 51, 234, 0.05) !important;
-  box-shadow: 0 0 8px rgba(147, 51, 234, 0.3) !important;
-}
-
-:deep(.el-input__wrapper:focus-within) {
-  border-color: rgba(147, 51, 234, 0.9) !important;
-  background-color: rgba(147, 51, 234, 0.1) !important;
-  box-shadow: 0 0 12px rgba(147, 51, 234, 0.5) !important;
-}
-
-/* 图标颜色 */
-:deep(.el-input__prefix-inner svg) {
-  color: rgba(147, 51, 234, 0.8);
-  filter: drop-shadow(0 0 2px rgba(147, 51, 234, 0.4));
-}
-
-/* 复选框样式 */
-:deep(.el-checkbox__inner) {
-  background-color: rgba(30, 30, 40, 0.6) !important;
-  border-color: rgba(147, 51, 234, 0.5) !important;
-}
-
-:deep(.el-checkbox__input.is-checked .el-checkbox__inner) {
-  background-color: rgba(147, 51, 234, 0.8) !important;
-}
-
-:deep(.el-checkbox__label) {
-  color: rgba(255, 255, 255, 0.8) !important;
-}
-
-/* 链接颜色 */
-:deep(.el-link) {
-  color: rgba(147, 51, 234, 0.9) !important;
-}
-
-:deep(.el-link:hover) {
-  color: rgba(147, 51, 234, 1) !important;
-  text-shadow: 0 0 8px rgba(147, 51, 234, 0.6);
+  width: 100%;
 }
 </style>

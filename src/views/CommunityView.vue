@@ -32,7 +32,7 @@
       </div>
 
       <!-- 悬浮发帖按钮 -->
-      <div class="floating-button" @click="showPostDialog">
+      <div class="floating-button pulse-on-click" @click="showPostDialog">
         <el-icon><Plus /></el-icon>
         <span>发帖</span>
       </div>
@@ -44,7 +44,7 @@
           <div
             v-for="post in leftPosts"
             :key="post.id"
-            class="post-card"
+            class="post-card hover-lift"
             @click="viewPost(post)"
           >
             <!-- 帖子封面图 -->
@@ -62,38 +62,27 @@
             <!-- 帖子内容 -->
             <div class="post-content">
               <h3 class="post-title">{{ post.title }}</h3>
-              <p class="post-text">{{ post.content }}</p>
-              <p class="post-time">{{ formatTime(post.created_at) }}</p>
+              
+              <!-- 帖子文字内容 (仅在没有图片时显示更多文字) -->
+              <p class="post-text" v-if="!post.images?.length">{{ post.content }}</p>
             </div>
 
             <!-- 帖子底部信息 -->
             <div class="post-footer">
               <div class="user-info">
                 <el-avatar
-                  :size="40"
+                  :size="24"
                   :src="post.user?.avatar"
                   @error="() => true"
                   class="user-avatar"
                 >
                   {{ post.user?.username?.charAt(0).toUpperCase() || "?" }}
                 </el-avatar>
-                <span class="username">{{
-                  post.user?.username || "匿名用户"
-                }}</span>
+                <span class="username">{{ post.user?.username || "匿名用户" }}</span>
               </div>
-              <div class="post-stats">
-                <span class="stat-item">
-                  <el-icon><View /></el-icon>
-                  <span>{{ post.views || 0 }}</span>
-                </span>
-                <span class="stat-item">
-                  <el-icon><ChatDotRound /></el-icon>
-                  <span>{{ post.comments_count || 0 }}</span>
-                </span>
-                <span class="stat-item">
-                  <el-icon><Star /></el-icon>
-                  <span>{{ post.likes || 0 }}</span>
-                </span>
+              <div class="like-area">
+                <el-icon class="like-icon"><Star /></el-icon>
+                <span class="like-count">{{ post.likes || 0 }}</span>
               </div>
             </div>
           </div>
@@ -104,7 +93,7 @@
           <div
             v-for="post in rightPosts"
             :key="post.id"
-            class="post-card"
+            class="post-card hover-lift"
             @click="viewPost(post)"
           >
             <!-- 帖子封面图 -->
@@ -122,38 +111,27 @@
             <!-- 帖子内容 -->
             <div class="post-content">
               <h3 class="post-title">{{ post.title }}</h3>
-              <p class="post-text">{{ post.content }}</p>
-              <p class="post-time">{{ formatTime(post.created_at) }}</p>
+              
+              <!-- 帖子文字内容 (仅在没有图片时显示更多文字) -->
+              <p class="post-text" v-if="!post.images?.length">{{ post.content }}</p>
             </div>
 
             <!-- 帖子底部信息 -->
             <div class="post-footer">
               <div class="user-info">
                 <el-avatar
-                  :size="40"
+                  :size="24"
                   :src="post.user?.avatar"
                   @error="() => true"
                   class="user-avatar"
                 >
                   {{ post.user?.username?.charAt(0).toUpperCase() || "?" }}
                 </el-avatar>
-                <span class="username">{{
-                  post.user?.username || "匿名用户"
-                }}</span>
+                <span class="username">{{ post.user?.username || "匿名用户" }}</span>
               </div>
-              <div class="post-stats">
-                <span class="stat-item">
-                  <el-icon><View /></el-icon>
-                  <span>{{ post.views || 0 }}</span>
-                </span>
-                <span class="stat-item">
-                  <el-icon><ChatDotRound /></el-icon>
-                  <span>{{ post.comments_count || 0 }}</span>
-                </span>
-                <span class="stat-item">
-                  <el-icon><Star /></el-icon>
-                  <span>{{ post.likes || 0 }}</span>
-                </span>
+              <div class="like-area">
+                <el-icon class="like-icon"><Star /></el-icon>
+                <span class="like-count">{{ post.likes || 0 }}</span>
               </div>
             </div>
           </div>
@@ -249,7 +227,7 @@
 import { ref, onMounted, computed, nextTick } from "vue";
 import { useRouter } from "vue-router";
 import { ElMessage, ElMessageBox } from "element-plus";
-import { Search, Plus, Picture, View, ChatDotRound, Star } from "@element-plus/icons-vue";
+import { Search, Plus, Picture, View, ChatDotRound, Star, VideoPlay, VideoPause } from "@element-plus/icons-vue";
 import BottomNavBar from "@/components/BottomNavBar.vue";
 import NotificationBadge from "@/components/NotificationBadge.vue";
 import AudioRecorder from "@/components/AudioRecorder.vue";
@@ -343,14 +321,40 @@ const loadPosts = async () => {
     console.log('调试 - 原始帖子数据:', response.posts);
     if (response?.posts && response.posts.length > 0) {
       console.log('调试 - 第一个帖子的用户数据:', response.posts[0].user);
-      console.log('调试 - 第一个帖子的用户头像:', {
-        原始头像: response.posts[0].user?.avatar,
+      console.log('调试 - 第一个帖子的音频数据:', response.posts[0].audio);
+      
+      // 详细调试第一个帖子的音频
+      if (response.posts[0]) {
+        debugPostAudio(response.posts[0]);
+      }
+      
+      // 检查所有帖子的音频数据
+      console.log('所有帖子的音频状态:');
+      response.posts.forEach((post, index) => {
+        console.log(`帖子 ${index+1} (ID:${post.id}): 音频=${!!post.audio}`);
       });
     }
 
-    // 处理帖子数据中的头像和图片路径
+    // 处理帖子数据中的头像、图片和音频路径
     if (response?.posts) {
-      console.log('原始帖子数据:', response.posts);
+      // 处理音频路径
+      response.posts.forEach(post => {
+        // 修复音频路径
+        if (post.audio && typeof post.audio === 'string') {
+          // 如果音频路径是相对路径，则添加API基础URL
+          if (post.audio.startsWith('/')) {
+            post.audio = API_BASE_URL + post.audio;
+          }
+          // 如果音频路径不是以http开头，也添加API基础URL
+          else if (!post.audio.startsWith('http')) {
+            post.audio = API_BASE_URL + '/' + post.audio;
+          }
+          
+          console.log(`处理后的音频URL: ${post.audio}`);
+        }
+      });
+      
+      console.log('处理后的帖子数据:', response.posts);
       posts.value = response.posts;
     } else {
       posts.value = [];
@@ -445,6 +449,84 @@ const handleBeforeUpload = (file) => {
   return true;
 };
 
+// 音频播放相关变量和方法
+const currentPlayingAudio = ref(null);
+const audioPlayer = ref(null);
+
+// 播放音频
+const playAudio = (audioUrl) => {
+  if (!audioUrl) {
+    console.warn('尝试播放空的音频URL');
+    ElMessage.warning('无法播放：未找到音频文件');
+    return;
+  }
+  
+  // 如果点击当前正在播放的音频，则暂停播放
+  if (currentPlayingAudio.value === audioUrl && audioPlayer.value) {
+    audioPlayer.value.pause();
+    audioPlayer.value.currentTime = 0;
+    currentPlayingAudio.value = null;
+    return;
+  }
+  
+  // 如果有正在播放的其他音频，暂停它
+  if (currentPlayingAudio.value && audioPlayer.value) {
+    audioPlayer.value.pause();
+    audioPlayer.value.currentTime = 0;
+  }
+  
+  // 创建新的音频播放器
+  const completeAudioUrl = audioUrl;
+  console.log('准备播放音频:', completeAudioUrl);
+  
+  audioPlayer.value = new Audio(completeAudioUrl);
+  currentPlayingAudio.value = audioUrl;
+  
+  // 播放完成后重置
+  audioPlayer.value.onended = () => {
+    currentPlayingAudio.value = null;
+  };
+  
+  // 播放出错处理
+  audioPlayer.value.onerror = (e) => {
+    console.error('音频播放出错:', e);
+    ElMessage.error('音频播放出错');
+    currentPlayingAudio.value = null;
+  };
+  
+  // 开始播放
+  audioPlayer.value.play().catch(error => {
+    console.error('音频播放失败:', error);
+    ElMessage.error('音频播放失败');
+    currentPlayingAudio.value = null;
+  });
+};
+
+// 调试帖子中的音频数据
+const debugPostAudio = (post) => {
+  console.log('帖子ID:', post.id, '标题:', post.title);
+  console.log('音频数据:', post.audio);
+  console.log('音频数据类型:', typeof post.audio);
+  console.log('音频数据是否为空:', !post.audio);
+  console.log('音频数据是否为字符串:', typeof post.audio === 'string');
+  console.log('音频数据长度:', post.audio ? post.audio.length : 0);
+  
+  // 如果是字符串，检查是否为有效URL
+  if (typeof post.audio === 'string' && post.audio) {
+    try {
+      const url = new URL(post.audio);
+      console.log('有效的URL格式');
+    } catch (e) {
+      console.log('非有效URL格式:', e.message);
+      // 检查是否为相对路径
+      if (post.audio.startsWith('/')) {
+        console.log('是相对路径，尝试构建完整URL:', API_BASE_URL + post.audio);
+      }
+    }
+  }
+};
+
+// 初始化时移除通知相关代码
 onMounted(() => {
   console.log("当前用户头像URL:", authStore.user?.avatar);
   loadPosts();
@@ -472,34 +554,32 @@ onMounted(() => {
 
 <style scoped>
 .page-container {
-  height: 100vh;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  background: var(--bg-color);
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f8f9fa, #f1f3f5);
+  padding-bottom: 70px; /* 为底部导航栏留出空间 */
 }
 
 .community-page {
-  flex: 1;
-  background: var(--bg-color);
-  padding-bottom: 76px;
-  width: 100%;
-  max-width: 768px;
-  margin: 0 auto;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
+  position: relative;
+  padding-top: 56px;
 }
 
+/* 顶部搜索栏 */
 .page-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 56px;
+  background-color: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
   display: flex;
   align-items: center;
-  padding: 16px;
-  background: var(--card-bg);
-  position: sticky;
-  top: 0;
+  padding: 0 16px;
   z-index: 20;
   width: 100%;
   box-sizing: border-box;
+  backdrop-filter: blur(10px);
 }
 
 .search-bar {
@@ -513,46 +593,51 @@ onMounted(() => {
 
 .notification-container {
   margin-left: 12px;
+  position: relative;
+  z-index: 9950;
 }
 
+/* 排序选项卡 */
 .sort-tabs {
   display: flex;
   justify-content: space-between;
   padding: 12px 16px;
-  background-color: var(--bg-color);
-  margin-bottom: 8px;
+  background-color: rgba(255, 255, 255, 0.95);
+  margin-bottom: 12px;
   position: sticky;
   top: 56px;
   z-index: 10;
+  backdrop-filter: blur(5px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
 }
 
 .tab-item {
   font-size: 14px;
-  color: var(--el-text-color-regular);
+  color: #666;
   cursor: pointer;
   position: relative;
-  padding: 0 4px;
+  padding: 6px 12px;
+  border-radius: 14px;
+  transition: all 0.3s ease;
 }
 
 .tab-item.active {
-  color: var(--el-color-primary);
-  font-weight: 500;
+  color: #111;
+  font-weight: 600;
+  background-color: rgba(51, 51, 51, 0.08);
 }
 
-.tab-item.active::after {
-  content: "";
-  position: absolute;
-  bottom: -12px;
-  left: 0;
-  width: 100%;
-  height: 2px;
-  background: var(--el-color-primary);
+.tab-item:hover:not(.active) {
+  color: #111;
+  background-color: rgba(51, 51, 51, 0.05);
 }
 
+/* 帖子列表 */
 .post-list {
-  padding: 8px;
+  padding: 12px;
   display: flex;
-  gap: 6px;
+  gap: 12px;
   width: 100%;
   box-sizing: border-box;
 }
@@ -561,30 +646,29 @@ onMounted(() => {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 16px;
   min-width: 0;
 }
 
 .post-card {
-  background: var(--card-bg);
-  border-radius: 8px;
+  background-color: rgba(255, 255, 255, 0.98);
+  border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s ease;
+  border: none;
   cursor: pointer;
-  transition: transform 0.3s;
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  min-width: 0;
+  margin-bottom: 12px;
 }
 
-.post-card:active {
-  transform: scale(0.97);
+.post-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
 }
 
 .post-cover {
   position: relative;
-  padding-bottom: 100%; /* 1:1 比例，或者保持 133.33% 看效果 */
+  padding-bottom: 56.25%; /* 16:9 比例 */
   overflow: hidden;
 }
 
@@ -594,37 +678,39 @@ onMounted(() => {
   left: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover; /* 或者 contain，取决于你的需求 */
-  background-color: var(--border-color); /* 图片加载前的背景色 */
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.post-card:hover .post-cover img {
+  transform: scale(1.03);
 }
 
 .image-count {
   position: absolute;
+  bottom: 8px;
   right: 8px;
-  top: 8px;
-  background: rgba(0, 0, 0, 0.5);
-  color: #fff;
+  background-color: rgba(0, 0, 0, 0.5);
+  color: white;
   padding: 2px 6px;
-  border-radius: 12px;
-  font-size: 12px;
+  border-radius: 10px;
+  font-size: 11px;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
 }
 
+/* 帖子内容 */
 .post-content {
-  padding: 8px;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+  padding: 12px;
+  position: relative;
 }
 
 .post-title {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 500;
-  color: var(--text-color);
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0 0 6px;
+  color: #333;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -633,70 +719,123 @@ onMounted(() => {
 }
 
 .post-text {
-  margin: 0;
-  font-size: 12px;
-  color: var(--placeholder-color);
+  font-size: 13px;
+  color: #555;
+  margin: 0 0 8px;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  line-height: 1.5;
+  line-height: 1.4;
 }
 
-.post-time {
-  margin: 4px 0 0;
-  font-size: 12px;
-  color: var(--placeholder-color);
-  margin-top: auto;
-  text-align: right;
-}
-
+/* 帖子底部 */
 .post-footer {
-  padding: 6px 8px;
-  border-top: 1px solid var(--border-color);
   display: flex;
-  align-items: center;
   justify-content: space-between;
+  align-items: center;
+  padding: 6px 10px;
+  border-top: 1px solid rgba(0, 0, 0, 0.04);
+  background-color: rgba(248, 249, 250, 0.7);
 }
 
 .user-info {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
 }
 
-:deep(.el-avatar) {
-  border: 1px solid var(--border-color);
-  width: 20px !important;
-  height: 20px !important;
+.user-avatar {
+  border: 1px solid white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  width: 24px;
+  height: 24px;
 }
 
 .username {
-  font-size: 12px;
-  color: var(--placeholder-color);
-  max-width: 80px;
+  font-size: 11px;
+  color: #444;
+  font-weight: 500;
+  max-width: 100px;
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
-.post-stats {
+.like-area {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 0;
+  background-color: rgba(240, 240, 240, 0.7);
+  padding: 2px 6px 2px 4px;
+  border-radius: 12px;
+  margin-right: 6px;
+  position: relative;
 }
 
-.stat-item {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  color: var(--placeholder-color);
-  font-size: 11px;
-  min-width: 32px;
-}
-
-.stat-item .el-icon {
+.like-icon {
+  color: #333;
   font-size: 14px;
+  margin-right: 2px;
+}
+
+.like-count {
+  font-size: 13px;
+  color: #111;
+  font-weight: 600;
+  line-height: 1;
+  min-width: 8px;
+  text-align: left;
+  position: relative;
+  left: -1px;
+}
+
+/* 悬浮发帖按钮 */
+.floating-button {
+  position: fixed;
+  bottom: 80px;
+  right: 16px;
+  width: auto;
+  height: 48px;
+  padding: 0 20px;
+  border-radius: 24px;
+  background: linear-gradient(135deg, #222, #444);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  z-index: 10;
+  font-weight: 500;
+}
+
+.floating-button:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+}
+
+.floating-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.pulse-on-click:active {
+  animation: pulse 0.3s ease-in-out;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(0.95);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 .empty-state {
@@ -714,46 +853,40 @@ onMounted(() => {
   height: 80px;
 }
 
-.floating-button {
-  position: fixed;
-  right: 20px;
-  bottom: 90px;
-  width: auto;
-  height: 40px;
-  padding: 0 20px;
-  background: var(--el-color-primary);
-  color: white;
-  border-radius: 20px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
-  cursor: pointer;
-  transition: all 0.3s;
-  z-index: 10;
-}
-
-.floating-button:active {
-  transform: scale(0.95);
-}
-
-.floating-button .el-icon {
-  font-size: 20px;
-}
-
-.floating-button span {
-  font-size: 14px;
-}
-
-:deep(.el-input__wrapper) {
-  border-radius: 20px;
-  background-color: var(--el-fill-color-blank);
-}
-
 .el-upload__tip {
   font-size: 12px;
   color: var(--placeholder-color);
   margin-top: 8px;
+}
+
+.post-meta {
+  display: flex;
+  align-items: center;
+  color: #666;
+  font-size: 12px;
+  gap: 8px;
+}
+
+.post-actions {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-color);
+}
+
+.action-button {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #555;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.action-button:hover {
+  color: #333;
 }
 
 @media screen and (max-width: 480px) {
@@ -766,11 +899,13 @@ onMounted(() => {
   }
 
   .post-title {
-    font-size: 14px;
+    font-size: 15px;
+    font-weight: 600;
   }
 
   .post-text {
-    font-size: 12px;
+    font-size: 13px;
+    line-height: 1.4;
   }
 }
 
@@ -795,5 +930,23 @@ onMounted(() => {
   .post-text {
     font-size: 14px;
   }
+}
+
+/* 全局顶部通知栏样式 */
+.global-notification {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: auto;
+  background-color: #333;
+  color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  z-index: 9999; /* 确保最高层级 */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  box-sizing: border-box;
 }
 </style>

@@ -45,19 +45,9 @@
                 post.user?.username || "匿名用户"
               }}</span>
             </div>
-            <div class="post-stats">
-              <span class="stat-item">
-                <el-icon><View /></el-icon>
-                <span>{{ post.views || 0 }}</span>
-              </span>
-              <span class="stat-item">
-                <el-icon><ChatDotRound /></el-icon>
-                <span>{{ post.comments_count || 0 }}</span>
-              </span>
-              <span class="stat-item">
-                <el-icon><Star /></el-icon>
-                <span>{{ post.likes || 0 }}</span>
-              </span>
+            <div class="like-area">
+              <el-icon class="like-icon"><Star /></el-icon>
+              <span class="like-count">{{ post.likes || 0 }}</span>
             </div>
           </div>
         </div>
@@ -153,7 +143,7 @@ onMounted(() => {
 <style scoped>
 .page-container {
   min-height: 100vh;
-  background: #f6f7f9;
+  background: linear-gradient(135deg, #f8f9fa, #f1f3f5);
   text-align: left;
   position: absolute;
   top: 0;
@@ -165,7 +155,7 @@ onMounted(() => {
 }
 
 .my-likes-page {
-  padding-bottom: 76px;
+  padding-bottom: 0;
   position: relative;
   min-height: 100vh;
 }
@@ -176,24 +166,25 @@ onMounted(() => {
   top: 0;
   z-index: 10;
   background: #fff;
-  height: 44px;
+  height: 48px;
   display: flex;
   align-items: center;
   padding: 0 16px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 }
 
 .back-icon {
   font-size: 20px;
-  color: #333;
+  color: #2c3e50;
   padding: 4px;
   margin-right: 8px;
+  cursor: pointer;
 }
 
 .page-header h2 {
-  font-size: 17px;
+  font-size: 18px;
   font-weight: 600;
-  color: #333;
+  color: #2c3e50;
   flex: 1;
   text-align: center;
   margin: 0;
@@ -201,22 +192,29 @@ onMounted(() => {
 
 /* 帖子列表 */
 .post-list {
-  padding: 12px;
+  padding: 16px;
+  padding-bottom: 70px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
 }
 
 /* 帖子卡片 */
 .post-card {
   background: #fff;
-  border-radius: 12px;
+  border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
   display: flex;
   flex-direction: column;
-  transition: transform 0.2s;
+  transition: all 0.3s ease;
   cursor: pointer;
+  border: none;
+}
+
+.post-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
 }
 
 .post-card:active {
@@ -226,8 +224,9 @@ onMounted(() => {
 /* 帖子封面 */
 .post-cover {
   position: relative;
-  padding-top: 56.25%; /* 16:9 比例 */
+  padding-top: 60%;
   background: #f5f5f5;
+  overflow: hidden;
 }
 
 .post-cover img {
@@ -237,20 +236,26 @@ onMounted(() => {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.post-card:hover .post-cover img {
+  transform: scale(1.08);
 }
 
 .image-count {
   position: absolute;
-  right: 8px;
-  top: 8px;
-  background: rgba(0, 0, 0, 0.6);
+  right: 12px;
+  top: 12px;
+  background: rgba(0, 0, 0, 0.5);
   color: #fff;
   font-size: 12px;
-  padding: 4px 8px;
-  border-radius: 12px;
+  padding: 4px 10px;
+  border-radius: 14px;
   display: flex;
   align-items: center;
   gap: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 /* 帖子内容 */
@@ -262,7 +267,7 @@ onMounted(() => {
 .post-title {
   font-size: 16px;
   font-weight: 600;
-  color: #333;
+  color: #2c3e50;
   margin: 0;
   line-height: 1.4;
   display: -webkit-box;
@@ -272,8 +277,8 @@ onMounted(() => {
 }
 
 .post-text {
-  font-size: 13px;
-  color: #666;
+  font-size: 14px;
+  color: #34495e;
   margin: 8px 0;
   line-height: 1.5;
   display: -webkit-box;
@@ -284,7 +289,7 @@ onMounted(() => {
 
 .post-time {
   font-size: 12px;
-  color: #999;
+  color: #95a5a6;
   margin-top: 8px;
   text-align: right;
 }
@@ -292,131 +297,144 @@ onMounted(() => {
 /* 帖子底部 */
 .post-footer {
   padding: 12px 16px;
-  border-top: 1px solid #f0f2f5;
+  border-top: 1px solid rgba(236, 240, 241, 0.8);
   display: flex;
   justify-content: space-between;
   align-items: center;
+  background-color: rgba(248, 249, 250, 0.5);
 }
 
 .user-info {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
 .user-avatar {
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  border: 2px solid #fff;
 }
 
 .username {
   font-size: 13px;
-  color: #666;
+  color: #2c3e50;
+  font-weight: 500;
+  max-width: 130px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.post-stats {
-  display: flex;
-  gap: 16px;
-}
-
-.stat-item {
+.like-area {
   display: flex;
   align-items: center;
-  gap: 4px;
-  color: #666;
-  font-size: 12px;
-  min-width: 48px;
+  gap: 2px;
+  background-color: rgba(240, 240, 240, 0.8);
+  padding: 4px 10px 4px 8px;
+  border-radius: 16px;
+  position: relative;
+  transition: all 0.2s ease;
 }
 
-.stat-item .el-icon {
-  font-size: 16px;
-  color: #999;
+.like-area:hover {
+  background-color: rgba(236, 240, 241, 0.9);
+}
+
+.like-icon {
+  color: #e74c3c;
+  font-size: 14px;
+  margin-right: 3px;
+}
+
+.like-count {
+  font-size: 13px;
+  color: #2c3e50;
+  font-weight: 600;
+  line-height: 1;
+  min-width: 8px;
+  text-align: left;
 }
 
 /* 空状态 */
 .empty-state {
-  padding: 40px 16px;
+  padding: 60px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #7f8c8d;
+  min-height: 200px;
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 20px;
+  margin: 16px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.05);
   text-align: center;
-  color: #999;
-}
-
-/* 响应式设计 */
-@media screen and (min-width: 768px) {
-  .page-container {
-    position: relative;
-    height: auto;
-  }
-
-  .my-likes-page {
-    max-width: 768px;
-    margin: 0 auto;
-    position: relative;
-    height: auto;
-    min-height: 100vh;
-  }
-
-  .post-list {
-    padding: 16px;
-    gap: 16px;
-  }
-
-  .post-content {
-    padding: 20px;
-  }
-
-  .post-title {
-    font-size: 18px;
-  }
-
-  .post-text {
-    font-size: 14px;
-    margin: 12px 0;
-  }
-
-  .post-footer {
-    padding: 16px 20px;
-  }
 }
 
 /* 暗色模式适配 */
 @media (prefers-color-scheme: dark) {
   .page-container {
-    background: #1a1a1a;
+    background: linear-gradient(135deg, #1a1a1a, #2c3e50);
   }
 
   .page-header {
-    background: #242424;
+    background: #2c3e50;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
   }
 
   .page-header h2 {
-    color: #fff;
+    color: #ecf0f1;
   }
 
   .back-icon {
-    color: #fff;
+    color: #ecf0f1;
   }
 
   .post-card {
-    background: #242424;
+    background: #34495e;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
   }
 
   .post-title {
-    color: #fff;
+    color: #ecf0f1;
   }
 
   .post-text {
-    color: #999;
+    color: #bdc3c7;
   }
 
   .post-footer {
-    border-top-color: #333;
+    border-top-color: rgba(52, 73, 94, 0.5);
+    background-color: rgba(44, 62, 80, 0.8);
   }
 
-  .stat-item {
-    color: #999;
+  .like-area {
+    background-color: rgba(41, 128, 185, 0.3);
+  }
+
+  .like-count {
+    color: #ecf0f1;
+  }
+  
+  .like-area:hover {
+    background-color: rgba(41, 128, 185, 0.4);
+  }
+  
+  .username {
+    color: #ecf0f1;
+  }
+  
+  .post-time {
+    color: #bdc3c7;
+  }
+  
+  .empty-state {
+    background-color: rgba(52, 73, 94, 0.8);
+    color: #ecf0f1;
   }
 }
 </style>

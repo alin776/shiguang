@@ -13,7 +13,7 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background: #121212;
+  background: linear-gradient(135deg, #e6f2ff, #f0f9ff);
   z-index: -10;
   overflow: hidden;
   pointer-events: none;
@@ -27,22 +27,22 @@
   height: 100%;
   background-image: radial-gradient(
       circle at 80% 10%,
-      rgba(147, 51, 234, 0.15) 0%,
+      rgba(74, 144, 226, 0.1) 0%,
       transparent 25%
     ),
     radial-gradient(
       circle at 20% 30%,
-      rgba(56, 189, 248, 0.15) 0%,
+      rgba(86, 204, 242, 0.1) 0%,
       transparent 20%
     ),
     radial-gradient(
       circle at 30% 70%,
-      rgba(236, 72, 153, 0.15) 0%,
+      rgba(74, 144, 226, 0.1) 0%,
       transparent 30%
     ),
     radial-gradient(
       circle at 70% 80%,
-      rgba(56, 189, 248, 0.15) 0%,
+      rgba(86, 204, 242, 0.1) 0%,
       transparent 25%
     );
   opacity: 0.7;
@@ -56,37 +56,37 @@
   height: 100%;
   background-image: radial-gradient(
       1px 1px at 20px 30px,
-      rgba(255, 255, 255, 0.9) 50%,
+      rgba(74, 144, 226, 0.5) 50%,
       transparent
     ),
     radial-gradient(
       1px 1px at 40px 70px,
-      rgba(255, 255, 255, 0.8) 50%,
+      rgba(86, 204, 242, 0.4) 50%,
       transparent
     ),
     radial-gradient(
       1px 1px at 50px 160px,
-      rgba(255, 255, 255, 0.7) 50%,
+      rgba(74, 144, 226, 0.5) 50%,
       transparent
     ),
     radial-gradient(
       1px 1px at 90px 40px,
-      rgba(255, 255, 255, 0.9) 50%,
+      rgba(86, 204, 242, 0.4) 50%,
       transparent
     ),
     radial-gradient(
       1px 1px at 130px 80px,
-      rgba(255, 255, 255, 0.8) 50%,
+      rgba(74, 144, 226, 0.5) 50%,
       transparent
     ),
     radial-gradient(
       1px 1px at 160px 120px,
-      rgba(255, 255, 255, 0.9) 50%,
+      rgba(86, 204, 242, 0.4) 50%,
       transparent
     );
   background-repeat: repeat;
   background-size: 200px 200px;
-  opacity: 0.3;
+  opacity: 0.4;
   animation: twinkle 5s infinite ease-in-out alternate;
 }
 
@@ -109,6 +109,9 @@
   height: 100%;
   top: 0;
   left: 0;
+  --particle-color-1: rgba(74, 144, 226, 0.4);
+  --particle-color-2: rgba(86, 204, 242, 0.4);
+  --particle-color-3: rgba(74, 144, 226, 0.2);
   background-image: radial-gradient(
       circle at 10% 10%,
       var(--particle-color-1) 0%,
@@ -212,10 +215,10 @@
 @keyframes twinkle {
   0%,
   100% {
-    opacity: 0.3;
+    opacity: 0.2;
   }
   50% {
-    opacity: 0.5;
+    opacity: 0.4;
   }
 }
 

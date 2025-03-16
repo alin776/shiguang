@@ -73,13 +73,14 @@ export const useNotificationStore = defineStore("notification", {
       }
     },
 
+    // 删除通知
     async deleteNotification(notificationId) {
       try {
-        const token = localStorage.getItem("token");
+        const authStore = useAuthStore();
         await axios.delete(
           `${API_BASE_URL}/api/notifications/${notificationId}`,
           {
-            headers: { Authorization: `Bearer ${token}` },
+            headers: { Authorization: `Bearer ${authStore.token}` },
           }
         );
         this.notifications = this.notifications.filter(

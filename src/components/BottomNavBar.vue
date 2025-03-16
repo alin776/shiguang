@@ -34,6 +34,12 @@ const route = useRoute();
 
 const navItems = [
   {
+    path: "/note",
+    label: "小记",
+    icon: "/icons/note.svg",
+    activeIcon: "/icons/note-active.svg",
+  },
+  {
     path: "/calendar",
     label: "日程",
     icon: "/icons/calendar.svg",
@@ -53,7 +59,20 @@ const navItems = [
   },
 ];
 
-const currentRoute = computed(() => route.path);
+const currentRoute = computed(() => {
+  // 处理路由匹配逻辑，确保子路由也能正确高亮对应的底部导航项
+  const path = route.path;
+  if (path.startsWith('/calendar/')) {
+    return '/calendar';
+  } else if (path.startsWith('/community/')) {
+    return '/community';
+  } else if (path.startsWith('/profile/')) {
+    return '/profile';
+  } else if (path.startsWith('/note/')) {
+    return '/note';
+  }
+  return path;
+});
 
 const navigate = (path) => {
   if (route.path === path) return;
@@ -68,7 +87,7 @@ const navigate = (path) => {
   left: 0;
   right: 0;
   height: 60px;
-  background: #1E1E1E;
+  background: #ffffff;
   display: flex;
   justify-content: space-around;
   align-items: center;
@@ -77,6 +96,8 @@ const navigate = (path) => {
   margin: 0 auto;
   border-radius: 20px 20px 0 0;
   padding: 0 10px;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+  border-top: 1px solid #f5f5f5;
 }
 
 .nav-item {
@@ -87,7 +108,7 @@ const navigate = (path) => {
   gap: 4px;
   padding: 6px 0;
   min-width: 70px;
-  color: #909399;
+  color: #a0a0a0;
   font-size: 12px;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -105,19 +126,20 @@ const navigate = (path) => {
 }
 
 .icon-container.active {
-  background-color: #6C5CE7;
+  background-color: #ff9f43;
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(108, 92, 231, 0.3);
+  box-shadow: 0 4px 8px rgba(255, 159, 67, 0.3);
 }
 
 .nav-item.active {
-  color: #FFFFFF;
+  color: #ff9f43;
   transform: scale(1.05);
+  font-weight: 500;
 }
 
 .nav-item:not(.active) {
-  color: #909399;
-  opacity: 0.7;
+  color: #a0a0a0;
+  opacity: 0.8;
 }
 
 .nav-icon {

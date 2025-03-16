@@ -14,6 +14,13 @@
             <el-icon><Edit /></el-icon>
             <span>编辑资料</span>
           </div>
+          <div
+            class="action-btn submit-note-btn"
+            @click="router.push('/note/submit')"
+          >
+            <el-icon><EditPen /></el-icon>
+            <span>小记投稿</span>
+          </div>
         </div>
         <div class="user-basic-info">
           <el-avatar :size="64" :src="userAvatar" @error="() => true">
@@ -115,10 +122,20 @@
               </div>
             </div>
             <div class="post-footer">
-              <div class="post-time">{{ formatTime(post.created_at) }}</div>
-              <div class="likes-count">
-                <el-icon><Star /></el-icon>
-                <span>{{ post.likes_count || post.likesCount || 0 }}</span>
+              <div class="user-info">
+                <el-avatar
+                  :size="24"
+                  :src="post.user?.avatar"
+                  @error="() => true"
+                  class="user-avatar"
+                >
+                  {{ post.user?.username?.charAt(0) || "?" }}
+                </el-avatar>
+                <span class="username">{{ post.user?.username || "匿名用户" }}</span>
+              </div>
+              <div class="like-area">
+                <el-icon class="like-icon"><Star /></el-icon>
+                <span class="like-count">{{ post.likes_count || post.likesCount || 0 }}</span>
               </div>
             </div>
           </div>
@@ -165,10 +182,20 @@
               </div>
             </div>
             <div class="post-footer">
-              <div class="post-time">{{ formatTime(post.created_at) }}</div>
-              <div class="likes-count">
-                <el-icon><Star /></el-icon>
-                <span>{{ post.likes_count || post.likesCount || 0 }}</span>
+              <div class="user-info">
+                <el-avatar
+                  :size="24"
+                  :src="post.user?.avatar"
+                  @error="() => true"
+                  class="user-avatar"
+                >
+                  {{ post.user?.username?.charAt(0) || "?" }}
+                </el-avatar>
+                <span class="username">{{ post.user?.username || "匿名用户" }}</span>
+              </div>
+              <div class="like-area">
+                <el-icon class="like-icon"><Star /></el-icon>
+                <span class="like-count">{{ post.likes_count || post.likesCount || 0 }}</span>
               </div>
             </div>
           </div>
@@ -201,6 +228,7 @@ import {
   Edit,
   Picture,
   Collection,
+  EditPen,
 } from "@element-plus/icons-vue";
 import BottomNavBar from "../components/BottomNavBar.vue";
 import useProfileLogic from "../mine/js/profile.js";
@@ -229,3 +257,25 @@ const {
   router,
 } = useProfileLogic();
 </script>
+
+<style scoped>
+.action-btn.submit-note-btn {
+  background-color: #e74c3c;
+  color: white;
+}
+
+.action-btn.submit-note-btn:hover {
+  background-color: #c0392b;
+}
+
+@media (prefers-color-scheme: dark) {
+  .action-btn.submit-note-btn {
+    background-color: #e74c3c;
+    color: #ecf0f1;
+  }
+  
+  .action-btn.submit-note-btn:hover {
+    background-color: #c0392b;
+  }
+}
+</style>

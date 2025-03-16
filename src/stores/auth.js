@@ -25,7 +25,7 @@ export const useAuthStore = defineStore("auth", {
       token: localStorage.getItem("token") || null,
       user: storedUser,
       autoLogin: localStorage.getItem("autoLogin") === "true",
-      theme: "dark", // 固定为黑色主题
+      theme: "light", // 使用亮色主题
     };
   },
 
@@ -384,22 +384,28 @@ export const useAuthStore = defineStore("auth", {
     },
 
     initializeTheme() {
-      this.theme = "dark"; // 始终使用黑色主题
-      localStorage.setItem("theme", "dark"); // 保存设置到本地存储
-      this.applyTheme("dark");
+      // 从本地存储加载主题设置，默认为亮色主题
+      const savedTheme = localStorage.getItem("theme") || "light";
+      this.theme = savedTheme;
+      localStorage.setItem("theme", savedTheme);
+      this.applyTheme(savedTheme);
     },
 
     setTheme(newTheme) {
-      // 无论传入什么主题，都设置为dark
-      this.theme = "dark";
-      localStorage.setItem("theme", "dark");
-      this.applyTheme("dark");
+      // 设置新主题
+      this.theme = newTheme;
+      localStorage.setItem("theme", newTheme);
+      this.applyTheme(newTheme);
     },
 
     applyTheme(theme) {
-      // 忽略传入的主题参数，始终应用dark
-      document.documentElement.setAttribute("data-theme", "dark");
-      document.documentElement.classList.add("dark");
+      // 应用主题
+      document.documentElement.setAttribute("data-theme", theme);
+      if (theme === "dark") {
+        document.documentElement.classList.add("dark");
+      } else {
+        document.documentElement.classList.remove("dark");
+      }
     },
 
     checkSavedLogin() {

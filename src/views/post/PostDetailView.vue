@@ -319,22 +319,93 @@ onMounted(() => {
 <style scoped>
 .post-detail-page {
   min-height: 100vh;
-  background: var(--bg-color);
+  background: linear-gradient(135deg, #f0f7ff, #e6f2ff);
   display: flex;
   flex-direction: column;
   position: relative;
+  padding-bottom: 70px;
 }
 
 @media (min-width: 768px) {
   .post-detail-page {
     max-width: 768px;
     margin: 0 auto;
+    background: transparent;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+    border-radius: 20px;
+    overflow: hidden;
+    margin-top: 20px;
+    margin-bottom: 20px;
   }
 }
 
 .loading-container {
-  padding: 16px;
-  background-color: var(--card-bg);
+  padding: 20px;
+  background-color: rgba(255, 255, 255, 0.9);
   margin-top: 60px;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  backdrop-filter: blur(5px);
+}
+
+/* 对话框样式覆盖 */
+:deep(.el-dialog) {
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+}
+
+:deep(.el-dialog__header) {
+  padding: 20px;
+  background-color: rgba(74, 144, 226, 0.05);
+  margin-right: 0;
+}
+
+:deep(.el-dialog__title) {
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+:deep(.el-dialog__body) {
+  padding: 30px 20px;
+  color: var(--text-color);
+  font-size: 16px;
+}
+
+:deep(.el-dialog__footer) {
+  padding: 16px 20px;
+  background-color: rgba(250, 250, 250, 0.8);
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  width: 100%;
+}
+
+:deep(.el-button) {
+  border-radius: 20px;
+  padding: 8px 20px;
+  transition: all 0.3s ease;
+}
+
+:deep(.el-button:not(.el-button--danger):hover) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+:deep(.el-button--danger) {
+  background-color: #ff4d4f;
+  border-color: #ff4d4f;
+  color: white;
+}
+
+:deep(.el-button--danger:hover) {
+  background-color: #ff7875;
+  border-color: #ff7875;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 77, 79, 0.2);
 }
 </style>

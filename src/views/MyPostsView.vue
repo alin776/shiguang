@@ -42,19 +42,9 @@
                 post.user?.username || "匿名用户"
               }}</span>
             </div>
-            <div class="post-stats">
-              <span class="stat-item">
-                <el-icon><View /></el-icon>
-                <span>{{ post.views || 0 }}</span>
-              </span>
-              <span class="stat-item">
-                <el-icon><ChatDotRound /></el-icon>
-                <span>{{ post.comments_count || 0 }}</span>
-              </span>
-              <span class="stat-item">
-                <el-icon><Star /></el-icon>
-                <span>{{ post.likes || 0 }}</span>
-              </span>
+            <div class="like-area">
+              <el-icon class="like-icon"><Star /></el-icon>
+              <span class="like-count">{{ post.likes || 0 }}</span>
             </div>
           </div>
         </div>
@@ -144,13 +134,13 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   text-align: left;
+  background: linear-gradient(135deg, #f8f9fa, #f1f3f5);
 }
 
 .my-posts-page {
   flex: 1;
   min-height: 100vh;
-  background: #f5f7fa;
-  padding-bottom: 76px;
+  padding-bottom: 0;
   margin: 0 auto;
   overflow-y: auto;
   width: 100%;
@@ -166,24 +156,28 @@ onMounted(() => {
   top: 0;
   z-index: 10;
   width: 100%;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 }
 
 .page-header h2 {
   margin: 0;
   font-size: 18px;
-  font-weight: 500;
+  font-weight: 600;
   flex: 1;
   text-align: center;
+  color: #2c3e50;
 }
 
 .back-icon {
   font-size: 20px;
-  color: #606266;
+  color: #2c3e50;
   cursor: pointer;
   padding: 4px;
 }
+
 .post-list {
-  padding: 8px;
+  padding: 12px;
+  padding-bottom: 70px;
   display: block;
   width: 100%;
   box-sizing: border-box;
@@ -191,25 +185,31 @@ onMounted(() => {
 
 .post-card {
   background: #fff;
-  border-radius: 8px;
+  border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
   cursor: pointer;
-  transition: transform 0.3s;
+  transition: all 0.3s ease;
   display: flex;
   flex-direction: column;
   width: 100%;
   min-width: 0;
-  margin-bottom: 8px;
+  margin-bottom: 16px;
+  border: none;
+}
+
+.post-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
 }
 
 .post-card:active {
-  transform: scale(0.97);
+  transform: scale(0.98);
 }
 
 .post-cover {
   position: relative;
-  padding-bottom: 100%; /* 1:1 比例 */
+  padding-bottom: 70%; /* 更宽屏的比例 */
   overflow: hidden;
 }
 
@@ -220,35 +220,41 @@ onMounted(() => {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.post-card:hover .post-cover img {
+  transform: scale(1.08);
 }
 
 .image-count {
   position: absolute;
-  right: 8px;
-  top: 8px;
+  right: 12px;
+  top: 12px;
   background: rgba(0, 0, 0, 0.5);
   color: #fff;
-  padding: 2px 6px;
-  border-radius: 12px;
+  padding: 4px 10px;
+  border-radius: 14px;
   font-size: 12px;
   display: flex;
   align-items: center;
   gap: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .post-content {
-  padding: 8px;
+  padding: 16px;
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .post-title {
   margin: 0;
   font-size: 16px;
-  font-weight: 500;
-  color: #303133;
+  font-weight: 600;
+  color: #2c3e50;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -258,8 +264,8 @@ onMounted(() => {
 
 .post-text {
   margin: 0;
-  font-size: 12px;
-  color: #606266;
+  font-size: 14px;
+  color: #34495e;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -270,91 +276,83 @@ onMounted(() => {
 .post-time {
   margin: 4px 0 0;
   font-size: 12px;
-  color: #909399;
+  color: #95a5a6;
   margin-top: auto;
   text-align: right;
 }
 
 .post-footer {
-  padding: 6px 8px;
-  border-top: 1px solid #f0f2f5;
+  padding: 12px 16px;
+  border-top: 1px solid rgba(236, 240, 241, 0.8);
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-}
-
-.post-stats {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.stat-item {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  color: #909399;
-  font-size: 11px;
-  min-width: 32px;
-}
-
-.stat-item .el-icon {
-  font-size: 14px;
-}
-
-@media screen and (max-width: 480px) {
-  .post-list {
-    padding: 6px;
-  }
-
-  .post-content {
-    padding: 6px;
-  }
-
-  .post-title {
-    font-size: 14px;
-  }
-
-  .post-text {
-    font-size: 12px;
-  }
-}
-
-@media screen and (min-width: 481px) {
-  .post-list {
-    padding: 12px;
-  }
-
-  .post-content {
-    padding: 12px;
-  }
-
-  .post-title {
-    font-size: 16px;
-  }
-
-  .post-text {
-    font-size: 14px;
-  }
+  justify-content: space-between;
+  background-color: rgba(248, 249, 250, 0.5);
 }
 
 .user-info {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-right: 16px;
+  gap: 10px;
 }
 
 .user-avatar {
   border-radius: 50%;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  border: 2px solid #fff;
 }
 
 .username {
-  font-size: 12px;
-  color: #606266;
+  font-size: 13px;
+  color: #2c3e50;
+  font-weight: 500;
+  max-width: 130px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.like-area {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background-color: rgba(240, 240, 240, 0.8);
+  padding: 4px 10px 4px 8px;
+  border-radius: 16px;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.like-area:hover {
+  background-color: rgba(236, 240, 241, 0.9);
+}
+
+.like-icon {
+  color: #e74c3c;
+  font-size: 14px;
+  margin-right: 3px;
+}
+
+.like-count {
+  font-size: 13px;
+  color: #2c3e50;
+  font-weight: 600;
+  line-height: 1;
+  min-width: 8px;
+  text-align: left;
 }
 
 .empty-state {
-  padding: 40px 0;
+  padding: 60px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #7f8c8d;
+  min-height: 200px;
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 20px;
+  margin: 16px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.05);
 }
 </style>

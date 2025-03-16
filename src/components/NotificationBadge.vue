@@ -10,7 +10,10 @@
     direction="rtl"
     size="90%"
     :before-close="handleClose"
-    :z-index="3000"
+    :z-index="9999"
+    append-to-body
+    :teleported="true"
+    destroy-on-close
     class="cosmic-drawer"
   >
     <template #header>
@@ -65,13 +68,14 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, defineEmits } from "vue";
 import { useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
 import { Bell } from "@element-plus/icons-vue";
 import { useNotificationStore } from "../stores/notification";
 import dayjs from "dayjs";
 
+const emit = defineEmits(['show-notification']);
 const router = useRouter();
 const notificationStore = useNotificationStore();
 const drawerVisible = ref(false);
@@ -95,6 +99,7 @@ const loadNotifications = async () => {
 const showNotifications = () => {
   drawerVisible.value = true;
   loadNotifications();
+  emit('show-notification');
 };
 
 const handleClose = () => {
@@ -130,9 +135,7 @@ const handleNotificationClick = async (notification) => {
     router.push(`/community/post/${notification.source_id}`);
   } else if (notification.source_type === "comment") {
     // 跳转到评论所在的帖子
-    router.push(
-      `/community/post/${notification.source_id}#comment-${notification.source_id}`
-    );
+    router.push(`/community/post/${notification.source_id}#comment-${notification.source_id}`);
   }
   drawerVisible.value = false;
 };
@@ -143,6 +146,11 @@ const handleAvatarError = (e) => {
 
 onMounted(() => {
   loadNotifications();
+});
+
+defineExpose({
+  markAllAsRead,
+  loadNotifications
 });
 </script>
 
@@ -170,6 +178,7 @@ onMounted(() => {
   background: rgba(18, 18, 30, 0.95);
   border-left: 1px solid rgba(147, 51, 234, 0.3);
   box-shadow: -8px 0 20px rgba(0, 0, 0, 0.5);
+  z-index: 9999 !important;
 }
 
 :deep(.el-drawer__header) {
@@ -177,6 +186,10 @@ onMounted(() => {
   padding: 16px;
   color: white;
   border-bottom: 1px solid rgba(147, 51, 234, 0.3);
+}
+
+:deep(.el-overlay) {
+  z-index: 9998 !important;
 }
 
 .drawer-header {

@@ -79,11 +79,15 @@ defineEmits(["prev-month", "next-month", "select-day"]);
 
 <style scoped>
 .calendar-wrapper {
-  border-radius: var(--border-radius);
+  border-radius: 0;
   overflow: hidden;
   position: relative;
-  margin-bottom: 16px;
-  padding: 12px;
+  margin-bottom: 0;
+  padding: 10px 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  border: none;
 }
 
 .month-nav {
@@ -92,19 +96,62 @@ defineEmits(["prev-month", "next-month", "select-day"]);
   align-items: center;
   margin-bottom: 12px;
   color: var(--text-color);
+  padding: 0 5px;
 }
 
 .month-label {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: white;
-  text-shadow: 0 0 8px rgba(147, 51, 234, 0.7);
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #333;
+  text-shadow: none;
+  letter-spacing: 0;
+  position: relative;
+  padding: 0 8px;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: calc(100% - 80px);
+  text-align: center;
+}
+
+.month-label::after {
+  content: '';
+  position: absolute;
+  bottom: -3px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 30px;
+  height: 2px;
+  background: linear-gradient(90deg, #333, #666);
+  border-radius: 2px;
 }
 
 .nav-button {
-  background: transparent;
+  background: rgba(51, 51, 51, 0.08);
   border: none;
-  color: var(--text-color);
+  color: #333;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  min-height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.nav-button:hover {
+  background: rgba(51, 51, 51, 0.15);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.nav-button:active {
+  transform: translateY(0);
 }
 
 .calendar-grid {
@@ -116,15 +163,18 @@ defineEmits(["prev-month", "next-month", "select-day"]);
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   text-align: center;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
+  padding: 6px 0;
+  background: rgba(51, 51, 51, 0.05);
+  border-radius: 12px;
 }
 
 .weekday {
-  color: var(--text-secondary);
-  font-weight: 500;
+  color: #333;
+  font-weight: 600;
   font-size: 0.9rem;
   padding: 8px 0;
-  text-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+  text-shadow: none;
 }
 
 .days {
@@ -134,38 +184,46 @@ defineEmits(["prev-month", "next-month", "select-day"]);
 }
 
 .day-cell {
-  aspect-ratio: 1;
+  aspect-ratio: 1 / 0.85;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  border-radius: 8px;
+  border-radius: 12px;
   cursor: pointer;
   position: relative;
   padding: 4px;
-  padding-bottom: 15px;
-  transition: all 0.2s ease;
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--text-color);
+  padding-bottom: 16px;
+  transition: all 0.3s ease;
+  background: rgba(255, 255, 255, 0.6);
+  color: #333;
+  border: 1px solid rgba(0, 0, 0, 0.03);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
 }
 
 .day-cell:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.9);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
 }
 
 .day-cell.other-month {
-  opacity: 0.5;
+  opacity: 0.4;
+  background: rgba(240, 240, 240, 0.4);
+  box-shadow: none;
 }
 
 .day-cell.has-events {
-  background: rgba(56, 189, 248, 0.1);
+  background: rgba(51, 51, 51, 0.06);
+  border-color: rgba(51, 51, 51, 0.1);
 }
 
 .day-number {
-  font-weight: 500;
+  font-weight: 600;
   font-size: 0.95rem;
-  margin-bottom: 8px;
-  text-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+  margin-bottom: 4px;
+  text-shadow: none;
+  color: #444;
 }
 
 .day-indicators {
@@ -174,7 +232,7 @@ defineEmits(["prev-month", "next-month", "select-day"]);
   justify-content: center;
   gap: 4px;
   position: absolute;
-  bottom: 5px;
+  bottom: 4px;
   max-width: 90%;
 }
 
@@ -182,42 +240,56 @@ defineEmits(["prev-month", "next-month", "select-day"]);
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background-color: var(--accent-color);
+  background-color: #555;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
 }
 
 .checkin-indicator {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
-  box-shadow: 0 0 5px currentColor;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.2);
   transition: all 0.3s ease;
   opacity: 0.9;
 }
 
 .day-cell:hover .checkin-indicator {
-  transform: scale(1.2);
+  transform: scale(1.3);
   opacity: 1;
 }
 
 .day-cell.today {
-  background: rgba(147, 51, 234, 0.15);
-  color: white;
+  background: rgba(51, 51, 51, 0.08);
+  border: 2px solid #444;
+  color: #333;
   font-weight: bold;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 0 8px rgba(2, 255, 234, 0.635);
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.1);
+}
+
+.day-cell.today .day-number {
+  color: #333;
+  font-weight: 700;
 }
 
 .day-cell.has-checkins {
-  background: rgba(30, 30, 40, 0.2);
-  border: 1px solid rgba(147, 51, 234, 0.15);
+  background: rgba(245, 247, 250, 0.8);
+  border: 1px solid rgba(51, 51, 51, 0.15);
 }
 
 @media (max-width: 480px) {
   .day-cell {
+    aspect-ratio: 1 / 0.8;
     font-size: 0.8rem;
     padding: 2px;
     padding-bottom: 12px;
+    border-radius: 8px;
+  }
+
+  .day-number {
+    font-size: 0.9rem;
+    margin-bottom: 2px;
   }
 
   .day-indicators {
@@ -225,9 +297,34 @@ defineEmits(["prev-month", "next-month", "select-day"]);
     gap: 2px;
   }
 
-  .checkin-indicator {
-    width: 6px;
-    height: 6px;
+  .checkin-indicator, .event-indicator {
+    width: 5px;
+    height: 5px;
+  }
+  
+  .month-label {
+    font-size: 1rem;
+    padding: 0 4px;
+  }
+  
+  .nav-button {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    min-height: 28px;
+  }
+}
+
+@media (max-width: 360px) {
+  .month-label {
+    font-size: 0.9rem;
+  }
+  
+  .nav-button {
+    width: 26px;
+    height: 26px;
+    min-width: 26px;
+    min-height: 26px;
   }
 }
 </style>
