@@ -432,13 +432,51 @@ const debugPostAudio = (post) => {
 // 从localStorage加载用户已点赞的帖子ID
 const loadLikedPosts = () => {
   try {
-    const savedLikes = localStorage.getItem('likedPosts');
+    // 获取当前用户ID，如果未登录则使用访客模式
+    const userId = authStore.user?.id || 'guest';
+    const savedLikes = localStorage.getItem(`likedPosts_${userId}`);
     if (savedLikes) {
       likedPostIds.value = new Set(JSON.parse(savedLikes));
-      console.log('已加载帖子点赞状态:', Array.from(likedPostIds.value));
+      console.log(`已加载用户(${userId})的帖子点赞状态:`, Array.from(likedPostIds.value));
+    } else {
+      // 如果没有找到用户特定的点赞数据，尝试从服务器获取
+      fetchUserLikes();
     }
   } catch (error) {
     console.error('加载点赞状态失败:', error);
+  }
+};
+
+// 从服务器获取用户点赞历史
+const fetchUserLikes = async () => {
+  try {
+    // 检查用户是否已登录
+    if (!authStore.isAuthenticated) {
+      console.log('用户未登录，跳过获取点赞历史');
+      return;
+    }
+    
+    const response = await communityStore.getUserLikes();
+    if (response && response.likedPosts) {
+      // 将服务器返回的点赞数据设置到本地
+      likedPostIds.value = new Set(response.likedPosts.map(post => post.toString()));
+      console.log('从服务器获取到的点赞历史:', Array.from(likedPostIds.value));
+      // 保存到localStorage
+      saveLikedPosts();
+    }
+  } catch (error) {
+    console.error('获取用户点赞历史失败:', error);
+  }
+};
+
+// 保存点赞状态到localStorage
+const saveLikedPosts = () => {
+  try {
+    // 获取当前用户ID，如果未登录则使用访客模式
+    const userId = authStore.user?.id || 'guest';
+    localStorage.setItem(`likedPosts_${userId}`, JSON.stringify(Array.from(likedPostIds.value)));
+  } catch (error) {
+    console.error('保存点赞状态失败:', error);
   }
 };
 
@@ -447,24 +485,15 @@ const isPostLiked = (postId) => {
   return likedPostIds.value.has(postId.toString());
 };
 
-// 保存点赞状态到localStorage
-const saveLikedPosts = () => {
-  try {
-    localStorage.setItem('likedPosts', JSON.stringify(Array.from(likedPostIds.value)));
-  } catch (error) {
-    console.error('保存点赞状态失败:', error);
-  }
-};
-
 // 帖子点赞功能
 const likePost = async (event, postId) => {
   event.stopPropagation(); // 阻止冒泡，避免点击点赞区域时触发整个卡片的点击事件
   
   try {
-    // 获取用户token
-    const token = localStorage.getItem('token');
-    if (!token) {
+    // 检查用户是否已登录
+    if (!authStore.isAuthenticated) {
       ElMessage.warning('请先登录后再点赞');
+      router.push('/login'); // 导航到登录页面
       return;
     }
 
@@ -531,6 +560,9 @@ const loadCategories = async () => {
 // 初始化时移除通知相关代码
 onMounted(() => {
   console.log("当前用户头像URL:", authStore.user?.avatar);
+  console.log("当前用户ID:", authStore.user?.id);
+  
+  // 加载用户点赞状态
   loadLikedPosts();
   
   // 加载分类数据
@@ -547,8 +579,8 @@ onMounted(() => {
     'avatar-1234.jpg'
   ].forEach(url => {
     console.log({
-      原始URL: url,
-      处理后URL: getAvatarUrl(url)
+      原始值: url,
+      处理后: getAvatarUrl(url)
     });
   });
 

@@ -655,5 +655,35 @@ export const useCommunityStore = defineStore("community", {
         throw error.response?.data || error;
       }
     },
+
+    // 获取用户点赞的帖子ID列表
+    async getUserLikes() {
+      try {
+        const authStore = useAuthStore();
+        if (!authStore.isAuthenticated) {
+          console.log('用户未登录，无法获取点赞历史');
+          return { likedPosts: [] };
+        }
+        
+        // 使用已有的my-likes接口
+        const response = await axios.get(
+          `${API_BASE_URL}/api/community/my-likes`,
+          {
+            headers: { Authorization: `Bearer ${authStore.token}` },
+          }
+        );
+        
+        // 从返回的帖子列表中提取ID
+        const likedPostIds = response.data.posts ? 
+          response.data.posts.map(post => post.id) : [];
+        
+        console.log('从服务器获取的点赞历史:', likedPostIds);
+        return { likedPosts: likedPostIds };
+      } catch (error) {
+        console.error("获取用户点赞历史失败:", error);
+        // 出错时返回空数组，不中断流程
+        return { likedPosts: [] };
+      }
+    },
   },
 });

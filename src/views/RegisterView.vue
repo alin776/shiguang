@@ -26,7 +26,24 @@
         </el-form-item>
 
         <el-form-item label="邮箱" prop="email">
-          <el-input v-model="registerForm.email" />
+          <div class="verification-group">
+            <el-input v-model="registerForm.email" />
+            <el-button 
+              type="primary" 
+              :disabled="cooldown > 0" 
+              @click="sendVerificationCode"
+              :loading="sendingCode"
+            >
+              {{ cooldown > 0 ? `${cooldown}秒` : '获取验证码' }}
+            </el-button>
+          </div>
+        </el-form-item>
+
+        <el-form-item label="验证码" prop="verificationCode">
+          <el-input 
+            v-model="registerForm.verificationCode" 
+            placeholder="请输入邮箱验证码"
+          />
         </el-form-item>
 
         <el-form-item label="手机号" prop="phone">
@@ -81,15 +98,20 @@
 </template>
 
 <script setup>
-import { ref, computed, reactive } from "vue";
+import { ref, computed, reactive, onBeforeUnmount } from "vue";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "../stores/auth";
 import { ElMessage } from "element-plus";
+import axios from "axios";
+import { API_BASE_URL } from "../config";
 
 const router = useRouter();
 const authStore = useAuthStore();
 const registerFormRef = ref(null);
 const loading = ref(false);
+const sendingCode = ref(false);
+const cooldown = ref(0);
+let cooldownTimer = null;
 
 const registerForm = reactive({
   username: "",
@@ -97,6 +119,7 @@ const registerForm = reactive({
   confirmPassword: "",
   email: "",
   phone: "",
+  verificationCode: ""
 });
 
 // 密码强度验证
@@ -138,6 +161,10 @@ const rules = {
     { required: true, message: "请输入邮箱", trigger: "blur" },
     { type: "email", message: "请输入正确的邮箱格式", trigger: "blur" },
   ],
+  verificationCode: [
+    { required: true, message: "请输入验证码", trigger: "blur" },
+    { pattern: /^\d{6}$/, message: "验证码必须是6位数字", trigger: "blur" },
+  ],
   phone: [
     { required: true, message: "请输入手机号", trigger: "blur" },
     {
@@ -161,6 +188,43 @@ const rules = {
   ],
 };
 
+// 发送验证码
+const sendVerificationCode = async () => {
+  try {
+    // 验证邮箱格式
+    if (!/^[\w-]+(\.[\w-]+)*@([\w-]+\.)+[a-zA-Z]{2,7}$/.test(registerForm.email)) {
+      ElMessage.warning("请输入正确的邮箱格式");
+      return;
+    }
+    
+    sendingCode.value = true;
+    
+    // 发送获取验证码请求
+    await axios.post(`${API_BASE_URL}/api/users/send-verification-code`, {
+      email: registerForm.email
+    });
+    
+    ElMessage.success("验证码已发送到您的邮箱");
+    
+    // 启动倒计时
+    cooldown.value = 60;
+    cooldownTimer = setInterval(() => {
+      cooldown.value--;
+      if (cooldown.value <= 0) {
+        clearInterval(cooldownTimer);
+      }
+    }, 1000);
+  } catch (error) {
+    let errorMsg = "发送验证码失败";
+    if (error.response && error.response.data && error.response.data.message) {
+      errorMsg = error.response.data.message;
+    }
+    ElMessage.error(errorMsg);
+  } finally {
+    sendingCode.value = false;
+  }
+};
+
 const handleRegister = async () => {
   if (!registerFormRef.value) return;
 
@@ -180,6 +244,13 @@ const handleRegister = async () => {
 const goToLogin = () => {
   router.push("/login");
 };
+
+// 清理定时器
+onBeforeUnmount(() => {
+  if (cooldownTimer) {
+    clearInterval(cooldownTimer);
+  }
+});
 </script>
 
 <style scoped>
@@ -421,5 +492,18 @@ const goToLogin = () => {
   :deep(.el-form-item) {
     margin-bottom: 16px;
   }
+}
+
+.verification-group {
+  display: flex;
+  gap: 10px;
+}
+
+.verification-group .el-input {
+  flex: 1;
+}
+
+.verification-group .el-button {
+  width: 120px;
 }
 </style>

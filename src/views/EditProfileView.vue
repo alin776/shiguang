@@ -289,23 +289,24 @@ const displayCover = computed(() => {
 </script>
 
 <style scoped>
-/* 太空科技风格全局变量 */
+/* 清新优雅风格全局变量 */
 :root {
-  --primary-color: #8c52ff;
-  --secondary-color: #ff52aa;
-  --accent-color: #36f9f6;
-  --bg-color: #121212;
-  --card-bg: rgba(30, 30, 30, 0.8);
-  --text-color: #ffffff;
-  --border-color: #333333;
-  --hover-color: #373737;
+  --primary-color: #4e95ff;
+  --secondary-color: #85c9e8;
+  --accent-color: #9dd0ff;
+  --bg-color: #f8f9fc;
+  --card-bg: #ffffff;
+  --text-color: #333333;
+  --text-light: #666666;
+  --border-color: #e8e8e8;
+  --hover-color: #f0f5ff;
 }
 
 /* 页面容器 */
 .edit-profile-page {
   min-height: 100vh;
-  background-color: #1a1a1a;
-  color: #ffffff;
+  background-color: #f8f9fc;
+  color: #333333;
   padding-bottom: 40px;
 }
 
@@ -316,14 +317,15 @@ const displayCover = computed(() => {
   justify-content: space-between;
   padding: 0 16px;
   height: 56px;
-  background-color: #1a1a1a;
+  background-color: #ffffff;
   position: relative;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid #eaeaea;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .back-icon {
   font-size: 20px;
-  color: #ffffff;
+  color: #333333;
   cursor: pointer;
 }
 
@@ -334,17 +336,22 @@ const displayCover = computed(() => {
   margin: 0;
   font-size: 18px;
   font-weight: 500;
-  color: #ffffff;
+  color: #333333;
 }
 
 .save-btn {
-  background-color: #4080ff;
+  background-color: #4e95ff;
   color: #ffffff;
   border: none;
   padding: 6px 16px;
   border-radius: 4px;
   font-size: 14px;
   cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.save-btn:hover {
+  background-color: #3a85f0;
 }
 
 .save-btn:disabled {
@@ -374,7 +381,7 @@ const displayCover = computed(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.3);
+  background-color: rgba(0, 0, 0, 0.1);
 }
 
 .cover-update-btn {
@@ -384,12 +391,18 @@ const displayCover = computed(() => {
   display: flex;
   align-items: center;
   gap: 6px;
-  background-color: rgba(0, 0, 0, 0.5);
-  color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.9);
+  color: #333333;
   padding: 6px 12px;
   border-radius: 16px;
   font-size: 14px;
   cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  transition: background-color 0.3s;
+}
+
+.cover-update-btn:hover {
+  background-color: #ffffff;
 }
 
 /* 头像部分 */
@@ -409,55 +422,75 @@ const displayCover = computed(() => {
 }
 
 :deep(.el-avatar) {
-  border: 3px solid #1a1a1a;
-  background: #333;
+  border: 3px solid #ffffff;
+  background: #f0f0f0;
   margin-bottom: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
 .avatar-update-label {
-  color: #4080ff;
+  color: #4e95ff;
   font-size: 14px;
   cursor: pointer;
+  transition: color 0.3s;
+}
+
+.avatar-update-label:hover {
+  color: #3a85f0;
 }
 
 /* 表单样式 */
 .form-container {
-  padding: 0 16px;
+  padding: 16px;
+  max-width: 500px;
+  margin: 0 auto;
 }
 
 .profile-form {
-  background-color: #1a1a1a;
+  background-color: #ffffff;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
 }
 
 :deep(.el-form-item__label) {
-  color: rgba(255, 255, 255, 0.85);
+  color: #333333;
   font-size: 15px;
   padding-bottom: 4px;
 }
 
 :deep(.el-input__wrapper),
 :deep(.el-textarea__wrapper) {
-  background-color: #2a2a2a;
+  background-color: #f9f9f9;
   box-shadow: none;
+  border: 1px solid #e8e8e8;
   border-radius: 8px;
+  transition: all 0.3s;
+}
+
+:deep(.el-input__wrapper:hover),
+:deep(.el-textarea__wrapper:hover) {
+  border-color: #c0d7ff;
 }
 
 :deep(.el-input__inner),
 :deep(.el-textarea__inner) {
-  color: #ffffff;
+  color: #333333;
 }
 
 :deep(.el-input__count) {
   background: transparent;
-  color: rgba(255, 255, 255, 0.6);
+  color: #999999;
 }
 
-/* 确保渐变边框正确显示 */
-:deep(.el-input__wrapper:focus-within) {
-  box-shadow: 0 0 0 1px #4080ff inset;
+/* 确保边框正确显示 */
+:deep(.el-input__wrapper:focus-within),
+:deep(.el-textarea__wrapper:focus-within) {
+  box-shadow: 0 0 0 1px #4e95ff inset;
+  border-color: #4e95ff;
 }
 
-/* 修复表单样式在暗色模式下的问题 */
+/* 修复表单样式在浅色模式下的问题 */
 :deep(.el-form-item.is-error .el-input__wrapper) {
   box-shadow: 0 0 0 1px #f56c6c inset;
 }

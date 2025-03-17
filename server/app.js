@@ -1,4 +1,12 @@
 require("dotenv").config();
+// 打印环境变量信息
+console.log('环境变量加载情况:');
+console.log('- NODE_ENV:', process.env.NODE_ENV);
+console.log('- PORT:', process.env.PORT);
+console.log('- DB_HOST:', process.env.DB_HOST);
+console.log('- EMAIL_USER存在:', !!process.env.EMAIL_USER);
+console.log('- EMAIL_PASS存在:', !!process.env.EMAIL_PASS);
+
 const express = require("express");
 const cors = require("cors");
 const fs = require("fs");
@@ -15,6 +23,7 @@ const noteRoutes = require("./routes/noteRoutes");
 const categoryRoutes = require("./routes/categoryRoutes");
 const updateRoutes = require("./routes/updateRoutes");
 const adminRoutes = require("./routes/adminRoutes");
+const emailService = require("./services/emailService");
 
 const app = express();
 
@@ -101,6 +110,9 @@ app.use("/api/notes", noteRoutes);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/updates", updateRoutes);
+
+// 初始化邮件服务
+emailService.initMailer();
 
 // 错误处理中间件
 app.use((err, req, res, next) => {

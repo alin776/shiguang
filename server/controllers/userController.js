@@ -40,7 +40,7 @@ const register = async (req, res) => {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { username, email, password, phone } = req.body;
+    const { username, email, password, phone, verificationCode } = req.body;
 
     // 检查用户是否已存在
     const [existingUsers] = await db.execute(
@@ -51,6 +51,22 @@ const register = async (req, res) => {
     if (existingUsers.length > 0) {
       return res.status(400).json({ message: "用户已存在" });
     }
+
+    // 验证邮箱验证码
+    const [codes] = await db.execute(
+      "SELECT * FROM verification_codes WHERE email = ? AND code = ? AND is_used = FALSE AND expiry_time > NOW() ORDER BY created_at DESC LIMIT 1",
+      [email, verificationCode]
+    );
+
+    if (codes.length === 0) {
+      return res.status(400).json({ message: "验证码无效或已过期" });
+    }
+
+    // 标记验证码为已使用
+    await db.execute(
+      "UPDATE verification_codes SET is_used = TRUE WHERE id = ?",
+      [codes[0].id]
+    );
 
     // 加密密码
     const hashedPassword = await bcrypt.hash(password, 12);

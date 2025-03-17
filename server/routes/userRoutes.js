@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const userController = require("../controllers/userController");
+const verificationController = require("../controllers/verificationController");
 const auth = require("../middleware/auth");
 const { check } = require("express-validator");
 const multer = require("multer");
@@ -60,6 +61,25 @@ const coverUpload = multer({
   },
 });
 
+// 发送验证码
+router.post(
+  "/send-verification-code",
+  [
+    check("email").isEmail().withMessage("邮箱格式不正确")
+  ],
+  verificationController.sendVerificationCode
+);
+
+// 验证验证码
+router.post(
+  "/verify-code",
+  [
+    check("email").isEmail().withMessage("邮箱格式不正确"),
+    check("code").isLength({ min: 6, max: 6 }).withMessage("验证码必须是6位")
+  ],
+  verificationController.verifyCode
+);
+
 // 用户注册
 router.post(
   "/register",
@@ -68,6 +88,7 @@ router.post(
     check("email").isEmail().withMessage("邮箱格式不正确"),
     check("password").isLength({ min: 6 }).withMessage("密码至少6个字符"),
     check("phone").notEmpty().withMessage("手机号不能为空"),
+    check("verificationCode").isLength({ min: 6, max: 6 }).withMessage("验证码必须是6位")
   ],
   userController.register
 );
