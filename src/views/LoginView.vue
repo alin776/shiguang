@@ -135,7 +135,7 @@ const handleLogin = async () => {
     authStore.user = response.user;
 
     // 统一使用路由跳转
-    router.replace("/calendar");
+    router.replace("/note");
   } catch (error) {
     ElMessage.error(error.message || "登录失败");
   } finally {

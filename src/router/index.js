@@ -216,7 +216,7 @@ router.beforeEach((to, from, next) => {
   if (to.meta.requiresAuth && !token) {
     next("/login");
   } else if (token && to.path === "/login") {
-    next("/calendar");
+    next("/note");
   } else {
     // 添加小延迟，避免快速导航造成的组件更新问题
     setTimeout(() => {
