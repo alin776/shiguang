@@ -1,8 +1,5 @@
 <template>
   <div class="settings-page">
-    <!-- 添加宇宙粒子背景 -->
-    <SpaceBackground />
-
     <!-- 顶部标题 -->
     <div class="settings-header">
       <el-icon class="back-icon" @click="router.back()"><ArrowLeft /></el-icon>
@@ -54,7 +51,7 @@
         <div class="group-title">主题设置</div>
         <div class="settings-item">
           <span>界面主题</span>
-          <span class="theme-info">宇宙粒子风格</span>
+          <span class="theme-info">简约清新风格</span>
         </div>
       </div>
 
@@ -138,7 +135,6 @@ import { useFeedbackStore } from "@/stores/feedback";
 import { useClipboard } from "@vueuse/core";
 import axios from "axios";
 import { getAvatarUrl } from "@/utils/imageHelpers";
-import SpaceBackground from "./calendar/components/SpaceBackground.vue";
 
 const router = useRouter();
 const route = useRoute();
@@ -288,51 +284,57 @@ const handleLogout = async () => {
 <style scoped>
 .settings-page {
   min-height: 100vh;
-  background-color: rgba(18, 18, 30, 0.9);
+  background-color: #f8f9fa;
   padding-bottom: 60px;
-  color: white;
   position: relative;
   overflow-x: hidden;
-  padding: 0 16px;
+  padding: 0;
+  font-family: "PingFang SC", "Helvetica Neue", "Hiragino Sans GB", "Microsoft YaHei", Arial, sans-serif;
+  color: #333;
 }
 
 .settings-header {
   position: sticky;
   top: 0;
   z-index: 10;
-  background: transparent;
+  background: #ffffff;
   height: 56px;
   display: flex;
   align-items: center;
   padding: 0 16px;
   width: 100%;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  margin-bottom: 16px;
 }
 
 .back-icon {
   font-size: 20px;
-  color: white;
+  color: #333;
   cursor: pointer;
   padding: 8px;
   margin-right: 8px;
   transition: all 0.3s ease;
+  border-radius: 50%;
 }
 
 .back-icon:hover {
   transform: translateX(-3px);
-  text-shadow: 0 0 8px rgba(147, 51, 234, 0.7);
+  color: #6366f1;
+  background-color: rgba(99, 102, 241, 0.08);
 }
 
 .settings-header h2 {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: 18px;
   font-weight: 600;
   flex: 1;
-  color: white;
-  text-shadow: 0 0 10px rgba(147, 51, 234, 0.7);
+  color: #333;
+  text-align: center;
+  letter-spacing: 0.5px;
 }
 
 .settings-list {
-  padding: 12px;
+  padding: 0 16px 16px;
   max-width: 800px;
   margin: 0 auto;
 }
@@ -341,65 +343,55 @@ const handleLogout = async () => {
   position: relative;
   z-index: 0;
   padding: 0;
-  border-radius: 16px;
+  border-radius: 12px;
   margin-bottom: 16px;
-  background: rgba(20, 20, 30, 0.7);
-  box-shadow: 0 0 20px rgba(147, 51, 234, 0.4);
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   overflow: hidden;
 }
 
-/* 添加渐变边框效果 */
+/* 边框效果 */
 .tech-card {
-  background: rgba(30, 30, 40, 0.5);
-  border-radius: 16px;
+  background: #ffffff;
+  border-radius: 12px;
   overflow: hidden;
   position: relative;
   margin-bottom: 16px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.tech-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .enhanced-border {
   position: relative;
   z-index: 0;
-}
-
-.enhanced-border::before {
-  content: "";
-  position: absolute;
-  z-index: -1;
-  inset: 0;
-  padding: 2px;
-  border-radius: 16px;
-  background: linear-gradient(
-    45deg,
-    rgba(56, 189, 248, 0.6),
-    rgba(147, 51, 234, 0.6)
-  );
-  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
+  border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 .group-title {
-  font-size: 15px;
-  color: rgba(255, 255, 255, 0.9);
-  padding: 10px 16px;
-  background: rgba(147, 51, 234, 0.2);
-  text-shadow: 0 0 8px rgba(147, 51, 234, 0.5);
-  font-weight: 500;
+  font-size: 14px;
+  color: #555;
+  padding: 12px 16px;
+  background: #f9fafb;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
 }
 
 .settings-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px;
-  border-bottom: 1px solid rgba(147, 51, 234, 0.3);
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
   transition: all 0.2s ease;
 }
 
 .settings-item:hover {
-  background: rgba(147, 51, 234, 0.1);
+  background: #f9fafb;
 }
 
 .settings-item:last-child {
@@ -407,8 +399,8 @@ const handleLogout = async () => {
 }
 
 .settings-item span {
-  color: white;
-  text-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+  color: #333;
+  font-size: 15px;
 }
 
 .settings-item.link {
@@ -416,47 +408,66 @@ const handleLogout = async () => {
 }
 
 .settings-item.logout {
-  color: #ff5252;
+  color: #f56c6c;
   justify-content: center;
-  background: rgba(255, 82, 82, 0.1);
+  background: #fff;
+  font-weight: 500;
   transition: all 0.3s ease;
 }
 
 .settings-item.logout:hover {
-  background: rgba(255, 82, 82, 0.2);
-  box-shadow: 0 0 15px rgba(255, 82, 82, 0.4);
+  background: #fef2f2;
+  color: #e63946;
+}
+
+/* 创建一个轻微的光标hover效果 */
+.settings-item.link:after {
+  content: "";
+  position: absolute;
+  right: 16px;
+  width: 8px;
+  height: 8px;
+  border-top: 2px solid #ddd;
+  border-right: 2px solid #ddd;
+  transform: rotate(45deg);
+  transition: all 0.2s ease;
+}
+
+.settings-item.link:hover:after {
+  border-color: #6366f1;
+  transform: rotate(45deg) translateX(3px);
 }
 
 .el-select {
-  width: 100px;
+  width: 120px;
 }
 
 /* 移动端优化 */
 @media screen and (max-width: 768px) {
   .settings-list {
-    padding: 12px;
+    padding: 0 12px 12px;
   }
 
   .settings-item {
-    padding: 14px;
+    padding: 14px 16px;
   }
 
   .settings-item span {
-    font-size: 14px;
+    font-size: 15px;
   }
 
   .group-title {
-    font-size: 13px;
-    padding: 10px 14px;
+    font-size: 14px;
+    padding: 12px 16px;
   }
 }
 
 .settings-section {
-  background: rgba(30, 30, 40, 0.7);
-  border-radius: 16px;
+  background: #ffffff;
+  border-radius: 12px;
   padding: 16px;
   margin-bottom: 16px;
-  box-shadow: 0 0 20px rgba(147, 51, 234, 0.4);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .section-header {
@@ -465,18 +476,18 @@ const handleLogout = async () => {
 
 .section-header h3 {
   margin: 0;
-  color: white;
-  text-shadow: 0 0 8px rgba(147, 51, 234, 0.7);
+  color: #333;
   font-size: 16px;
+  font-weight: 600;
 }
 
 .section-content {
-  color: white;
+  color: #333;
 }
 
 .version-text {
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 13px;
+  color: #909399;
+  font-size: 14px;
 }
 
 :deep(.el-select) {
@@ -495,7 +506,7 @@ const handleLogout = async () => {
   display: flex;
   align-items: center;
   padding: 16px 0;
-  border-bottom: 1px solid rgba(147, 51, 234, 0.3);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 .contact-item:last-child {
@@ -504,8 +515,9 @@ const handleLogout = async () => {
 
 .contact-label {
   font-size: 15px;
-  color: white;
+  color: #333;
   width: 80px;
+  font-weight: 500;
 }
 
 .contact-value {
@@ -514,7 +526,7 @@ const handleLogout = async () => {
   align-items: center;
   justify-content: space-between;
   font-size: 15px;
-  color: white;
+  color: #333;
 }
 
 .avatar-item {
@@ -531,20 +543,19 @@ const handleLogout = async () => {
 :deep(.el-avatar) {
   cursor: pointer;
   transition: all 0.3s;
-  border: 2px solid rgba(147, 51, 234, 0.3);
-  box-shadow: 0 0 10px rgba(147, 51, 234, 0.4);
+  border: 2px solid #f2f3f5;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
 }
 
 :deep(.el-avatar:hover) {
   transform: scale(1.05);
-  border-color: rgba(147, 51, 234, 0.8);
-  box-shadow: 0 0 15px rgba(147, 51, 234, 0.7);
+  border-color: #6366f1;
+  box-shadow: 0 1px 6px rgba(99, 102, 241, 0.2);
 }
 
 /* 主题信息样式 */
 .theme-info {
-  color: #8b5cf6;
-  text-shadow: 0 0 8px rgba(147, 51, 234, 0.7);
+  color: #6366f1;
   font-size: 14px;
   display: flex;
   align-items: center;
@@ -553,29 +564,26 @@ const handleLogout = async () => {
 .theme-info:before {
   content: "";
   display: inline-block;
-  width: 12px;
-  height: 12px;
-  background: linear-gradient(
-    135deg,
-    rgba(56, 189, 248, 0.8),
-    rgba(147, 51, 234, 0.8)
-  );
+  width: 10px;
+  height: 10px;
+  background: #6366f1;
   border-radius: 50%;
   margin-right: 8px;
-  border: 2px solid rgba(147, 51, 234, 0.8);
-  box-shadow: 0 0 10px rgba(147, 51, 234, 0.7);
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 4px rgba(99, 102, 241, 0.3);
 }
 
 /* 对话框样式 */
 :deep(.el-dialog) {
-  background-color: rgba(20, 20, 30, 0.9);
-  border: 1px solid rgba(147, 51, 234, 0.3);
-  box-shadow: 0 0 20px rgba(147, 51, 234, 0.4);
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
 }
 
 :deep(.el-dialog__title) {
-  color: white;
-  text-shadow: 0 0 8px rgba(147, 51, 234, 0.7);
+  color: #333;
+  font-weight: 600;
+  font-size: 18px;
 }
 
 :deep(.el-button) {
@@ -583,12 +591,12 @@ const handleLogout = async () => {
 }
 
 :deep(.el-switch.is-checked .el-switch__core) {
-  background-color: rgba(147, 51, 234, 0.8) !important;
-  border-color: rgba(147, 51, 234, 0.8) !important;
+  background-color: #6366f1 !important;
+  border-color: #6366f1 !important;
 }
 
 :deep(.el-switch__core) {
-  background-color: rgba(255, 255, 255, 0.2) !important;
-  border-color: rgba(255, 255, 255, 0.2) !important;
+  background-color: #e4e7ed !important;
+  border-color: #e4e7ed !important;
 }
 </style>
