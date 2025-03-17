@@ -33,6 +33,31 @@ export default defineConfig({
           });
         },
       },
+      "/api/proxy": {
+        target: "http://47.98.210.7:3000",
+        changeOrigin: true,
+        rewrite: (path) => {
+          const url = new URLSearchParams(path.split('?')[1]).get('url');
+          return url ? url.replace(/^https?:\/\/[^\/]+/, '') : path;
+        },
+        configure: (proxy, options) => {
+          proxy.on("error", (err, req, res) => {
+            console.log("图片代理错误:", err);
+          });
+          proxy.on("proxyReq", (proxyReq, req, res) => {
+            console.log("图片请求:", req.url);
+          });
+        },
+      },
+      "/uploads": {
+        target: "http://47.98.210.7:3000",
+        changeOrigin: true,
+      },
+      "/api/uploads": {
+        target: "http://47.98.210.7:3000",
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, ''),
+      },
     },
     host: true,
   },

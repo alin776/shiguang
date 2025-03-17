@@ -324,7 +324,8 @@ onMounted(() => {
   background-size: cover;
   background-position: center;
   position: relative;
-  background-color: rgba(20, 20, 30, 0.8);
+  background-color: rgba(255, 255, 255, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .header-actions {
@@ -562,8 +563,9 @@ onMounted(() => {
 }
 
 .tech-badge {
-  backdrop-filter: blur(4px);
+  /* backdrop-filter: blur(4px); */
   border: 1px solid rgba(255, 255, 255, 0.2);
+  background-color: rgba(255, 255, 255, 0.2); /* 添加半透明背景代替模糊效果 */
 }
 
 .post-content {

@@ -49,9 +49,9 @@ defineEmits(["like", "follow"]);
   display: flex;
   align-items: center;
   padding: 12px 16px;
-  border-top: 1px solid var(--border-color);
-  border-bottom: 1px solid var(--border-color);
-  background-color: var(--card-bg);
+  border-top: 1px solid #f0f0f0;
+  border-bottom: 1px solid #f0f0f0;
+  background-color: #ffffff;
 }
 
 .action-item {
@@ -59,7 +59,7 @@ defineEmits(["like", "follow"]);
   align-items: center;
   margin-right: 24px;
   cursor: pointer;
-  color: var(--text-secondary, #909399);
+  color: #909399;
 }
 
 .action-item span {
@@ -74,7 +74,7 @@ defineEmits(["like", "follow"]);
 .follow-action {
   margin-left: auto;
   margin-right: 0;
-  background: var(--primary-color);
+  background: #4A90E2;
   color: white;
   padding: 4px 12px;
   border-radius: 16px;
@@ -82,7 +82,7 @@ defineEmits(["like", "follow"]);
 }
 
 .follow-action.following {
-  background: var(--border-color);
-  color: var(--text-secondary);
+  background: #e0e0e0;
+  color: #666666;
 }
 </style>

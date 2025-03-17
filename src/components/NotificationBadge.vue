@@ -14,19 +14,30 @@
     append-to-body
     :teleported="true"
     destroy-on-close
-    class="cosmic-drawer"
+    class="cosmic-drawer light-mode-drawer"
+    custom-class="light-mode-custom"
+    style="--el-drawer-bg-color: #ffffff; background-color: #ffffff;"
   >
     <template #header>
       <div class="drawer-header tech-header">
         <span class="drawer-title cosmic-text">通知</span>
-        <el-button
-          v-if="notifications.length"
-          class="mark-read-btn glow-button"
-          link
-          @click="markAllAsRead"
-        >
-          全部标记为已读
-        </el-button>
+        <div class="header-buttons">
+          <el-button
+            v-if="notifications.length"
+            class="mark-read-btn glow-button"
+            link
+            @click="markAllAsRead"
+          >
+            全部标记为已读
+          </el-button>
+          <el-button 
+            class="custom-close-btn" 
+            circle 
+            @click="handleClose"
+          >
+            <el-icon><Close /></el-icon>
+          </el-button>
+        </div>
       </div>
     </template>
 
@@ -68,10 +79,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted, defineEmits } from "vue";
+import { ref, onMounted, defineEmits, onBeforeMount } from "vue";
 import { useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
-import { Bell } from "@element-plus/icons-vue";
+import { Bell, Close } from "@element-plus/icons-vue";
 import { useNotificationStore } from "../stores/notification";
 import dayjs from "dayjs";
 
@@ -81,6 +92,29 @@ const notificationStore = useNotificationStore();
 const drawerVisible = ref(false);
 const notifications = ref([]);
 const unreadCount = ref(0);
+
+// 在组件挂载前修改CSS变量
+onBeforeMount(() => {
+  // 添加全局样式来覆盖Element Plus的抽屉变量
+  const styleElement = document.createElement('style');
+  styleElement.textContent = `
+    :root {
+      --el-drawer-bg-color: #f5f0e1 !important;
+      --el-bg-color: #f5f0e1 !important;
+      --el-bg-color-overlay: #f5f0e1 !important;
+    }
+    .el-drawer {
+      background-color: #f5f0e1 !important;
+    }
+    .el-drawer__body {
+      background-color: #f5f0e1 !important;
+    }
+    .el-drawer__content {
+      background-color: #f5f0e1 !important;
+    }
+  `;
+  document.head.appendChild(styleElement);
+});
 
 const formatTime = (time) => {
   return dayjs(time).format("YYYY-MM-DD HH:mm");
@@ -163,33 +197,122 @@ defineExpose({
 }
 
 .notification-icon {
-  color: white;
-  filter: drop-shadow(0 0 4px rgba(147, 51, 234, 0.7));
+  color: #2c3e50;
+  filter: drop-shadow(0 0 4px rgba(147, 51, 234, 0.3));
   transition: all 0.3s ease;
 }
 
 .notification-icon:hover {
   transform: scale(1.1);
-  filter: drop-shadow(0 0 8px rgba(147, 51, 234, 0.9));
+  filter: drop-shadow(0 0 8px rgba(147, 51, 234, 0.5));
 }
 
-/* 抽屉样式 */
-:deep(.el-drawer) {
-  background: rgba(18, 18, 30, 0.95);
-  border-left: 1px solid rgba(147, 51, 234, 0.3);
-  box-shadow: -8px 0 20px rgba(0, 0, 0, 0.5);
+/* 抽屉样式 - 更强的选择器以确保优先级 */
+:deep(.cosmic-drawer.light-mode-drawer),
+:deep(.el-drawer),
+:deep(.el-drawer.light-mode-custom) {
+  background-color: #f5f0e1 !important;
+  border-left: 1px solid rgba(210, 180, 140, 0.3);
+  box-shadow: -8px 0 20px rgba(150, 120, 90, 0.15);
   z-index: 9999 !important;
 }
 
+:deep(.el-drawer__body) {
+  background-color: #f5f0e1 !important;
+  padding: 0;
+}
+
+/* 隐藏原始关闭按钮 - 使用更多选择器组合 */
+:deep(.el-drawer__close) button,
+:deep(.el-drawer__close-btn),
+:deep(.el-drawer__close),
+:deep(.el-icon-close),
+:deep(.el-drawer__header button),
+:deep(.el-drawer__header) .el-drawer__close,
+:deep([class*="close-btn"]),
+:deep(.el-drawer__headerbtn),
+:deep(.el-drawer .el-dialog__close) {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  width: 0 !important;
+  height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  position: absolute !important;
+  z-index: -9999 !important;
+}
+
+/* 抽屉标题样式 */
 :deep(.el-drawer__header) {
-  margin-bottom: 0;
   padding: 16px;
-  color: white;
-  border-bottom: 1px solid rgba(147, 51, 234, 0.3);
+  margin-bottom: 0;
+  color: #5d4037;
+  background-color: #f5f0e1 !important;
+  border-bottom: 1px solid rgba(210, 180, 140, 0.5);
+  /* 禁用原始标题容器的flex模式，确保完全由我们自己的标题栏控制 */
+  display: block !important;
+}
+
+/* 注入样式到全局，确保隐藏各种可能的关闭按钮 */
+:global(.el-drawer__headerbtn),
+:global(.el-drawer button.el-drawer__close),
+:global(.el-drawer .el-drawer__close) {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+
+/* 确保我们的关闭按钮样式更明确 */
+.header-buttons .custom-close-btn {
+  width: 36px !important;
+  height: 36px !important;
+  margin-left: 12px;
+  font-size: 20px;
+  font-weight: bold;
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  border: 1px solid #e0e0e0 !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.3s ease;
+  padding: 0 !important;
+  z-index: 10000 !important;
+}
+
+.header-buttons .custom-close-btn:hover {
+  background-color: #f8f8f8 !important;
+  color: #e74c3c !important;
+  transform: scale(1.1);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+}
+
+.header-buttons {
+  display: flex;
+  align-items: center;
+}
+
+:deep(.el-drawer__content) {
+  background-color: #f5f0e1 !important;
 }
 
 :deep(.el-overlay) {
   z-index: 9998 !important;
+}
+
+/* 全局样式覆盖 */
+:global(.el-drawer) {
+  background-color: #f5f0e1 !important;
+}
+
+:global(.el-drawer__content) {
+  background-color: #f5f0e1 !important;
+}
+
+:global(.light-mode-custom) {
+  background-color: #f5f0e1 !important;
 }
 
 .drawer-header {
@@ -204,35 +327,39 @@ defineExpose({
 }
 
 .drawer-title {
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 600;
+  color: #5d4037;
 }
 
 .cosmic-text {
-  background: linear-gradient(45deg, #38bdf8, #9333ea);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  text-shadow: 0 0 8px rgba(147, 51, 234, 0.4);
+  color: #5d4037;
+  text-shadow: none;
 }
 
 .mark-read-btn {
   font-size: 14px;
-  color: rgba(147, 51, 234, 0.9) !important;
-  text-shadow: 0 0 4px rgba(147, 51, 234, 0.4);
+  font-weight: 500;
+  color: #ffffff !important;
+  background-color: #2c3e50;
+  padding: 4px 12px;
+  border-radius: 16px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
   transition: all 0.3s ease;
 }
 
 .mark-read-btn:hover {
-  color: rgba(147, 51, 234, 1) !important;
-  text-shadow: 0 0 8px rgba(147, 51, 234, 0.7);
+  color: #ffffff !important;
+  background-color: #34495e;
   transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
 }
 
 .notification-list {
   padding: 16px;
   height: 100%;
   overflow-y: auto;
+  background-color: #f5f0e1;
 }
 
 .notification-item {
@@ -240,39 +367,35 @@ defineExpose({
   gap: 12px;
   padding: 16px;
   margin-bottom: 12px;
-  border-radius: 12px;
-  background: rgba(30, 30, 40, 0.6);
-  border: 1px solid rgba(147, 51, 234, 0.2);
+  border-radius: 16px;
+  background: #f9f3e3;
+  border: 1px solid rgba(210, 180, 140, 0.2);
+  box-shadow: 0 4px 15px rgba(150, 120, 90, 0.1);
   cursor: pointer;
   transition: all 0.3s ease;
 }
 
 .notification-item:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-  border-color: rgba(147, 51, 234, 0.4);
+  box-shadow: 0 6px 18px rgba(150, 120, 90, 0.15);
+  background: #f7f2dd;
 }
 
 .notification-item.unread {
-  background: rgba(147, 51, 234, 0.15);
+  background: #f0e6d2;
   position: relative;
+  border-left: 3px solid #8d6e63;
 }
 
 .notification-item.unread::before {
-  content: "";
-  position: absolute;
-  top: 16px;
-  left: -4px;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: linear-gradient(45deg, #38bdf8, #9333ea);
-  box-shadow: 0 0 8px rgba(147, 51, 234, 0.7);
+  content: none;
 }
 
 .actor-avatar {
-  border: 2px solid rgba(147, 51, 234, 0.3);
-  box-shadow: 0 0 8px rgba(0, 0, 0, 0.3);
+  border: 1px solid white;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  width: 36px !important;
+  height: 36px !important;
 }
 
 .notification-content {
@@ -281,39 +404,43 @@ defineExpose({
 }
 
 .notification-text {
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.9);
-  margin-bottom: 4px;
+  font-size: 16px;
+  line-height: 1.6;
+  color: #5d4037;
+  font-weight: 500;
+  margin-bottom: 6px;
   text-align: left;
+  white-space: pre-line;
 }
 
 .actor {
-  color: rgba(147, 51, 234, 0.9);
-  font-weight: 500;
+  color: #5d4037;
+  font-weight: 600;
   margin-right: 4px;
   text-align: left;
 }
 
 .cosmic-name {
-  background: linear-gradient(45deg, #38bdf8, #9333ea);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  text-shadow: 0 0 4px rgba(147, 51, 234, 0.4);
-  text-align: left;
+  color: #5d4037;
+  font-weight: 600;
+  background: none;
+  -webkit-background-clip: unset;
+  background-clip: unset;
+  text-shadow: none;
 }
 
 .notification-time {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.6);
+  font-size: 14px;
+  color: #7f8c8d;
   text-align: left;
 }
 
 .empty-state {
   padding: 40px 20px;
-  background: rgba(30, 30, 40, 0.6);
-  border-radius: 12px;
-  border: 1px solid rgba(147, 51, 234, 0.2);
+  background: #f9f3e3;
+  border-radius: 16px;
+  box-shadow: 0 4px 15px rgba(150, 120, 90, 0.1);
+  border: 1px solid rgba(210, 180, 140, 0.2);
   text-align: center;
 }
 
@@ -329,10 +456,12 @@ defineExpose({
 
 /* Element Plus Empty组件样式覆盖 */
 :deep(.el-empty__description) {
-  color: rgba(255, 255, 255, 0.7);
+  color: #8d6e63;
+  font-size: 16px;
+  font-weight: 500;
 }
 
 :deep(.el-empty__image) {
-  opacity: 0.7;
+  opacity: 0.8;
 }
 </style>

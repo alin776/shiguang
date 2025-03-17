@@ -75,7 +75,7 @@ defineEmits(["user-click", "post-command"]);
   left: 0;
   right: 0;
   z-index: 100;
-  background-color: var(--header-bg);
+  background-color: #ffffff;
   height: 60px;
   display: flex;
   align-items: center;
@@ -93,7 +93,7 @@ defineEmits(["user-click", "post-command"]);
 
 .back-icon {
   font-size: 24px;
-  color: var(--text-color);
+  color: #333333;
   cursor: pointer;
   margin-right: 16px;
 }
@@ -102,49 +102,63 @@ defineEmits(["user-click", "post-command"]);
   margin: 0;
   font-size: 18px;
   font-weight: 500;
+  color: #333333;
   flex: 1;
   text-align: center;
 }
 
 .user-info {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   padding: 16px;
-  background-color: var(--card-bg);
+  background-color: #ffffff;
+  border-bottom: 1px solid #f0f0f0;
   margin-top: 60px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .user-avatar {
   cursor: pointer;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .user-meta {
   flex: 1;
   margin-left: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
   text-align: left;
 }
 
 .username {
+  font-size: 16px;
   font-weight: 500;
-  margin-bottom: 4px;
+  color: #333333;
+  line-height: 1.4;
   text-align: left;
+  width: 100%;
 }
 
 .post-time {
-  font-size: 12px;
-  color: var(--text-secondary, #909399);
+  font-size: 13px;
+  color: #999999;
   text-align: left;
+  width: 100%;
 }
 
 .more-icon {
   font-size: 20px;
+  color: #666666;
   cursor: pointer;
-  color: var(--text-secondary, #909399);
 }
 
 .user-info-loading {
   padding: 16px;
-  background-color: var(--card-bg);
+  background-color: #ffffff;
   margin-top: 60px;
 }
 

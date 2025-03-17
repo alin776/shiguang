@@ -1,7 +1,9 @@
 <template>
   <div class="calendar-page no-extra-padding">
     <!-- 宇宙粒子背景 -->
-    <SpaceBackground />
+    <div class="background-wrapper">
+      <SpaceBackground />
+    </div>
 
     <!-- 内容主体 -->
     <div class="calendar-content">
@@ -663,18 +665,31 @@ watch(
 .calendar-page {
   min-height: 100vh;
   padding-bottom: 70px;
+  padding-top: 0;
+  margin-top: 0;
   background: linear-gradient(135deg, #f0f7ff, #e6f2ff);
   position: relative;
   overflow: hidden;
+}
+
+.background-wrapper {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  pointer-events: none;
 }
 
 .calendar-content {
   width: 100%;
   max-width: 100%;
   margin: 0 auto;
+  padding: 0;
   position: relative;
   z-index: 5;
-  padding: 0;
+  background-color: rgba(255, 255, 255, 0.98);
 }
 
 .toolbar {
@@ -684,11 +699,10 @@ watch(
   margin-bottom: 10px;
   position: relative;
   z-index: 5;
-  background-color: rgba(255, 255, 255, 0.85);
+  background-color: rgba(255, 255, 255, 0.98);
   padding: 12px 16px;
   border-radius: 0;
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
-  backdrop-filter: blur(10px);
   border: none;
   border-bottom: 1px solid rgba(255, 255, 255, 0.8);
 }
@@ -787,11 +801,10 @@ watch(
   display: flex;
   flex-direction: column;
   gap: 10px;
-  background-color: rgba(255, 255, 255, 0.75);
+  background-color: rgba(255, 255, 255, 0.98);
   border-radius: 0;
   padding: 10px 0;
   box-shadow: none;
-  backdrop-filter: blur(10px);
   border: none;
   max-height: none;
   height: auto;
@@ -849,8 +862,8 @@ watch(
 .header-switch {
   display: flex;
   justify-content: center;
-  padding: 16px 0;
-  margin-top: 10px;
+  padding: 5px 0;
+  margin-top: 0;
 }
 
 .switch-button {

@@ -6,8 +6,42 @@ export const API_BASE_URL = "http://47.98.210.7:3000";
 // 添加图片 URL 处理函数
 export const getImageUrl = (path) => {
   if (!path) return "";
-  if (path.startsWith("http")) return path;
-  return `${API_BASE_URL}${path}`;
+  
+  // 清理URL，移除末尾可能存在的多余字符
+  let cleanPath = path;
+  if (cleanPath.includes('?') && (cleanPath.endsWith('？') || cleanPath.endsWith('?'))) {
+    cleanPath = cleanPath.replace(/[？?]+$/, '');
+  }
+  
+  // 简单日志
+  console.log('处理图片URL:', cleanPath);
+  
+  // 已经是完整URL的情况，直接返回
+  if (cleanPath.startsWith("http")) {
+    return cleanPath;
+  }
+  
+  // 三种基础情况处理
+  
+  // 1. avatar-开头的文件 - 用户头像
+  if (cleanPath.startsWith("avatar-")) {
+    return `${API_BASE_URL}/uploads/avatars/${cleanPath}`;
+  }
+  
+  // 2. post-开头的文件 - 帖子图片
+  if (cleanPath.startsWith("post-")) {
+    return `${API_BASE_URL}/uploads/posts/${cleanPath}`;
+  }
+  
+  // 3. 以/uploads开头的完整路径
+  if (cleanPath.startsWith("/uploads")) {
+    return `${API_BASE_URL}${cleanPath}`;
+  }
+  
+  // 4. 其他情况 - 添加/分隔符
+  return cleanPath.startsWith("/") 
+    ? `${API_BASE_URL}${cleanPath}`
+    : `${API_BASE_URL}/${cleanPath}`;
 };
 
 // 创建 axios 实例
@@ -129,3 +163,4 @@ instance.interceptors.response.use(
 );
 
 export default instance;
+

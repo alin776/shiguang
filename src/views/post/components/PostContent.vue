@@ -383,7 +383,7 @@ const getWaveformOpacity = (index, currentTime, totalDuration) => {
 
 .post-content {
   padding: 16px;
-  background-color: var(--card-bg);
+  background-color: #ffffff;
   text-align: left;
 }
 
@@ -391,7 +391,7 @@ const getWaveformOpacity = (index, currentTime, totalDuration) => {
   margin-top: 0;
   margin-bottom: 12px;
   font-size: 18px;
-  color: var(--text-color);
+  color: #333333;
   text-align: left;
 }
 
@@ -399,7 +399,7 @@ const getWaveformOpacity = (index, currentTime, totalDuration) => {
   font-size: 15px;
   line-height: 1.6;
   white-space: pre-wrap;
-  color: var(--text-color);
+  color: #333333;
   margin: 0;
   text-align: left;
 }
@@ -407,21 +407,21 @@ const getWaveformOpacity = (index, currentTime, totalDuration) => {
 .audio-container {
   margin-top: 20px;
   position: relative;
-  max-width: 95%; /* 增加最大宽度，确保包含时间显示 */
+  max-width: 100%;
 }
 
 .audio-bubble {
-  background-color: var(--card-bg, #1e1e1e);
+  background-color: #f8f8f8;
   border: 1px solid rgba(47, 156, 106, 0.3);
   border-radius: 20px;
-  padding: 14px 16px 20px 16px; /* 减小内边距 */
+  padding: 14px 16px 20px 16px;
   transition: all 0.3s ease;
   position: relative;
   overflow: visible;
 }
 
 .audio-bubble.playing {
-  background-color: var(--card-bg, #1e1e1e);
+  background-color: #f0f9f4;
   border: 1px solid rgba(66, 184, 131, 0.4);
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
 }
@@ -468,18 +468,19 @@ const getWaveformOpacity = (index, currentTime, totalDuration) => {
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
+  width: 100%;
 }
 
 .audio-waveform {
   display: flex;
   align-items: center;
-  gap: 3px; /* 减小波形条之间的间距 */
+  gap: 3px;
   height: 40px;
-  width: calc(100% - 100px); /* 微调给时间显示留出的空间 */
+  width: calc(100% - 110px);
 }
 
 .waveform-bar {
-  width: 3px; /* 减小波形条宽度 */
+  width: 3px;
   background-color: #42b883;
   border-radius: 2px;
   transition: height 0.2s ease, opacity 0.3s ease;
@@ -502,7 +503,7 @@ const getWaveformOpacity = (index, currentTime, totalDuration) => {
 
 .audio-time-display {
   font-size: 14px;
-  color: var(--text-color, #303133);
+  color: #333333;
   padding: 3px 8px;
   background-color: rgba(47, 156, 106, 0.1);
   border-radius: 10px;
@@ -510,7 +511,7 @@ const getWaveformOpacity = (index, currentTime, totalDuration) => {
   font-weight: 500;
   margin-left: 12px;
   flex-shrink: 0;
-  min-width: 90px;
+  min-width: 95px;
   text-align: center;
 }
 

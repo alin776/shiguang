@@ -319,7 +319,7 @@ onMounted(() => {
 <style scoped>
 .post-detail-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #f0f7ff, #e6f2ff);
+  background: #ffffff;
   display: flex;
   flex-direction: column;
   position: relative;
@@ -330,7 +330,7 @@ onMounted(() => {
   .post-detail-page {
     max-width: 768px;
     margin: 0 auto;
-    background: transparent;
+    background: #ffffff;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
     border-radius: 20px;
     overflow: hidden;
@@ -341,11 +341,10 @@ onMounted(() => {
 
 .loading-container {
   padding: 20px;
-  background-color: rgba(255, 255, 255, 0.9);
+  background-color: #ffffff;
   margin-top: 60px;
   border-radius: 16px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  backdrop-filter: blur(5px);
 }
 
 /* 对话框样式覆盖 */
@@ -353,22 +352,25 @@ onMounted(() => {
   border-radius: 16px;
   overflow: hidden;
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+  background-color: #ffffff;
+  color: #333333;
 }
 
 :deep(.el-dialog__header) {
   padding: 20px;
   background-color: rgba(74, 144, 226, 0.05);
   margin-right: 0;
+  color: #333333;
 }
 
 :deep(.el-dialog__title) {
   font-weight: 600;
-  color: var(--primary-color);
+  color: #4A90E2;
 }
 
 :deep(.el-dialog__body) {
   padding: 30px 20px;
-  color: var(--text-color);
+  color: #333333;
   font-size: 16px;
 }
 

@@ -13,6 +13,7 @@
           <img
             :src="currentRoute === item.path ? item.activeIcon : item.icon"
             class="nav-icon"
+            :class="{'community-icon': item.path === '/community' && currentRoute !== '/community'}"
             :alt="item.label"
           />
         </div>
@@ -40,12 +41,6 @@ const navItems = [
     activeIcon: "/icons/note-active.svg",
   },
   {
-    path: "/calendar",
-    label: "日程",
-    icon: "/icons/calendar.svg",
-    activeIcon: "/icons/calendar-active.svg",
-  },
-  {
     path: "/community",
     label: "小镇",
     icon: "/icons/community.svg",
@@ -62,9 +57,7 @@ const navItems = [
 const currentRoute = computed(() => {
   // 处理路由匹配逻辑，确保子路由也能正确高亮对应的底部导航项
   const path = route.path;
-  if (path.startsWith('/calendar/')) {
-    return '/calendar';
-  } else if (path.startsWith('/community/')) {
+  if (path.startsWith('/community/')) {
     return '/community';
   } else if (path.startsWith('/profile/')) {
     return '/profile';
@@ -146,6 +139,11 @@ const navigate = (path) => {
   width: 24px;
   height: 24px;
   transition: all 0.3s ease;
+}
+
+/* 小镇图标特殊样式 - 非激活状态为黑色 */
+.community-icon {
+  filter: brightness(0);  /* 将图标变为黑色 */
 }
 
 /* 在大屏幕上限制宽度 */

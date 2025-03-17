@@ -178,7 +178,7 @@ watch(
 <style scoped>
 .comments-section {
   padding: 16px;
-  background-color: var(--card-bg);
+  background-color: #ffffff;
   margin-bottom: 64px;
 }
 
@@ -186,14 +186,14 @@ watch(
   margin-top: 0;
   margin-bottom: 16px;
   font-size: 16px;
-  color: var(--text-color);
+  color: #333333;
   text-align: left;
 }
 
 .no-comments {
   text-align: left;
   padding: 20px 0;
-  color: var(--text-secondary, #909399);
+  color: #909399;
 }
 
 .reply-input {
@@ -204,8 +204,8 @@ watch(
   display: flex;
   align-items: center;
   padding: 10px;
-  background-color: var(--card-bg);
-  border-top: 1px solid var(--border-color);
+  background-color: #ffffff;
+  border-top: 1px solid #f0f0f0;
   z-index: 10;
 }
 
@@ -214,9 +214,9 @@ watch(
   bottom: 60px;
   left: 0;
   right: 0;
-  background-color: var(--card-bg);
+  background-color: #ffffff;
   padding: 10px;
-  border-top: 1px solid var(--border-color);
+  border-top: 1px solid #f0f0f0;
   z-index: 9;
 }
 
@@ -247,5 +247,16 @@ watch(
   overflow: hidden;
   min-height: 40px;
   max-height: 100px;
+  color: #333333;
+  background-color: #fff;
+}
+
+/* 添加字数统计样式 */
+:deep(.el-input__count) {
+  background-color: transparent;
+  color: #666666;
+  font-size: 12px;
+  right: 10px;
+  bottom: 5px;
 }
 </style>

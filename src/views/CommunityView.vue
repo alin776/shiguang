@@ -80,8 +80,11 @@
                 </el-avatar>
                 <span class="username">{{ post.user?.username || "匿名用户" }}</span>
               </div>
-              <div class="like-area">
-                <el-icon class="like-icon"><Star /></el-icon>
+              <div class="like-area" @click="(e) => likePost(e, post.id)">
+                <el-icon class="like-icon" :class="{ 'liked': isPostLiked(post.id) }">
+                  <StarFilled v-if="isPostLiked(post.id)" />
+                  <Star v-else />
+                </el-icon>
                 <span class="like-count">{{ post.likes || 0 }}</span>
               </div>
             </div>
@@ -129,8 +132,11 @@
                 </el-avatar>
                 <span class="username">{{ post.user?.username || "匿名用户" }}</span>
               </div>
-              <div class="like-area">
-                <el-icon class="like-icon"><Star /></el-icon>
+              <div class="like-area" @click="(e) => likePost(e, post.id)">
+                <el-icon class="like-icon" :class="{ 'liked': isPostLiked(post.id) }">
+                  <StarFilled v-if="isPostLiked(post.id)" />
+                  <Star v-else />
+                </el-icon>
                 <span class="like-count">{{ post.likes || 0 }}</span>
               </div>
             </div>
@@ -227,7 +233,7 @@
 import { ref, onMounted, computed, nextTick } from "vue";
 import { useRouter } from "vue-router";
 import { ElMessage, ElMessageBox } from "element-plus";
-import { Search, Plus, Picture, View, ChatDotRound, Star, VideoPlay, VideoPause } from "@element-plus/icons-vue";
+import { Search, Plus, Picture, View, ChatDotRound, Star, StarFilled, VideoPlay, VideoPause } from "@element-plus/icons-vue";
 import BottomNavBar from "@/components/BottomNavBar.vue";
 import NotificationBadge from "@/components/NotificationBadge.vue";
 import AudioRecorder from "@/components/AudioRecorder.vue";
@@ -251,6 +257,7 @@ const loading = ref(false);
 const noMoreData = ref(false);
 const searchText = ref("");
 const currentSort = ref("latest");
+const likedPostIds = ref(new Set());
 
 const postForm = ref({
   title: "",
@@ -526,9 +533,97 @@ const debugPostAudio = (post) => {
   }
 };
 
+// 从localStorage加载用户已点赞的帖子ID
+const loadLikedPosts = () => {
+  try {
+    const savedLikes = localStorage.getItem('likedPosts');
+    if (savedLikes) {
+      likedPostIds.value = new Set(JSON.parse(savedLikes));
+      console.log('已加载帖子点赞状态:', Array.from(likedPostIds.value));
+    }
+  } catch (error) {
+    console.error('加载点赞状态失败:', error);
+  }
+};
+
+// 检查帖子是否已被点赞
+const isPostLiked = (postId) => {
+  return likedPostIds.value.has(postId.toString());
+};
+
+// 保存点赞状态到localStorage
+const saveLikedPosts = () => {
+  try {
+    localStorage.setItem('likedPosts', JSON.stringify(Array.from(likedPostIds.value)));
+  } catch (error) {
+    console.error('保存点赞状态失败:', error);
+  }
+};
+
+// 帖子点赞功能
+const likePost = async (event, postId) => {
+  event.stopPropagation(); // 阻止冒泡，避免点击点赞区域时触发整个卡片的点击事件
+  
+  try {
+    // 获取用户token
+    const token = localStorage.getItem('token');
+    if (!token) {
+      ElMessage.warning('请先登录后再点赞');
+      return;
+    }
+
+    const postIdStr = postId.toString();
+    const isLiked = isPostLiked(postIdStr);
+    
+    // 调用点赞或取消点赞API
+    let response;
+    if (isLiked) {
+      response = await communityStore.unlikePost(postId);
+      likedPostIds.value.delete(postIdStr);
+      ElMessage.success('取消点赞成功');
+    } else {
+      response = await communityStore.likePost(postId);
+      likedPostIds.value.add(postIdStr);
+      ElMessage.success('点赞成功');
+    }
+    
+    // 更新点赞数量
+    const updatePost = (postList) => {
+      const postIndex = postList.findIndex(p => p.id.toString() === postIdStr);
+      if (postIndex !== -1) {
+        // 更新点赞数量（增加或减少）
+        postList[postIndex].likes = isLiked ? 
+          Math.max(0, (postList[postIndex].likes || 0) - 1) : 
+          ((postList[postIndex].likes || 0) + 1);
+      }
+    };
+    
+    // 更新左右两列的帖子
+    updatePost(leftPosts.value);
+    updatePost(rightPosts.value);
+    
+    // 保存点赞状态到本地存储
+    saveLikedPosts();
+  } catch (error) {
+    console.error('点赞操作失败:', error);
+    
+    // 更详细的错误信息
+    if (error.response) {
+      console.error('错误状态:', error.response.status);
+      console.error('错误数据:', error.response.data);
+      ElMessage.error(`点赞失败: ${error.response.data.message || '服务器错误'}`);
+    } else if (error.request) {
+      ElMessage.error('请求未收到响应，请检查网络连接');
+    } else {
+      ElMessage.error(`点赞失败: ${error.message}`);
+    }
+  }
+};
+
 // 初始化时移除通知相关代码
 onMounted(() => {
   console.log("当前用户头像URL:", authStore.user?.avatar);
+  loadLikedPosts();
   loadPosts();
   
   // 测试URL处理
@@ -571,7 +666,7 @@ onMounted(() => {
   left: 0;
   right: 0;
   height: 56px;
-  background-color: rgba(255, 255, 255, 0.95);
+  background-color: rgba(255, 255, 255, 0.98);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
   display: flex;
   align-items: center;
@@ -579,7 +674,6 @@ onMounted(() => {
   z-index: 20;
   width: 100%;
   box-sizing: border-box;
-  backdrop-filter: blur(10px);
 }
 
 .search-bar {
@@ -602,12 +696,11 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   padding: 12px 16px;
-  background-color: rgba(255, 255, 255, 0.95);
+  background-color: rgba(255, 255, 255, 0.98);
   margin-bottom: 12px;
   position: sticky;
   top: 56px;
   z-index: 10;
-  backdrop-filter: blur(5px);
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
 }
@@ -774,20 +867,19 @@ onMounted(() => {
 }
 
 .like-icon {
-  color: #333;
   font-size: 14px;
-  margin-right: 2px;
+  color: #e74c3c;
+}
+
+.like-icon.liked {
+  color: #e74c3c;
+  transform: scale(1.1);
 }
 
 .like-count {
-  font-size: 13px;
-  color: #111;
-  font-weight: 600;
-  line-height: 1;
-  min-width: 8px;
-  text-align: left;
-  position: relative;
-  left: -1px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #2c3e50;
 }
 
 /* 悬浮发帖按钮 */

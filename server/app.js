@@ -11,6 +11,7 @@ const notificationRoutes = require("./routes/notificationRoutes");
 const feedbackRoutes = require("./routes/feedbackRoutes");
 const uploadRoutes = require("./routes/uploadRoutes");
 const checkInRoutes = require("./routes/checkInRoutes");
+const noteRoutes = require("./routes/noteRoutes");
 
 const app = express();
 
@@ -25,16 +26,42 @@ if (!fs.existsSync(coverDir)) {
 }
 
 // 静态文件服务
-app.use("/uploads", express.static(path.join(__dirname, "public/uploads")));
-app.use("/uploads/covers", express.static("uploads/covers"));
+app.use("/uploads", (req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "*"); // 允许所有来源访问静态资源
+  res.header("Access-Control-Allow-Methods", "GET, OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+  next();
+}, express.static(path.join(__dirname, "public/uploads")));
+
+app.use("/uploads/covers", (req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "*"); // 允许所有来源访问静态资源
+  res.header("Access-Control-Allow-Methods", "GET, OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+  next();
+}, express.static("uploads/covers"));
+
+// 自定义CORS中间件，确保OPTIONS预检请求能被正确处理
+app.use((req, res, next) => {
+  // 对于预检请求，立即响应
+  if (req.method === 'OPTIONS') {
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
+    res.header("Access-Control-Max-Age", "86400"); // 24小时内不再发送预检请求
+    return res.status(204).end();
+  }
+  next();
+});
 
 // CORS 配置
 app.use(
   cors({
-    origin: "*",
+    origin: ["http://localhost:5173", "http://localhost:8080", "http://127.0.0.1:5173", "https://shiguang.example.com"],
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
+    exposedHeaders: ["Content-Length", "Content-Range"],
+    maxAge: 86400, // 24小时内不再发送预检请求
   })
 );
 
@@ -67,6 +94,7 @@ app.use(updateActivity);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/feedback", feedbackRoutes);
 app.use("/api/checkins", checkInRoutes);
+app.use("/api/notes", noteRoutes);
 
 // 错误处理中间件
 app.use((err, req, res, next) => {

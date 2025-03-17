@@ -369,9 +369,9 @@ const getWaveformOpacity = (index, currentTime, totalDuration) => {
 <style scoped>
 .comment-item {
   padding: 16px;
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid #f0f0f0;
   display: flex;
-  background-color: var(--card-bg);
+  background-color: #ffffff;
 }
 
 .comment-avatar {
@@ -399,7 +399,7 @@ const getWaveformOpacity = (index, currentTime, totalDuration) => {
 
 .comment-time {
   font-size: 12px;
-  color: var(--text-secondary, #909399);
+  color: #909399;
   text-align: left;
 }
 
@@ -408,6 +408,7 @@ const getWaveformOpacity = (index, currentTime, totalDuration) => {
   white-space: pre-wrap;
   word-break: break-word;
   text-align: left;
+  color: #333333;
 }
 
 .comment-actions {
@@ -422,7 +423,7 @@ const getWaveformOpacity = (index, currentTime, totalDuration) => {
   margin-right: 16px;
   cursor: pointer;
   font-size: 12px;
-  color: var(--text-secondary, #909399);
+  color: #909399;
 }
 
 .action-item.active {
@@ -440,7 +441,7 @@ const getWaveformOpacity = (index, currentTime, totalDuration) => {
 }
 
 .reply-item {
-  background-color: #333;
+  background-color: #f5f5f5;
   border-radius: 8px;
   padding: 10px;
   position: relative;
@@ -457,14 +458,14 @@ const getWaveformOpacity = (index, currentTime, totalDuration) => {
 }
 
 .reply-to {
-  color: var(--text-secondary, #909399);
+  color: #909399;
   margin-right: 8px;
   text-align: left;
 }
 
 .reply-time {
   font-size: 11px;
-  color: var(--text-secondary, #909399);
+  color: #909399;
   text-align: left;
 }
 
@@ -472,6 +473,7 @@ const getWaveformOpacity = (index, currentTime, totalDuration) => {
   white-space: pre-wrap;
   word-break: break-word;
   text-align: left;
+  color: #333333;
 }
 
 .reply-actions {
@@ -491,11 +493,11 @@ const getWaveformOpacity = (index, currentTime, totalDuration) => {
 .comment-audio {
   margin: 8px 0 12px 0;
   position: relative;
-  max-width: 95%; /* 增加最大宽度，确保包含时间显示 */
+  max-width: 100%; /* 从95%增加到100%，确保容器足够宽 */
 }
 
 .audio-bubble {
-  background-color: var(--card-bg, #1e1e1e);
+  background-color: #f8f8f8;
   border: 1px solid rgba(91, 70, 201, 0.3);
   border-radius: 18px;
   padding: 10px 14px 16px 14px; /* 减小内边距 */
@@ -505,7 +507,7 @@ const getWaveformOpacity = (index, currentTime, totalDuration) => {
 }
 
 .audio-bubble.playing {
-  background-color: var(--card-bg, #1e1e1e);
+  background-color: #f0f0ff;
   border: 1px solid rgba(58, 103, 222, 0.4);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
@@ -531,12 +533,12 @@ const getWaveformOpacity = (index, currentTime, totalDuration) => {
   align-items: center;
   gap: 2px; /* 减小波形条之间的间距 */
   height: 30px;
-  width: calc(100% - 90px); /* 微调给时间显示留出的空间 */
+  width: calc(100% - 100px); /* 从90px增加到100px，给时间显示留出更多空间 */
 }
 
 .audio-time-display {
   font-size: 12px;
-  color: var(--text-color, #303133);
+  color: #333333;
   padding: 2px 6px;
   background-color: rgba(91, 70, 201, 0.1);
   border-radius: 8px;
@@ -544,7 +546,7 @@ const getWaveformOpacity = (index, currentTime, totalDuration) => {
   font-weight: 500;
   margin-left: 10px;
   flex-shrink: 0;
-  min-width: 80px;
+  min-width: 90px; /* 从80px增加到90px，确保时间显示完整 */
   text-align: center;
 }
 
@@ -621,13 +623,13 @@ const getWaveformOpacity = (index, currentTime, totalDuration) => {
 
 @keyframes pulse-glow {
   0% {
-    box-shadow: 0 0 5px rgba(91, 70, 201, 0.5);
+    box-shadow: 0 0 4px rgba(91, 70, 201, 0.4);
   }
   50% {
-    box-shadow: 0 0 12px rgba(58, 103, 222, 0.7);
+    box-shadow: 0 0 10px rgba(58, 103, 222, 0.6);
   }
   100% {
-    box-shadow: 0 0 5px rgba(91, 70, 201, 0.5);
+    box-shadow: 0 0 4px rgba(91, 70, 201, 0.4);
   }
 }
 
@@ -644,9 +646,9 @@ const getWaveformOpacity = (index, currentTime, totalDuration) => {
 }
 
 .waveform-bar {
-  width: 2px; /* 减小波形条宽度 */
-  background-color: #5b46c9;
-  border-radius: 3px;
+  width: 3px;
+  background-color: #6c54e8;
+  border-radius: 2px;
   transition: height 0.2s ease, opacity 0.3s ease;
 }
 

@@ -300,7 +300,7 @@ const handleSubmit = async () => {
 .circle {
   position: absolute;
   border-radius: 50%;
-  opacity: 0.6;
+  opacity: 0.8;
 }
 
 .circle-1 {
@@ -309,7 +309,6 @@ const handleSubmit = async () => {
   background: linear-gradient(45deg, #4A90E2, #56CCF2);
   top: -100px;
   right: -50px;
-  filter: blur(30px);
 }
 
 .circle-2 {
@@ -318,7 +317,6 @@ const handleSubmit = async () => {
   background: linear-gradient(45deg, #F5A623, #F8E71C);
   bottom: -50px;
   left: -60px;
-  filter: blur(25px);
 }
 
 .circle-3 {
@@ -327,7 +325,6 @@ const handleSubmit = async () => {
   background: linear-gradient(45deg, #4CD964, #B8E986);
   top: 60%;
   right: 10%;
-  filter: blur(20px);
 }
 
 .logo {

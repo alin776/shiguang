@@ -14,7 +14,7 @@ import CalendarView from "../views/calendar/CalendarView.vue";
 import CalendarEventView from "../views/calendar/CalendarEventView.vue";
 import CalendarStatisticsView from "../views/calendar/statistics/StatisticsView.vue";
 import NoteView from "../views/NoteView.vue"; // 添加小记页面组件导入
-import NoteSubmitView from "../views/NoteSubmitView.vue"; // 添加小记投稿页面组件导入
+import SubmitNoteView from "../views/SubmitNoteView.vue"; // 添加小记投稿页面组件导入
 import AboutView from "../views/AboutView.vue";
 import { ref } from "vue";
 
@@ -39,7 +39,7 @@ const routes = [
   {
     path: "/note/submit",
     name: "NoteSubmit",
-    component: NoteSubmitView,
+    component: SubmitNoteView,
     meta: { requiresAuth: true },
   },
   {

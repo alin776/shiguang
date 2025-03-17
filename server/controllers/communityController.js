@@ -686,6 +686,11 @@ exports.uploadImage = async (req, res) => {
         return res.status(400).json({ message: "请选择要上传的图片" });
       }
 
+      // 添加CORS头部
+      res.header("Access-Control-Allow-Origin", "*");
+      res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+      res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+
       // 返回图片URL
       res.json({
         url: `/uploads/posts/${req.file.filename}`,

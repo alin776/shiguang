@@ -174,4 +174,29 @@ CREATE TABLE IF NOT EXISTS `checkins` (
   UNIQUE KEY `user_item_date` (`user_id`, `item_id`, `date`),
   FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
   FOREIGN KEY (`item_id`) REFERENCES `checkin_items` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 小记表
+CREATE TABLE IF NOT EXISTS `notes` (
+  `id` INT PRIMARY KEY AUTO_INCREMENT,
+  `content` TEXT NOT NULL,
+  `author_id` INT NOT NULL,
+  `image` VARCHAR(255) DEFAULT NULL,
+  `likes` INT DEFAULT 0,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (`author_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  INDEX `idx_notes_created_at` (`created_at`),  
+  INDEX `idx_notes_author` (`author_id`, `created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 小记点赞表
+CREATE TABLE IF NOT EXISTS `note_likes` (
+  `id` INT PRIMARY KEY AUTO_INCREMENT,
+  `note_id` INT NOT NULL,
+  `user_id` INT NOT NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (`note_id`) REFERENCES `notes` (`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  UNIQUE KEY `unique_note_like` (`note_id`, `user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci; 

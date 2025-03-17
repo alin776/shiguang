@@ -368,7 +368,7 @@ onBeforeUnmount(() => {
 <style scoped>
 .event-page {
   min-height: 100vh;
-  background-color: rgba(18, 18, 30, 0.9);
+  background-color: rgba(255, 255, 255, 0.98); /* 增加不透明度代替模糊效果 */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -484,11 +484,11 @@ onBeforeUnmount(() => {
 @keyframes shadow-pulse {
   0% {
     opacity: 0.5;
-    filter: blur(8px);
+    /* 删除模糊效果 */
   }
   100% {
     opacity: 0.8;
-    filter: blur(12px);
+    /* 删除模糊效果 */
   }
 }
 
@@ -572,16 +572,16 @@ onBeforeUnmount(() => {
 }
 
 :deep(.el-picker__popper) {
-  background-color: rgba(30, 30, 40, 0.7) !important;
+  background-color: rgba(255, 255, 255, 0.98) !important; /* 增加不透明度代替模糊效果 */
   border: 1px solid rgba(147, 51, 234, 0.5) !important;
   box-shadow: 0 0 15px rgba(147, 51, 234, 0.3) !important;
-  backdrop-filter: blur(5px);
+  /* 删除模糊效果 */
 }
 
 :deep(.el-picker-panel),
 :deep(.el-time-panel) {
-  background-color: rgba(30, 30, 40, 0.6) !important;
-  color: var(--text-color) !important;
+  background-color: rgba(255, 255, 255, 0.98) !important; /* 增加不透明度代替模糊效果 */
+  color: #333333 !important; /* 调整文字颜色，确保在白色背景上可见 */
 }
 
 :deep(.el-date-table td.current:not(.disabled) .el-date-table-cell__text) {
