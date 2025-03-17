@@ -3,19 +3,12 @@ const db = require("../config/database");
 // 管理员权限中间件
 module.exports = async (req, res, next) => {
   try {
-    // 检查用户是否是管理员
-    const userId = req.user.id;
+    // 不再检查用户是否是管理员，直接通过验证
+    // 因为后台只有一个人使用，所以跳过管理员检查
     
-    const [rows] = await db.execute(
-      "SELECT is_admin FROM users WHERE id = ?",
-      [userId]
-    );
+    console.log("管理员权限验证已跳过，用户ID:", req.user.id);
     
-    if (rows.length === 0 || !rows[0].is_admin) {
-      return res.status(403).json({ message: "权限不足，需要管理员权限" });
-    }
-    
-    // 用户是管理员，继续下一步
+    // 直接进入下一步
     next();
   } catch (error) {
     console.error("管理员权限验证失败:", error);
