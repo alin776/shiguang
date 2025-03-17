@@ -1,73 +1,115 @@
 # 时光 (shiguang)
 
-一个现代化的日程管理与社交分享平台，为您记录生活中的每一个瞬间。
+一个现代化的生活休闲社区平台，为用户提供分享生活点滴和交流互动的空间。
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 ## 项目介绍
 
-"时光"是一款融合日程规划、习惯养成与社区互动的多功能 Web 应用。它不仅帮助用户高效管理时间，还为用户提供一个分享生活、记录成长的社交平台。应用采用现代 UI 设计，宇宙粒子风格界面给用户带来沉浸式体验。
+"时光"是一款专注于生活分享与社区互动的轻社交平台。它为用户提供了一个温馨的社区空间，可以分享日常生活、记录成长、发现志同道合的朋友。应用采用简约现代的设计风格，双列瀑布流布局，为用户带来流畅舒适的浏览体验。
 
 ## 核心功能
 
-### 日程管理
-
-- 创建、编辑和删除日程安排
-- 多视图日历展示（月视图/周视图）
-- 日程提醒与优先级设置
-- 循环日程支持
-
-### 习惯养成
-
-- 自定义打卡项目
-- 连续打卡统计
-- 习惯养成数据分析
-
 ### 社区互动
 
-- 分享生活动态
-- 图文内容发布
-- 点赞评论功能
-- 用户关注系统
+- 瀑布流布局的内容浏览
+- 三种内容排序方式（最新、最热、推荐）
+- 分类筛选系统
+- 帖子搜索功能
+- 帖子详情查看
 
-### 个人空间
+### 内容发布
 
-- 个性化资料设置
-- 头像和封面管理
-- 帖子与点赞内容管理
-- 关注和粉丝列表
+- 图文内容创建与编辑
+- 多图片上传与预览
+- 分类标签选择
+- 富文本编辑支持
 
-### 外观与体验
+### 互动功能
 
-- 宇宙粒子风格界面
-- 深色模式支持
-- 响应式设计适配多端
-- 流畅动画与过渡效果
+- 帖子点赞系统
+- 评论与回复功能
+- 本地点赞状态保存
+- 评论点赞功能
 
-## 技术架构
+### 用户系统
+
+- 用户注册与登录
+- 个人主页与资料设置
+- 用户头像管理
+- 消息通知系统
+
+## 技术栈
 
 ### 前端
 
-- **核心框架**: Vue 3 (组合式 API)
+- **框架**: Vue 3 (组合式 API)
 - **状态管理**: Pinia
-- **路由管理**: Vue Router
-- **UI 组件库**: Element Plus
-- **HTTP 请求**: Axios
-- **样式处理**: SCSS
+- **路由**: Vue Router 4
+- **UI组件**: Element Plus
+- **HTTP客户端**: Axios
 - **构建工具**: Vite
 
 ### 后端
 
 - **运行环境**: Node.js
-- **Web 框架**: Express
+- **Web框架**: Express
 - **数据库**: MySQL
-- **身份验证**: JWT
-- **文件处理**: Multer
-- **API 文档**: Swagger
+- **认证**: JWT
+- **文件上传**: Multer
+- **跨域处理**: CORS
+
+## 项目结构
+
+```
+├── public/                 # 静态资源
+├── src/
+│   ├── assets/             # 资源文件
+│   ├── components/         # 公共组件
+│   │   ├── BottomNavBar.vue  # 底部导航栏
+│   │   ├── NotificationBadge.vue # 通知徽章
+│   │   └── ...
+│   ├── config/             # 配置文件
+│   ├── router/             # 路由配置
+│   ├── stores/             # Pinia状态仓库
+│   │   ├── auth.js         # 认证状态
+│   │   ├── community.js    # 社区相关状态
+│   │   └── ...
+│   ├── utils/              # 工具函数
+│   │   ├── formatTime.js   # 时间格式化
+│   │   ├── imageHelpers.js # 图片处理助手
+│   │   └── ...
+│   ├── views/              # 页面组件
+│   │   ├── CommunityView.vue  # 社区主页
+│   │   ├── PostView.vue    # 帖子详情页
+│   │   ├── ProfileView.vue # 个人主页
+│   │   └── ...
+│   ├── App.vue             # 根组件
+│   └── main.js             # 入口文件
+├── server/                 # 后端服务
+│   ├── config/             # 配置文件
+│   ├── controllers/        # 控制器
+│   │   ├── authController.js  # 认证控制器
+│   │   ├── communityController.js # 社区控制器
+│   │   └── ...
+│   ├── middleware/         # 中间件
+│   │   ├── auth.js         # 认证中间件
+│   │   └── ...
+│   ├── routes/             # 路由定义
+│   │   ├── auth.js         # 认证路由
+│   │   ├── community.js    # 社区路由
+│   │   └── ...
+│   ├── uploads/            # 上传文件目录
+│   └── app.js              # 服务器入口文件
+├── .env                    # 环境变量
+├── .gitignore              # Git忽略文件
+├── package.json            # 项目配置
+└── vite.config.js          # Vite配置
+```
 
 ## 快速开始
 
-### 开发环境设置
+### 前端开发
 
 1. 克隆仓库
 
@@ -94,7 +136,7 @@ npm run dev
 npm run build
 ```
 
-### 后端服务配置
+### 后端开发
 
 1. 进入服务器目录
 
@@ -109,106 +151,135 @@ npm install
 ```
 
 3. 配置环境变量
-   创建 `.env` 文件在 `server/config` 目录下:
+   创建 `.env` 文件在 `server` 目录下:
 
 ```
 DB_HOST=localhost
 DB_USER=your_username
 DB_PASSWORD=your_password
-DB_NAME=time_calendar
+DB_NAME=shiguang
 JWT_SECRET=your_jwt_secret
+PORT=3000
 ```
 
-4. 启动服务器
+4. 创建数据库表结构
 
 ```bash
-npm run start
+# 使用MySQL客户端连接到数据库
+mysql -u your_username -p
+
+# 在MySQL中创建数据库
+CREATE DATABASE shiguang;
+USE shiguang;
+
+# 导入数据库表结构
+SOURCE server/database/schema.sql;
+```
+
+5. 启动后端服务器
+
+```bash
+npm start
 ```
 
 ## 部署指南
 
 ### 前端部署
 
-更新 API 配置：
+1. 修改API配置
+
+在 `src/config/index.js` 中更新API基础URL:
 
 ```javascript
-// vite.config.js
-export default defineConfig({
-  server: {
-    proxy: {
-      "/api": {
-        target: "http://your-domain.com:3000",
-        changeOrigin: true,
-      },
-    },
-  },
-});
+export const API_BASE_URL = 'https://your-domain.com/api';
 ```
+
+2. 构建生产版本
+
+```bash
+npm run build
+```
+
+3. 部署到Web服务器
+
+将 `dist` 目录中的文件部署到Nginx、Apache或其他Web服务器。
 
 ### 后端部署
 
-1. 设置生产环境变量
+1. 准备服务器环境
+
+- 安装Node.js (推荐v16+)
+- 安装MySQL (推荐v8.0+)
+- 设置防火墙开放需要的端口
+
+2. 配置生产环境变量
+
+创建 `.env` 文件:
 
 ```
 NODE_ENV=production
+DB_HOST=localhost
+DB_USER=production_user
+DB_PASSWORD=secure_password
+DB_NAME=shiguang_prod
+JWT_SECRET=strong_random_secret
 PORT=3000
 ```
 
-2. 配置数据库
-
-- 创建生产环境数据库
-- 执行 `server/database/schema.sql` 初始化表结构
-
-3. 使用 PM2 管理 Node 进程
+3. 使用PM2管理Node进程
 
 ```bash
 npm install -g pm2
 pm2 start app.js --name "shiguang-server"
+pm2 startup
+pm2 save
 ```
 
-## 项目结构
+4. 设置Nginx反向代理
 
+```nginx
+server {
+    listen 80;
+    server_name your-domain.com;
+
+    location /api {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+
+    location / {
+        root /path/to/frontend/dist;
+        try_files $uri $uri/ /index.html;
+    }
+}
 ```
-├── public/                 # 静态资源
-├── src/
-│   ├── assets/             # 项目资源文件
-│   ├── components/         # 公共组件
-│   │   └── BottomNavBar.vue # 底部导航栏
-│   ├── composables/        # 组合式函数
-│   ├── config/             # 全局配置
-│   ├── router/             # 路由配置
-│   ├── stores/             # Pinia状态管理
-│   ├── utils/              # 工具函数
-│   └── views/              # 页面组件
-│       ├── calendar/       # 日历相关页面
-│       ├── post/           # 帖子相关页面
-│       └── AboutView.vue   # 关于我们页面
-├── server/                 # 后端服务
-│   ├── config/             # 配置文件
-│   ├── controllers/        # 控制器
-│   ├── database/           # 数据库文件
-│   ├── middleware/         # 中间件
-│   ├── routes/             # 路由
-│   └── app.js              # 主程序
-└── package.json            # 项目配置
-```
+
+## 功能截图
+
+![社区首页](screenshots/community.png)
+![帖子详情](screenshots/post-detail.png)
+![发布内容](screenshots/create-post.png)
 
 ## 浏览器兼容性
 
-- Chrome 87+
-- Firefox 78+
+- Chrome 90+
+- Firefox 80+
 - Safari 14+
-- Edge 88+
+- Edge 90+
 
 ## 贡献指南
 
-我们欢迎各种形式的贡献！
+我们欢迎任何形式的贡献与改进！
 
 1. Fork 本仓库
-2. 创建特性分支: `git checkout -b feature/amazing-feature`
-3. 提交更改: `git commit -m 'Add amazing feature'`
-4. 推送分支: `git push origin feature/amazing-feature`
-5. 提交 Pull Request
+2. 创建你的特性分支: `git checkout -b feature/amazing-feature`
+3. 提交你的更改: `git commit -m 'Add amazing feature'`
+4. 推送到分支: `git push origin feature/amazing-feature`
+5. 提交Pull Request
 
 ## 许可说明
 
@@ -218,14 +289,7 @@ pm2 start app.js --name "shiguang-server"
 
 Copyright © 2024 alin776. All Rights Reserved.
 
-根据 Apache License 2.0 许可证要求:
-
-- 使用本项目代码时必须保留此版权声明
-- 需在显著位置说明对代码的任何修改
-- 需保留原作者信息和项目链接
-
 本软件由 alin776 独立开发完成  
-首次发布时间: 2025 年 2 月 23 日  
 GitHub: https://github.com/alin776/shiguang
 
 ## 联系我们

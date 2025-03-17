@@ -99,12 +99,21 @@
         <div v-else-if="!loading && !hasCheckInData" class="no-data-container">
           <el-empty description="暂无打卡数据" class="custom-empty">
             <template #image>
-              <img
-                src="../../../assets/images/empty-data.svg"
-                alt="无数据"
-                class="empty-image"
-              />
+              <div class="empty-state-illustration">
+                <div class="calendar-icon">
+                  <div class="calendar-top">
+                    <div class="calendar-dot"></div>
+                    <div class="calendar-dot"></div>
+                  </div>
+                  <div class="calendar-body">
+                    <div class="calendar-check">+</div>
+                  </div>
+                </div>
+              </div>
             </template>
+            <div class="empty-message">
+              您还没有添加任何打卡项目或完成任何打卡
+            </div>
             <el-button
               type="primary"
               class="add-button"

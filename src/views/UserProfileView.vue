@@ -1,102 +1,113 @@
 <template>
   <div class="user-profile-page">
-    <!-- 添加宇宙粒子背景 -->
-    <SpaceBackground />
-
-    <!-- 背景图和用户信息 -->
-    <div class="profile-header tech-card enhanced-border">
-      <div
-        class="cover-image"
-        :style="{
-          backgroundImage: `url(${getCoverUrl(userProfile.coverImage)})`,
-        }"
-      >
-        <div class="header-actions">
-          <el-icon class="back-icon" @click="router.back()"
-            ><ArrowLeft
-          /></el-icon>
-          <el-icon v-if="isOwnProfile" @click="editProfile"><More /></el-icon>
-        </div>
-      </div>
-
-      <div class="user-info">
-        <div class="avatar-wrapper">
-          <el-avatar
-            :size="88"
-            :src="getAvatarUrl(userProfile.avatar)"
-            @error="() => true"
-            class="profile-avatar"
-          >
-            {{ userProfile.username?.charAt(0).toUpperCase() || "?" }}
-          </el-avatar>
-          <el-button
-            v-if="!isOwnProfile"
-            class="follow-btn glow-button"
-            round
-            :class="{ following: isFollowing }"
-            @click="toggleFollow"
-          >
-            <el-icon v-if="isFollowing"><Check /></el-icon>
-            {{ isFollowing ? "已关注" : "关注" }}
+    <!-- 页面主体内容 -->
+    <div class="profile-container">
+      <!-- 顶部导航栏 -->
+      <div class="top-nav">
+        <el-button class="back-btn" circle @click="router.back()">
+          <el-icon><ArrowLeft /></el-icon>
+        </el-button>
+        <div class="right-action">
+          <el-button v-if="isOwnProfile" circle @click="editProfile">
+            <el-icon><More /></el-icon>
           </el-button>
         </div>
+      </div>
 
-        <h1 class="username cosmic-text">{{ userProfile.username }}</h1>
-        <p class="bio">{{ userProfile.bio || "这个人很懒，什么都没写~" }}</p>
-
-        <div class="stats-bar enhanced-gradient">
-          <div class="stat-item hover-effect" @click="showFollowers">
-            <span class="count cosmic-number">{{
-              userProfile.followersCount || 0
-            }}</span>
-            <span class="label">粉丝</span>
+      <!-- 用户信息卡片 -->
+      <div class="user-card">
+        <!-- 封面图片 -->
+        <div 
+          class="cover-image"
+          :style="{
+            backgroundImage: `url(${getCoverUrl(userProfile.coverImage)})`,
+          }"
+        ></div>
+        
+        <!-- 用户基本信息区 -->
+        <div class="user-info-container">
+          <!-- 头像 -->
+          <div class="avatar-container">
+            <el-avatar
+              :size="80"
+              :src="getAvatarUrl(userProfile.avatar)"
+              @error="() => true"
+              class="profile-avatar"
+            >
+              {{ userProfile.username?.charAt(0).toUpperCase() || "?" }}
+            </el-avatar>
           </div>
-          <div class="divider"></div>
-          <div class="stat-item hover-effect" @click="showFollowing">
-            <span class="count cosmic-number">{{
-              userProfile.followingCount || 0
-            }}</span>
-            <span class="label">关注</span>
+          
+          <!-- 用户名和简介 -->
+          <div class="user-details">
+            <h1 class="username text-center">{{ userProfile.username }}</h1>
+            <p class="bio text-center">{{ userProfile.bio || "这个人很懒，什么都没写~" }}</p>
+            
+            <!-- 关注按钮 (只在查看他人主页时显示) -->
+            <div class="action-btn-container" v-if="!isOwnProfile">
+              <el-button
+                class="follow-btn"
+                round
+                :type="isFollowing ? 'info' : 'primary'"
+                @click="toggleFollow"
+              >
+                <el-icon v-if="isFollowing"><Check /></el-icon>
+                {{ isFollowing ? "已关注" : "关注" }}
+              </el-button>
+            </div>
           </div>
-          <div class="divider"></div>
-          <div class="stat-item">
-            <span class="count cosmic-number">{{
-              userProfile.postsCount || 0
-            }}</span>
-            <span class="label">帖子</span>
+          
+          <!-- 用户统计信息 -->
+          <div class="stats-container">
+            <div class="stat-group hover-effect" @click="showFollowers">
+              <span class="count">{{ userProfile.followersCount || 0 }}</span>
+              <span class="label">粉丝</span>
+            </div>
+            <div class="stat-group hover-effect" @click="showFollowing">
+              <span class="count">{{ userProfile.followingCount || 0 }}</span>
+              <span class="label">关注</span>
+            </div>
+            <div class="stat-group">
+              <span class="count">{{ userProfile.postsCount || 0 }}</span>
+              <span class="label">帖子</span>
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- 帖子列表 -->
-    <div class="posts-container tech-container">
-      <h2 class="section-title cosmic-text">发布的帖子</h2>
-      <div class="post-list" v-if="posts.length > 0">
+      <!-- 帖子标题 -->
+      <div class="section-header">
+        <h2 class="section-title">发布的帖子</h2>
+      </div>
+      
+      <!-- 帖子列表 -->
+      <div class="posts-list" v-if="posts.length > 0">
         <div
           v-for="post in posts"
           :key="post.id"
-          class="post-card tech-card"
+          class="post-card"
           @click="viewPost(post)"
         >
+          <!-- 帖子图片 -->
           <div class="post-cover" v-if="post.images?.length">
             <img :src="getImageUrl(post.images[0])" :alt="post.title" />
-            <div class="image-count tech-badge" v-if="post.images.length > 1">
+            <div class="image-count" v-if="post.images.length > 1">
               <el-icon><Picture /></el-icon>
               {{ post.images.length }}
             </div>
           </div>
 
+          <!-- 帖子内容 -->
           <div class="post-content">
-            <h3 class="post-title cosmic-title">{{ post.title }}</h3>
+            <h3 class="post-title">{{ post.title }}</h3>
             <p class="post-text">{{ post.content }}</p>
             <div class="post-meta">
               <div class="post-stats">
-                <span class="stat-item cosmic-stat">
+                <span class="stats-item">
                   <el-icon><View /></el-icon>
                   {{ post.views || 0 }}
                 </span>
-                <span class="stat-item cosmic-stat">
+                <span class="stats-item">
                   <el-icon><Star /></el-icon>
                   {{ post.likes || 0 }}
                 </span>
@@ -107,7 +118,8 @@
         </div>
       </div>
 
-      <div v-else class="empty-state tech-card">
+      <!-- 无帖子时显示 -->
+      <div v-else class="empty-state">
         <el-empty description="暂无帖子" />
       </div>
     </div>
@@ -273,269 +285,227 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* 页面基本样式 */
 .user-profile-page {
+  background-color: #f8f9fa;
   min-height: 100vh;
-  background: rgba(18, 18, 30, 0.9);
-  color: white;
+  width: 100%;
+  padding-bottom: 24px;
   position: relative;
 }
 
-.profile-header {
-  background: rgba(30, 30, 40, 0.7);
+.profile-container {
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 0;
   position: relative;
-  z-index: 2;
-  overflow: hidden;
 }
 
-/* 宇宙科技风格卡片 */
-.tech-card {
-  background: rgba(30, 30, 40, 0.7);
-  border-radius: 16px;
-  overflow: hidden;
-  position: relative;
-  margin-bottom: 16px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+/* 工具类 */
+.text-center {
+  text-align: center !important;
+  width: 100% !important;
+  display: block !important;
 }
 
-.enhanced-border {
-  position: relative;
-  z-index: 0;
-}
-
-.enhanced-border::before {
-  content: "";
+/* 顶部导航 */
+.top-nav {
   position: absolute;
-  z-index: -1;
-  inset: 0;
-  padding: 2px;
-  border-radius: 16px;
-  background: linear-gradient(
-    45deg,
-    rgba(56, 189, 248, 0.6),
-    rgba(147, 51, 234, 0.6)
-  );
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
+  top: 10px;
+  left: 10px;
+  right: 10px;
+  display: flex;
+  justify-content: space-between;
+  z-index: 100;
 }
 
+.back-btn {
+  background-color: rgba(255, 255, 255, 0.8);
+  border: none;
+  color: #333;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(4px);
+}
+
+.right-action {
+  display: flex;
+  gap: 8px;
+}
+
+/* 用户卡片 */
+.user-card {
+  background-color: #fff;
+  border-radius: 0 0 20px 20px;
+  overflow: hidden;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+/* 封面图片 */
 .cover-image {
   height: 180px;
   background-size: cover;
   background-position: center;
   position: relative;
-  background-color: rgba(255, 255, 255, 0.98);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background-color: #eef2f7;
 }
 
-.header-actions {
-  position: absolute;
-  top: 16px;
-  left: 16px;
-  right: 16px;
-  display: flex;
-  justify-content: space-between;
-  z-index: 5;
-}
-
-.back-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.5);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  box-shadow: 0 0 10px rgba(147, 51, 234, 0.4);
-}
-
-.user-info {
+/* 用户信息容器 */
+.user-info-container {
+  padding: 0 16px 24px;
   position: relative;
-  margin-top: -44px;
-  padding: 0 16px 20px;
-  text-align: center;
-}
-
-.avatar-wrapper {
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-bottom: 12px;
+}
+
+/* 头像容器 */
+.avatar-container {
+  margin-top: -40px;
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 2;
+  width: 100%;
 }
 
 .profile-avatar {
-  border: 4px solid rgba(30, 30, 40, 0.8);
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
-  box-shadow: 0 0 15px rgba(147, 51, 234, 0.6);
-  transition: all 0.3s ease;
+  border: 4px solid #fff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  width: 80px;
+  height: 80px;
 }
 
-.profile-avatar:hover {
-  transform: scale(1.05);
-  box-shadow: 0 0 20px rgba(147, 51, 234, 0.8);
-}
-
-.follow-btn {
-  position: absolute;
-  right: 20px;
-  top: 0;
-  min-width: 90px;
-  background: linear-gradient(45deg, #8b5cf6, #d946ef);
-  border: none;
-  color: white;
-  font-weight: 600;
-  box-shadow: 0 4px 10px rgba(147, 51, 234, 0.4);
-  transition: all 0.3s ease;
-}
-
-.follow-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 15px rgba(147, 51, 234, 0.6);
-}
-
-.follow-btn.following {
-  background: rgba(147, 51, 234, 0.2);
-  color: white;
-  border: 1px solid rgba(147, 51, 234, 0.4);
-}
-
-.follow-btn .el-icon {
-  margin-right: 4px;
+/* 用户详情 */
+.user-details {
+  text-align: center;
+  margin-bottom: 15px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .username {
   font-size: 24px;
   font-weight: 600;
-  color: white;
-  margin: 0 0 8px;
-  text-shadow: 0 0 10px rgba(147, 51, 234, 0.7);
-}
-
-.cosmic-text {
-  background: linear-gradient(45deg, #38bdf8, #9333ea);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  text-shadow: 0 0 8px rgba(147, 51, 234, 0.4);
-}
-
-.cosmic-number {
-  font-weight: bold;
-  text-shadow: 0 0 8px rgba(147, 51, 234, 0.7);
-}
-
-.cosmic-title {
-  color: white;
-  text-shadow: 0 0 6px rgba(147, 51, 234, 0.5);
+  margin: 0 0 12px;
+  color: #333;
+  width: 100%;
+  text-align: center;
+  line-height: 1.2;
 }
 
 .bio {
-  font-size: 15px;
-  color: rgba(255, 255, 255, 0.8);
-  margin: 0 0 24px;
-  line-height: 1.6;
-  max-width: 480px;
-  margin-left: auto;
-  margin-right: auto;
+  font-size: 14px;
+  color: #666;
+  margin: 0 0 16px;
+  line-height: 1.5;
+  word-break: break-word;
+  width: 100%;
+  text-align: center;
 }
 
-.stats-bar {
+/* 操作按钮 */
+.action-btn-container {
+  margin-top: 16px;
   display: flex;
   justify-content: center;
-  align-items: center;
-  padding: 16px 0;
-  border-top: 1px solid rgba(147, 51, 234, 0.3);
-  max-width: 400px;
-  margin: 0 auto;
+  width: 100%;
 }
 
-.enhanced-gradient {
-  background: linear-gradient(
-    to right,
-    rgba(30, 30, 40, 0.5),
-    rgba(56, 189, 248, 0.1),
-    rgba(30, 30, 40, 0.5)
-  );
-  border-radius: 8px;
-  padding: 12px;
-  box-shadow: inset 0 0 10px rgba(147, 51, 234, 0.2);
+.follow-btn {
+  min-width: 100px;
+  font-weight: 500;
 }
 
-.divider {
-  width: 1px;
-  height: 24px;
-  background-color: rgba(147, 51, 234, 0.3);
-  margin: 0 32px;
+/* 统计信息 */
+.stats-container {
+  display: flex;
+  justify-content: space-around;
+  padding: 16px 10px;
+  border-top: 1px solid #f0f0f0;
+  width: 100%;
+  margin-top: 10px;
 }
 
-.stat-item {
+.stat-group {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  flex: 1;
+  text-align: center;
+  position: relative;
+}
+
+.stat-group:not(:last-child):after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 20%;
+  height: 60%;
+  width: 1px;
+  background-color: #f0f0f0;
 }
 
 .hover-effect {
   cursor: pointer;
-  transition: transform 0.2s;
 }
 
-.hover-effect:hover {
-  transform: translateY(-2px);
+.hover-effect:hover .count {
+  color: #409eff;
 }
 
-.stat-item .count {
+.count {
   font-size: 20px;
   font-weight: 600;
-  color: white;
+  color: #333;
+  line-height: 1.2;
 }
 
-.stat-item .label {
+.label {
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.7);
+  color: #909399;
+  margin-top: 5px;
+}
+
+/* 帖子部分 */
+.section-header {
+  margin: 24px 16px 16px;
 }
 
 .section-title {
   font-size: 18px;
-  font-weight: 500;
-  color: white;
-  text-shadow: 0 0 8px rgba(147, 51, 234, 0.7);
-  margin: 0 0 16px;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+}
+
+/* 帖子列表 */
+.posts-list {
   padding: 0 16px;
 }
 
-.posts-container {
-  padding: 16px 8px;
-  max-width: 600px;
-  margin: 0 auto;
-}
-
-.tech-container {
-  position: relative;
-  z-index: 1;
-}
-
 .post-card {
-  background: rgba(30, 30, 40, 0.6);
-  border: 1px solid rgba(147, 51, 234, 0.2);
+  background: #fff;
+  border-radius: 12px;
   overflow: hidden;
   margin-bottom: 16px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 1px 8px rgba(0, 0, 0, 0.05);
+  transition: transform 0.3s, box-shadow 0.3s;
   cursor: pointer;
 }
 
 .post-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(147, 51, 234, 0.3);
-  border-color: rgba(147, 51, 234, 0.4);
+  transform: translateY(-3px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
 }
 
 .post-cover {
   position: relative;
-  padding-bottom: 75%;
+  padding-bottom: 56%;
 }
 
 .post-cover img {
@@ -549,23 +519,17 @@ onMounted(() => {
 
 .image-count {
   position: absolute;
-  right: 8px;
-  top: 8px;
-  background: rgba(147, 51, 234, 0.6);
-  color: white;
-  padding: 4px 8px;
+  right: 10px;
+  top: 10px;
+  background-color: rgba(255, 255, 255, 0.9);
+  color: #666;
+  padding: 3px 8px;
   border-radius: 12px;
   font-size: 12px;
   display: flex;
   align-items: center;
   gap: 4px;
-  box-shadow: 0 0 10px rgba(147, 51, 234, 0.5);
-}
-
-.tech-badge {
-  /* backdrop-filter: blur(4px); */
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background-color: rgba(255, 255, 255, 0.2); /* 添加半透明背景代替模糊效果 */
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
 
 .post-content {
@@ -573,17 +537,17 @@ onMounted(() => {
 }
 
 .post-title {
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 600;
   margin: 0 0 8px;
-  color: white;
+  color: #333;
 }
 
 .post-text {
-  font-size: 15px;
-  color: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
+  color: #666;
   margin: 0 0 12px;
-  line-height: 1.6;
+  line-height: 1.5;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -594,63 +558,54 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  font-size: 12px;
+  color: #999;
 }
 
 .post-stats {
   display: flex;
-  gap: 16px;
+  gap: 12px;
 }
 
-.post-stats .stat-item {
-  flex-direction: row;
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.5);
+.stats-item {
+  display: flex;
+  align-items: center;
   gap: 4px;
 }
 
-.cosmic-stat {
-  transition: all 0.3s ease;
-}
-
-.cosmic-stat:hover {
-  color: rgba(147, 51, 234, 0.9);
-  transform: translateY(-1px);
-}
-
 .post-time {
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.5);
+  color: #999;
 }
 
+/* 无内容状态 */
 .empty-state {
-  padding: 48px 0;
-  text-align: center;
-  background: rgba(30, 30, 40, 0.7);
+  padding: 40px 0;
+  background-color: #fff;
   border-radius: 12px;
-  margin: 16px 8px;
-  border: 1px solid rgba(147, 51, 234, 0.2);
+  margin: 16px;
+  box-shadow: 0 1px 8px rgba(0, 0, 0, 0.05);
 }
 
-:deep(.nav-bar) {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 100;
-}
-
+/* 响应式布局 */
 @media screen and (min-width: 768px) {
-  .user-profile-page {
-    max-width: 800px;
-    margin: 0 auto;
-    padding-bottom: 40px;
-    position: relative;
-    height: auto;
-    min-height: 100vh;
+  .profile-container {
+    max-width: 700px;
   }
-
-  .posts-container {
-    padding: 24px 16px;
+  
+  .cover-image {
+    height: 220px;
+  }
+  
+  .post-card {
+    margin-bottom: 20px;
+  }
+  
+  .post-content {
+    padding: 20px;
+  }
+  
+  .post-title {
+    font-size: 18px;
   }
 }
 </style>

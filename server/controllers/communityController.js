@@ -63,7 +63,7 @@ const uploadAudio = multer({
 
 exports.getPosts = async (req, res) => {
   try {
-    let { page = 1, limit = 20, sort = "latest", search = "" } = req.query;
+    let { page = 1, limit = 20, sort = "latest", search = "", category_id } = req.query;
     page = parseInt(page);
     limit = parseInt(limit);
     const offset = (page - 1) * limit;
@@ -72,18 +72,20 @@ exports.getPosts = async (req, res) => {
     let query = `
       SELECT 
         p.id, p.user_id, p.title, p.content, p.views, p.likes, 
-        p.created_at, p.images, u.username,
+        p.created_at, p.images, p.category_id, u.username,
         CASE 
           WHEN u.avatar IS NOT NULL AND u.avatar != '' 
           THEN CONCAT('http://localhost:3000/uploads/avatars/', u.avatar)
           ELSE NULL 
         END as avatar,
         u.id as author_id,
+        c.name as category_name,
         COALESCE((SELECT COUNT(*) FROM comments WHERE post_id = p.id), 0) as comments_count,
         COALESCE((SELECT COUNT(*) FROM likes WHERE post_id = p.id), 0) as likes_count,
         IF(EXISTS(SELECT 1 FROM likes WHERE post_id = p.id AND user_id = ?), 1, 0) as is_liked
       FROM posts p
       LEFT JOIN users u ON p.user_id = u.id
+      LEFT JOIN categories c ON p.category_id = c.id
       WHERE 1=1
     `;
 
@@ -96,13 +98,19 @@ exports.getPosts = async (req, res) => {
       queryParams.push(searchPattern, searchPattern);
     }
 
+    // 添加分类筛选
+    if (category_id) {
+      query += ` AND p.category_id = ?`;
+      queryParams.push(category_id);
+    }
+
     // 添加排序条件
     query += ` ORDER BY `;
     switch (sort) {
-      case "popular":
+      case "hot":
         query += `p.likes DESC`;
         break;
-      case "recommended":
+      case "recommend":
         query += `p.views DESC`;
         break;
       case "latest":
@@ -120,13 +128,24 @@ exports.getPosts = async (req, res) => {
       WHERE 1=1
     `;
 
+    const countParams = [];
+
+    // 添加搜索条件到计数查询
     if (search.trim()) {
       countQuery += ` AND (p.title LIKE ? OR p.content LIKE ?)`;
+      const searchPattern = `%${search.trim()}%`;
+      countParams.push(searchPattern, searchPattern);
+    }
+
+    // 添加分类筛选到计数查询
+    if (category_id) {
+      countQuery += ` AND p.category_id = ?`;
+      countParams.push(category_id);
     }
 
     const [countResult] = await db.execute(
       countQuery,
-      search.trim() ? [`%${search.trim()}%`, `%${search.trim()}%`] : []
+      countParams
     );
 
     const [posts] = await db.query(query, queryParams);
@@ -184,10 +203,13 @@ exports.getPost = async (req, res) => {
         u.username,
         u.avatar,
         u.id as author_id,
+        c.id as category_id,
+        c.name as category_name,
         EXISTS(SELECT 1 FROM follows WHERE follower_id = ? AND followed_id = u.id) as is_following,
         EXISTS(SELECT 1 FROM likes WHERE post_id = p.id AND user_id = ?) as is_liked
       FROM posts p
       LEFT JOIN users u ON p.user_id = u.id
+      LEFT JOIN categories c ON p.category_id = c.id
       WHERE p.id = ?`,
       [currentUserId, currentUserId, postId]
     );
@@ -204,6 +226,10 @@ exports.getPost = async (req, res) => {
         avatar: posts[0].avatar,
         is_following: Boolean(posts[0].is_following),
       },
+      category: posts[0].category_id ? {
+        id: posts[0].category_id,
+        name: posts[0].category_name
+      } : null,
       is_liked: Boolean(posts[0].is_liked),
     };
 
@@ -285,7 +311,7 @@ exports.createPost = async (req, res) => {
       return res.status(400).json({ message: "标题和内容不能为空" });
     }
 
-    const { title, content, images, audio } = req.body;
+    const { title, content, images, audio, category_id } = req.body;
     let parsedImages = [];
 
     try {
@@ -298,6 +324,18 @@ exports.createPost = async (req, res) => {
       parsedImages = [];
     }
 
+    // 验证分类ID是否存在
+    if (category_id) {
+      const [categories] = await db.execute(
+        "SELECT id FROM categories WHERE id = ?", 
+        [category_id]
+      );
+      
+      if (categories.length === 0) {
+        return res.status(400).json({ message: "选择的分类不存在" });
+      }
+    }
+
     // 确保所有参数都有值
     const params = [
       req.user.id,
@@ -305,6 +343,7 @@ exports.createPost = async (req, res) => {
       content.trim(),
       JSON.stringify(parsedImages || []), // 确保不会是 undefined
       audio || null, // 添加音频字段
+      category_id || null, // 添加分类ID字段
     ];
 
     // 检查参数是否包含 undefined
@@ -313,21 +352,17 @@ exports.createPost = async (req, res) => {
     }
 
     const [result] = await db.execute(
-      "INSERT INTO posts (user_id, title, content, images, audio) VALUES (?, ?, ?, ?, ?)",
+      "INSERT INTO posts (user_id, title, content, images, audio, category_id) VALUES (?, ?, ?, ?, ?, ?)",
       params
     );
 
     res.status(201).json({
+      id: result.insertId,
       message: "发布成功",
-      postId: result.insertId,
     });
   } catch (error) {
-    console.error("创建帖子错误:", error);
-    if (error.code === "ER_BAD_NULL_ERROR") {
-      res.status(400).json({ message: "必填字段不能为空" });
-    } else {
-      res.status(500).json({ message: "发布失败" });
-    }
+    console.error("发布帖子失败:", error);
+    res.status(500).json({ message: "发布失败" });
   }
 };
 
@@ -392,7 +427,7 @@ exports.createComment = async (req, res) => {
 exports.updatePost = async (req, res) => {
   try {
     const { postId } = req.params;
-    const { title, content } = req.body;
+    const { title, content, category_id } = req.body;
     const userId = req.user.id;
 
     // 检查帖子是否存在且属于当前用户
@@ -405,11 +440,22 @@ exports.updatePost = async (req, res) => {
       return res.status(404).json({ message: "帖子不存在或无权限" });
     }
 
-    await db.execute("UPDATE posts SET title = ?, content = ? WHERE id = ?", [
-      title,
-      content,
-      postId,
-    ]);
+    // 验证分类ID是否存在
+    if (category_id) {
+      const [categories] = await db.execute(
+        "SELECT id FROM categories WHERE id = ?", 
+        [category_id]
+      );
+      
+      if (categories.length === 0) {
+        return res.status(400).json({ message: "选择的分类不存在" });
+      }
+    }
+
+    await db.execute(
+      "UPDATE posts SET title = ?, content = ?, category_id = ? WHERE id = ?", 
+      [title, content, category_id || null, postId]
+    );
 
     res.json({ message: "更新成功" });
   } catch (error) {

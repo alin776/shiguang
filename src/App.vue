@@ -87,26 +87,6 @@ watch(
   --header-height: 60px;
 }
 
-:root.dark {
-  /* 深色模式下保持相似色调但调整亮度 */
-  --primary-color: #5A9CEA;
-  --accent-color: #FFB340;
-  --success-color: #5CDF74;
-  --warning-color: #FFA020;
-  --danger-color: #FF5147;
-  
-  --text-color: #E5E7EB;
-  --text-color-light: #B0B0B0;
-  --text-color-lighter: #888888;
-  --bg-color: #1A1A1A;
-  --card-bg: #252525;
-  --border-color: #3D3D3D;
-  --header-bg: #252525;
-  --shadow-color: rgba(0, 0, 0, 0.2);
-  --placeholder-color: #777777;
-  --timeline-bg: #252525;
-}
-
 body {
   font-family: "PingFang SC", "Helvetica Neue", Helvetica, "Hiragino Sans GB",
     "Microsoft YaHei", Arial, sans-serif;
@@ -123,60 +103,8 @@ body {
   -webkit-overflow-scrolling: touch;
 }
 
-/* 深色模式下的ElementPlus组件样式调整 */
-.dark {
-  --el-color-primary: var(--primary-color);
-  --el-bg-color: var(--bg-color);
-  --el-text-color-primary: var(--text-color);
-  --el-border-color: var(--border-color);
-  --el-fill-color-blank: var(--card-bg);
-  --el-bg-color-overlay: var(--card-bg);
-  --el-fill-color-light: #363636;
-  --el-text-color-regular: #d1d5db;
-  --el-text-color-secondary: #9ca3af;
-  --el-mask-color: rgba(0, 0, 0, 0.8);
-}
-
 .el-tabs__item.is-active {
   color: var(--primary-color) !important;
-}
-
-.dark .el-card,
-.dark .el-dialog,
-.dark .el-menu,
-.dark .el-dropdown-menu,
-.dark .el-message-box,
-.dark .el-drawer {
-  background-color: var(--card-bg);
-  color: var(--text-color);
-  border-color: var(--border-color);
-}
-
-.dark .el-drawer__header,
-.dark .el-dialog__header,
-.dark .el-message-box__header {
-  color: var(--text-color);
-}
-
-.dark .el-button--default {
-  background-color: #333;
-  border-color: #555;
-  color: #eee;
-}
-
-.dark .el-input__inner,
-.dark .el-textarea__inner {
-  background-color: #333;
-  border-color: #555;
-  color: #eee;
-}
-
-.dark .el-empty__description {
-  color: var(--text-color);
-}
-
-.dark .el-tabs__nav-wrap::after {
-  background-color: var(--border-color);
 }
 
 #app {
@@ -313,16 +241,6 @@ a {
   box-shadow: 0 0 0 1px var(--primary-color) !important;
 }
 
-/* 覆盖深色模式的输入框样式 */
-.dark .el-input__inner,
-.dark .el-textarea__inner,
-[data-theme='dark'] .el-input__inner,
-[data-theme='dark'] .el-textarea__inner {
-  background-color: white !important;
-  border-color: var(--border-color) !important;
-  color: #333333 !important;
-}
-
 /* 输入框内文本颜色 */
 .el-form .el-input .el-input__inner,
 .el-input .el-input__inner,
@@ -335,101 +253,5 @@ a {
 .el-form .el-form-item__label {
   color: #333333 !important;
   font-weight: 600 !important;
-}
-
-@media (prefers-color-scheme: dark) {
-  /* 深色模式下的ElementPlus组件样式调整 */
-  .dark {
-    --el-color-primary: var(--primary-color);
-    --el-bg-color: var(--bg-color);
-    --el-text-color-primary: var(--text-color);
-    --el-border-color: var(--border-color);
-    --el-fill-color-blank: var(--card-bg);
-    --el-bg-color-overlay: var(--card-bg);
-    --el-fill-color-light: #363636;
-    --el-text-color-regular: #d1d5db;
-    --el-text-color-secondary: #9ca3af;
-    --el-mask-color: rgba(0, 0, 0, 0.8);
-  }
-
-  .dark .el-card,
-  .dark .el-dialog,
-  .dark .el-menu,
-  .dark .el-dropdown-menu,
-  .dark .el-message-box,
-  .dark .el-drawer {
-    background-color: var(--card-bg);
-    color: var(--text-color);
-    border-color: var(--border-color);
-  }
-
-  .dark .el-drawer__header,
-  .dark .el-dialog__header,
-  .dark .el-message-box__header {
-    color: var(--text-color);
-  }
-
-  .dark .el-button--default {
-    background-color: #333;
-    border-color: #555;
-    color: #eee;
-  }
-
-  .dark .el-input__inner,
-  .dark .el-textarea__inner {
-    background-color: #333;
-    border-color: #555;
-    color: #eee;
-  }
-
-  .dark .el-empty__description {
-    color: var(--text-color);
-  }
-
-  .dark .el-tabs__nav-wrap::after {
-    background-color: var(--border-color);
-  }
-
-  .dark .el-tabs__item.is-active {
-    color: var(--primary-color) !important;
-  }
-
-  .dark .el-card,
-  .dark .el-dialog,
-  .dark .el-menu,
-  .dark .el-dropdown-menu,
-  .dark .el-message-box,
-  .dark .el-drawer {
-    background-color: var(--card-bg);
-    color: var(--text-color);
-    border-color: var(--border-color);
-  }
-
-  .dark .el-drawer__header,
-  .dark .el-dialog__header,
-  .dark .el-message-box__header {
-    color: var(--text-color);
-  }
-
-  .dark .el-button--default {
-    background-color: #333;
-    border-color: #555;
-    color: #eee;
-  }
-
-  .dark .el-input__inner,
-  .dark .el-textarea__inner {
-    background-color: #333;
-    border-color: #555;
-    color: #eee;
-  }
-
-  .dark .el-empty__description {
-    color: var(--text-color);
-  }
-
-  .dark .el-tabs__nav-wrap::after {
-    background-color: var(--border-color);
-  }
 }
 </style>

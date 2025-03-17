@@ -12,6 +12,7 @@ const feedbackRoutes = require("./routes/feedbackRoutes");
 const uploadRoutes = require("./routes/uploadRoutes");
 const checkInRoutes = require("./routes/checkInRoutes");
 const noteRoutes = require("./routes/noteRoutes");
+const categoryRoutes = require("./routes/categoryRoutes");
 
 const app = express();
 
@@ -56,7 +57,7 @@ app.use((req, res, next) => {
 // CORS 配置
 app.use(
   cors({
-    origin: ["http://localhost:5173", "http://localhost:8080", "http://127.0.0.1:5173", "https://shiguang.example.com"],
+    origin: "*",
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
@@ -95,6 +96,7 @@ app.use("/api/notifications", notificationRoutes);
 app.use("/api/feedback", feedbackRoutes);
 app.use("/api/checkins", checkInRoutes);
 app.use("/api/notes", noteRoutes);
+app.use("/api/categories", categoryRoutes);
 
 // 错误处理中间件
 app.use((err, req, res, next) => {

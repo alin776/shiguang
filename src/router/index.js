@@ -16,6 +16,7 @@ import CalendarStatisticsView from "../views/calendar/statistics/StatisticsView.
 import NoteView from "../views/NoteView.vue"; // 添加小记页面组件导入
 import SubmitNoteView from "../views/SubmitNoteView.vue"; // 添加小记投稿页面组件导入
 import AboutView from "../views/AboutView.vue";
+import CreatePostView from "../views/CreatePostView.vue"; // 添加发布帖子页面组件导入
 import { ref } from "vue";
 
 const routes = [
@@ -81,6 +82,12 @@ const routes = [
     path: "/community",
     name: "Community",
     component: CommunityView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: "/community/create",
+    name: "CreatePost",
+    component: CreatePostView,
     meta: { requiresAuth: true },
   },
   {

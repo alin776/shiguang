@@ -8,7 +8,9 @@ export const useCommunityStore = defineStore("community", {
   state: () => ({
     posts: [],
     currentPost: null,
+    categories: [],
     loading: false,
+    categoriesLoading: false,
     error: null,
     pagination: {
       total: 0,
@@ -19,8 +21,31 @@ export const useCommunityStore = defineStore("community", {
   }),
 
   actions: {
+    // 获取所有分类
+    async getCategories() {
+      try {
+        this.categoriesLoading = true;
+        const authStore = useAuthStore();
+        const response = await axios.get(
+          `${API_BASE_URL}/api/categories`,
+          {
+            headers: { Authorization: `Bearer ${authStore.token}` }
+          }
+        );
+        
+        this.categories = response.data;
+        return response.data;
+      } catch (error) {
+        console.error("获取分类失败:", error);
+        this.error = error.response?.data?.message || "获取分类失败";
+        throw error;
+      } finally {
+        this.categoriesLoading = false;
+      }
+    },
+    
     // 获取帖子列表
-    async getPosts(page = 1, append = false, sort = "latest", search = "") {
+    async getPosts(page = 1, append = false, sort = "latest", search = "", categoryId = null) {
       try {
         this.loading = true;
         const authStore = useAuthStore();
@@ -33,6 +58,7 @@ export const useCommunityStore = defineStore("community", {
               limit: this.pagination.limit,
               sort,
               search: search.trim(),
+              category_id: categoryId
             },
           }
         );
@@ -108,6 +134,11 @@ export const useCommunityStore = defineStore("community", {
           title: postData.title,
           content: postData.content,
         };
+
+        // 添加分类ID
+        if (postData.category_id) {
+          data.category_id = postData.category_id;
+        }
 
         if (postData.images?.length) {
           // 处理已上传的图片URL

@@ -199,4 +199,22 @@ CREATE TABLE IF NOT EXISTS `note_likes` (
   FOREIGN KEY (`note_id`) REFERENCES `notes` (`id`) ON DELETE CASCADE,
   FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
   UNIQUE KEY `unique_note_like` (`note_id`, `user_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci; 
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 分类表
+CREATE TABLE IF NOT EXISTS `categories` (
+  `id` INT PRIMARY KEY AUTO_INCREMENT,
+  `name` VARCHAR(50) NOT NULL,
+  `description` TEXT,
+  `sort_order` INT DEFAULT 0,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 添加分类关联到帖子表
+ALTER TABLE posts ADD COLUMN category_id INT DEFAULT NULL;
+ALTER TABLE posts ADD FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL;
+
+-- 更新分类表结构：移除颜色和图标属性
+ALTER TABLE categories DROP COLUMN IF EXISTS color;
+ALTER TABLE categories DROP COLUMN IF EXISTS icon; 

@@ -871,6 +871,13 @@ const handleImageError = (event) => {
   line-height: 1;
   color: #2c3e50;
   margin-right: 15px;
+  /* 提高字体清晰度 */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* 防止文本模糊 */
+  transform: translateZ(0);
+  /* 防止字体缩放导致的模糊 */
+  text-rendering: optimizeLegibility;
 }
 
 .date-info {
@@ -878,6 +885,9 @@ const handleImageError = (event) => {
   color: #34495e;
   font-weight: 500;
   margin-bottom: 5px;
+  /* 提高字体清晰度 */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 .location-weather {
@@ -885,6 +895,9 @@ const handleImageError = (event) => {
   color: #7f8c8d;
   margin-top: 4px;
   font-weight: normal;
+  /* 提高字体清晰度 */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 .city-name {
@@ -964,6 +977,16 @@ const handleImageError = (event) => {
   overflow: hidden;
   position: relative;
   box-sizing: border-box;
+  /* 防止缩放和渲染问题 */
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  /* 优化字体渲染 */
+  text-rendering: optimizeLegibility;
+  /* 确保元素使用硬件加速 */
+  will-change: transform;
+  /* 修复边缘锯齿 */
+  perspective: 1000px;
 }
 
 .note-image-container {
@@ -1018,8 +1041,15 @@ const handleImageError = (event) => {
   font-weight: 500;
   text-align: left;
   white-space: pre-line;
-  width: 100%;
-  padding-left: 5px; /* 为文字添加左侧间距 */
+  /* 提高字体清晰度 */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* 防止文本模糊 */
+  transform: translateZ(0);
+  /* 确保文本使用整数像素 */
+  transform-style: preserve-3d;
+  /* 防止字体缩放导致的模糊 */
+  text-rendering: optimizeLegibility;
 }
 
 .note-footer {
@@ -1052,6 +1082,10 @@ const handleImageError = (event) => {
   font-size: 14px;
   font-weight: 500;
   color: #2c3e50;
+  /* 提高字体清晰度 */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transform: translateZ(0);
 }
 
 .like-area {
@@ -1078,6 +1112,10 @@ const handleImageError = (event) => {
   font-size: 14px;
   font-weight: 500;
   color: #2c3e50;
+  /* 提高字体清晰度 */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transform: translateZ(0);
 }
 
 /* 底部工具栏 */

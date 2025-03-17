@@ -1,16 +1,17 @@
 <template>
   <div class="followers-page page-container">
-    <SpaceBackground />
-    <div class="page-header tech-card">
-      <el-icon class="back-icon" @click="router.back()"><ArrowLeft /></el-icon>
-      <h2 class="cosmic-text">粉丝</h2>
+    <div class="page-header">
+      <el-button class="back-btn" circle @click="router.back()">
+        <el-icon><ArrowLeft /></el-icon>
+      </el-button>
+      <h2 class="page-title">粉丝</h2>
     </div>
 
     <div class="user-list" v-if="followers.length > 0">
       <div
         v-for="user in followers"
         :key="user.id"
-        class="user-item tech-card enhanced-border"
+        class="user-item"
         @click="viewUserProfile(user.id)"
       >
         <div class="user-info">
@@ -23,24 +24,24 @@
             {{ user.username?.charAt(0).toUpperCase() || "?" }}
           </el-avatar>
           <div class="user-meta">
-            <div class="username cosmic-text">{{ user.username }}</div>
+            <div class="username">{{ user.username }}</div>
             <div class="bio">{{ user.bio || "这个人很懒，什么都没写~" }}</div>
           </div>
         </div>
         <el-button
           v-if="user.id !== currentUserId"
-          class="follow-btn glow-button"
+          class="follow-btn"
           round
           size="small"
-          :class="{ following: user.isFollowing }"
-          @click="toggleFollow(user)"
+          :type="user.isFollowing ? 'info' : 'primary'"
+          @click.stop="toggleFollow(user)"
         >
           {{ user.isFollowing ? "已关注" : "关注" }}
         </el-button>
       </div>
     </div>
 
-    <div v-else class="empty-state tech-card">
+    <div v-else class="empty-state">
       <el-empty description="暂无粉丝" />
     </div>
   </div>
@@ -122,93 +123,78 @@ onMounted(() => {
 <style scoped>
 .followers-page {
   min-height: 100vh;
-  background: rgba(18, 18, 30, 0.9);
-  color: white;
+  background: #f8f9fa;
+  color: #333;
   position: relative;
-  background-color: #000000;
 }
 
 .page-header {
   display: flex;
   align-items: center;
   padding: 16px;
-  background: rgba(30, 30, 40, 0.7);
+  background: #ffffff;
   position: sticky;
   top: 0;
   z-index: 10;
   margin-bottom: 16px;
-  border-bottom: 1px solid rgba(147, 51, 234, 0.3);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  border-bottom: 1px solid #f0f0f0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
-.back-icon {
-  font-size: 20px;
-  color: white;
-  cursor: pointer;
-  padding: 4px;
+.back-btn {
+  color: #333;
+  background-color: rgba(0, 0, 0, 0.02);
+  border: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
-.page-header h2 {
+.page-title {
   margin: 0;
   font-size: 18px;
-  font-weight: 500;
+  font-weight: 600;
   flex: 1;
   text-align: center;
-  text-shadow: 0 0 8px rgba(147, 51, 234, 0.7);
+  color: #333;
 }
 
 .user-list {
-  padding: 12px;
+  padding: 12px 16px;
+  max-width: 600px;
+  margin: 0 auto;
 }
 
 .user-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px;
-  background: rgba(30, 30, 40, 0.6);
-  border-radius: 8px;
-  margin-bottom: 8px;
-  border: 1px solid rgba(147, 51, 234, 0.2);
-  transition: all 0.3s ease;
+  padding: 14px 16px;
+  background: #ffffff;
+  border-radius: 12px;
+  margin-bottom: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
   position: relative;
   overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  cursor: pointer;
 }
 
 .user-item:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(147, 51, 234, 0.3);
-  border-color: rgba(147, 51, 234, 0.4);
-}
-
-.enhanced-border {
-  position: relative;
-  z-index: 0;
-}
-
-.enhanced-border::before {
-  content: "";
-  position: absolute;
-  z-index: -1;
-  inset: 0;
-  padding: 2px;
-  border-radius: 8px;
-  background: linear-gradient(
-    45deg,
-    rgba(56, 189, 248, 0.6),
-    rgba(147, 51, 234, 0.6)
-  );
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border-color: rgba(0, 0, 0, 0.08);
 }
 
 .user-info {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
   flex: 1;
-  cursor: pointer;
+}
+
+.user-avatar {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  border: 2px solid #fff;
 }
 
 .user-meta {
@@ -217,23 +203,14 @@ onMounted(() => {
 
 .username {
   font-size: 16px;
-  font-weight: 500;
-  color: white;
+  font-weight: 600;
+  color: #333;
   margin-bottom: 4px;
-  text-shadow: 0 0 8px rgba(147, 51, 234, 0.7);
-}
-
-.cosmic-text {
-  background: linear-gradient(45deg, #38bdf8, #9333ea);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  text-shadow: 0 0 8px rgba(147, 51, 234, 0.4);
 }
 
 .bio {
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.7);
+  color: #666;
   display: -webkit-box;
   -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
@@ -242,38 +219,33 @@ onMounted(() => {
 
 .follow-btn {
   min-width: 80px;
-  background: linear-gradient(45deg, #8b5cf6, #d946ef);
-  border: none;
-  font-weight: 600;
-  box-shadow: 0 4px 10px rgba(147, 51, 234, 0.4);
-  transition: all 0.3s ease;
-  color: white;
+  font-weight: 500;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
 }
 
 .follow-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 15px rgba(147, 51, 234, 0.6);
-}
-
-.follow-btn.following {
-  background: rgba(147, 51, 234, 0.2);
-  color: white;
-  border: 1px solid rgba(147, 51, 234, 0.4);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
 }
 
 .empty-state {
   padding: 40px 0;
-  text-align: center;
-  background: rgba(30, 30, 40, 0.7);
+  background: #ffffff;
   border-radius: 12px;
-  margin: 16px 8px;
-  border: 1px solid rgba(147, 51, 234, 0.2);
+  margin: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  max-width: 600px;
+  margin: 20px auto;
 }
 
-@media screen and (min-width: 768px) {
-  .followers-page {
-    max-width: 600px;
-    margin: 0 auto;
+@media screen and (max-width: 768px) {
+  .user-list {
+    padding: 12px;
+  }
+
+  .user-item {
+    padding: 12px 14px;
   }
 }
 </style>

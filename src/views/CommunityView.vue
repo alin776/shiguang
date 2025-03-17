@@ -30,9 +30,29 @@
           {{ tab.label }}
         </div>
       </div>
+      
+      <!-- 分类筛选 -->
+      <div class="category-filter" v-if="categories.length > 0">
+        <div 
+          class="category-chip"
+          :class="{ active: !selectedCategoryId }"
+          @click="changeCategory(null)"
+        >
+          全部
+        </div>
+        <div 
+          v-for="category in categories" 
+          :key="category.id"
+          class="category-chip"
+          :class="{ active: selectedCategoryId === category.id }"
+          @click="changeCategory(category.id)"
+        >
+          {{ category.name }}
+        </div>
+      </div>
 
       <!-- 悬浮发帖按钮 -->
-      <div class="floating-button pulse-on-click" @click="showPostDialog">
+      <div class="floating-button pulse-on-click" @click="router.push('/community/create')">
         <el-icon><Plus /></el-icon>
         <span>发帖</span>
       </div>
@@ -79,6 +99,10 @@
                   {{ post.user?.username?.charAt(0).toUpperCase() || "?" }}
                 </el-avatar>
                 <span class="username">{{ post.user?.username || "匿名用户" }}</span>
+                <!-- 显示分类 -->
+                <span class="category-badge" v-if="post.category_name">
+                  {{ post.category_name }}
+                </span>
               </div>
               <div class="like-area" @click="(e) => likePost(e, post.id)">
                 <el-icon class="like-icon" :class="{ 'liked': isPostLiked(post.id) }">
@@ -131,6 +155,10 @@
                   {{ post.user?.username?.charAt(0).toUpperCase() || "?" }}
                 </el-avatar>
                 <span class="username">{{ post.user?.username || "匿名用户" }}</span>
+                <!-- 显示分类 -->
+                <span class="category-badge" v-if="post.category_name">
+                  {{ post.category_name }}
+                </span>
               </div>
               <div class="like-area" @click="(e) => likePost(e, post.id)">
                 <el-icon class="like-icon" :class="{ 'liked': isPostLiked(post.id) }">
@@ -148,77 +176,6 @@
       <div v-else class="empty-state">
         <el-empty description="暂无帖子" />
       </div>
-
-      <!-- 发帖对话框 -->
-      <el-dialog
-        v-model="showDialog"
-        title="发布新帖子"
-        width="90%"
-        class="mobile-dialog"
-      >
-        <el-form
-          ref="postFormRef"
-          :model="postForm"
-          :rules="postRules"
-          label-position="top"
-        >
-          <el-form-item label="标题" prop="title">
-            <el-input
-              v-model="postForm.title"
-              placeholder="请输入标题（最多50字）"
-              maxlength="50"
-              show-word-limit
-            />
-          </el-form-item>
-
-          <el-form-item label="内容" prop="content">
-            <el-input
-              v-model="postForm.content"
-              type="textarea"
-              :rows="4"
-              placeholder="分享你的故事..."
-              maxlength="1000"
-              show-word-limit
-            />
-          </el-form-item>
-
-          <el-form-item label="图片">
-            <el-upload
-              v-model:file-list="postForm.images"
-              action="http://47.98.210.7:3000/api/community/upload"
-              list-type="picture-card"
-              :limit="9"
-              :before-upload="handleBeforeUpload"
-              :on-preview="handlePictureCardPreview"
-              :on-remove="handleRemove"
-              :headers="{
-                Authorization: `Bearer ${authStore.token}`,
-              }"
-              multiple
-            >
-              <el-icon><Plus /></el-icon>
-              <template #tip>
-                <div class="el-upload__tip">
-                  每张图片不超过 5MB，支持 jpg/png 格式
-                </div>
-              </template>
-            </el-upload>
-          </el-form-item>
-
-          <el-form-item label="语音">
-            <AudioRecorder v-model:value="postForm.audio" />
-          </el-form-item>
-        </el-form>
-
-        <template #footer>
-          <div class="dialog-footer">
-            <el-button @click="showDialog = false">取消</el-button>
-            <el-button type="primary" @click="submitPost" :loading="submitting">
-              发布
-            </el-button>
-          </div>
-        </template>
-      </el-dialog>
 
       <!-- 图片预览 -->
       <el-dialog v-model="previewVisible" width="90%">
@@ -247,80 +204,43 @@ const router = useRouter();
 const communityStore = useCommunityStore();
 const authStore = useAuthStore();
 const posts = ref([]);
-const showDialog = ref(false);
-const submitting = ref(false);
-const postFormRef = ref(null);
 const previewVisible = ref(false);
 const previewImage = ref("");
-const currentPage = ref(1);
 const loading = ref(false);
-const noMoreData = ref(false);
 const searchText = ref("");
+const submitting = ref(false);
+const categories = ref([]);
+const selectedCategoryId = ref(null);
+const currentPage = ref(1);
+const noMoreData = ref(false);
 const currentSort = ref("latest");
 const likedPostIds = ref(new Set());
 
-const postForm = ref({
-  title: "",
-  content: "",
-  images: [],
-  audio: null,
-});
-
-const postRules = {
-  title: [
-    { required: true, message: "请输入标题", trigger: "blur" },
-    { min: 2, max: 50, message: "标题长度在2-50个字符之间", trigger: "blur" },
-  ],
-  content: [
-    { required: true, message: "请输入内容", trigger: "blur" },
-    { min: 10, message: "内容至少10个字符", trigger: "blur" },
-  ],
-};
-
-const showPostDialog = () => {
-  showDialog.value = true;
-};
+// 排序选项
+const sortTabs = [
+  { label: "最新", value: "latest" },
+  { label: "最热", value: "hot" },
+  { label: "推荐", value: "recommend" },
+];
 
 const handlePictureCardPreview = (file) => {
   previewImage.value = file.url;
   previewVisible.value = true;
 };
 
-const handleRemove = (file, fileList) => {
-  postForm.value.images = fileList;
-};
-
-const submitPost = async () => {
-  if (!postFormRef.value) return;
-
-  try {
-    await postFormRef.value.validate();
-    submitting.value = true;
-
-    await communityStore.createPost(postForm.value);
-    ElMessage.success("发布成功");
-    showDialog.value = false;
-    postFormRef.value.resetFields();
-    loadPosts();
-  } catch (error) {
-    ElMessage.error(error.message || "发布失败");
-  } finally {
-    submitting.value = false;
-  }
-};
-
 const viewPost = (post) => {
   router.push(`/community/post/${post.id}`);
 };
 
-const loadPosts = async () => {
+const loadPosts = async (page = 1, append = false) => {
   try {
     loading.value = true;
     const response = await communityStore.getPosts(
-      currentPage.value,
-      false,
+      page,
+      append,
       currentSort.value,
-      searchText.value
+      searchText.value,
+      selectedCategoryId.value
     );
 
     // 调试输出原始数据
@@ -368,7 +288,7 @@ const loadPosts = async () => {
     }
 
     noMoreData.value =
-      currentPage.value >= (response?.pagination?.totalPages || 1);
+      page >= (response?.pagination?.totalPages || 1);
   } catch (error) {
     console.error("获取帖子列表失败:", error);
     ElMessage.error("获取帖子列表失败");
@@ -386,7 +306,8 @@ const loadMorePosts = async () => {
       currentPage.value,
       true,
       currentSort.value,
-      searchText.value
+      searchText.value,
+      selectedCategoryId.value
     );
 
     if (response?.posts) {
@@ -429,31 +350,6 @@ const handleSearch = () => {
 const changeSort = (sort) => {
   currentSort.value = sort;
   loadPosts();
-};
-
-const sortTabs = [
-  { label: "最新", value: "latest" },
-  { label: "最热", value: "popular" },
-  { label: "推荐", value: "recommended" },
-];
-
-const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 2MB in bytes
-
-const handleBeforeUpload = (file) => {
-  const isImage = file.type === "image/jpeg" || file.type === "image/png";
-  const isLt2M = file.size <= MAX_IMAGE_SIZE;
-
-  if (!isImage) {
-    ElMessage.error("只能上传 JPG/PNG 格式的图片！");
-    return false;
-  }
-
-  if (!isLt2M) {
-    ElMessage.error("图片大小不能超过 5MB！");
-    return false;
-  }
-
-  return true;
 };
 
 // 音频播放相关变量和方法
@@ -620,10 +516,26 @@ const likePost = async (event, postId) => {
   }
 };
 
+// 加载分类数据
+const loadCategories = async () => {
+  try {
+    const categoriesData = await communityStore.getCategories();
+    categories.value = categoriesData;
+    console.log("加载分类数据成功:", categoriesData);
+  } catch (error) {
+    console.error("加载分类数据失败:", error);
+    ElMessage.error("加载分类数据失败");
+  }
+};
+
 // 初始化时移除通知相关代码
 onMounted(() => {
   console.log("当前用户头像URL:", authStore.user?.avatar);
   loadLikedPosts();
+  
+  // 加载分类数据
+  loadCategories();
+  
   loadPosts();
   
   // 测试URL处理
@@ -645,6 +557,11 @@ onMounted(() => {
     communityPage.addEventListener("scroll", handleScroll);
   }
 });
+
+const changeCategory = (categoryId) => {
+  selectedCategoryId.value = categoryId;
+  loadPosts();
+};
 </script>
 
 <style scoped>
@@ -666,8 +583,8 @@ onMounted(() => {
   left: 0;
   right: 0;
   height: 56px;
-  background-color: rgba(255, 255, 255, 0.98);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  background-color: #ffffff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
   display: flex;
   align-items: center;
   padding: 0 16px;
@@ -696,18 +613,18 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   padding: 12px 16px;
-  background-color: rgba(255, 255, 255, 0.98);
+  background-color: #ffffff;
   margin-bottom: 12px;
   position: sticky;
   top: 56px;
   z-index: 10;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.03);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.02);
 }
 
 .tab-item {
   font-size: 14px;
-  color: #666;
+  color: #909399;
   cursor: pointer;
   position: relative;
   padding: 6px 12px;
@@ -716,14 +633,14 @@ onMounted(() => {
 }
 
 .tab-item.active {
-  color: #111;
+  color: #409eff;
   font-weight: 600;
-  background-color: rgba(51, 51, 51, 0.08);
+  background-color: rgba(64, 158, 255, 0.08);
 }
 
 .tab-item:hover:not(.active) {
-  color: #111;
-  background-color: rgba(51, 51, 51, 0.05);
+  color: #409eff;
+  background-color: rgba(64, 158, 255, 0.05);
 }
 
 /* 帖子列表 */
@@ -744,10 +661,10 @@ onMounted(() => {
 }
 
 .post-card {
-  background-color: rgba(255, 255, 255, 0.98);
+  background-color: #ffffff;
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
   transition: all 0.3s ease;
   border: none;
   cursor: pointer;
@@ -756,7 +673,7 @@ onMounted(() => {
 
 .post-card:hover {
   transform: translateY(-3px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 6px 16px rgba(64, 158, 255, 0.1);
 }
 
 .post-cover {
@@ -803,7 +720,7 @@ onMounted(() => {
   font-size: 15px;
   font-weight: 600;
   margin: 0 0 6px;
-  color: #333;
+  color: #303133;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -813,7 +730,7 @@ onMounted(() => {
 
 .post-text {
   font-size: 13px;
-  color: #555;
+  color: #606266;
   margin: 0 0 8px;
   display: -webkit-box;
   -webkit-line-clamp: 3;
@@ -829,13 +746,15 @@ onMounted(() => {
   align-items: center;
   padding: 6px 10px;
   border-top: 1px solid rgba(0, 0, 0, 0.04);
-  background-color: rgba(248, 249, 250, 0.7);
+  background-color: #f9fafc;
 }
 
 .user-info {
   display: flex;
   align-items: center;
   gap: 4px;
+  max-width: 70%;
+  overflow: hidden;
 }
 
 .user-avatar {
@@ -847,7 +766,7 @@ onMounted(() => {
 
 .username {
   font-size: 11px;
-  color: #444;
+  color: #606266;
   font-weight: 500;
   max-width: 100px;
   white-space: nowrap;
@@ -859,7 +778,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 0;
-  background-color: rgba(240, 240, 240, 0.7);
+  background-color: #f5f7fa;
   padding: 2px 6px 2px 4px;
   border-radius: 12px;
   margin-right: 6px;
@@ -868,18 +787,18 @@ onMounted(() => {
 
 .like-icon {
   font-size: 14px;
-  color: #e74c3c;
+  color: #409eff;
 }
 
 .like-icon.liked {
-  color: #e74c3c;
+  color: #409eff;
   transform: scale(1.1);
 }
 
 .like-count {
   font-size: 14px;
   font-weight: 500;
-  color: #2c3e50;
+  color: #606266;
 }
 
 /* 悬浮发帖按钮 */
@@ -891,13 +810,13 @@ onMounted(() => {
   height: 48px;
   padding: 0 20px;
   border-radius: 24px;
-  background: linear-gradient(135deg, #222, #444);
+  background: linear-gradient(135deg, #409eff, #66b1ff);
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.25);
   transition: all 0.3s ease;
   cursor: pointer;
   z-index: 10;
@@ -906,12 +825,12 @@ onMounted(() => {
 
 .floating-button:hover {
   transform: translateY(-3px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 6px 16px rgba(64, 158, 255, 0.35);
 }
 
 .floating-button:active {
   transform: translateY(0);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 2px 8px rgba(64, 158, 255, 0.3);
 }
 
 .pulse-on-click:active {
@@ -972,13 +891,13 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 4px;
-  color: #555;
+  color: #909399;
   cursor: pointer;
   transition: color 0.2s;
 }
 
 .action-button:hover {
-  color: #333;
+  color: #409eff;
 }
 
 @media screen and (max-width: 480px) {
@@ -998,6 +917,16 @@ onMounted(() => {
   .post-text {
     font-size: 13px;
     line-height: 1.4;
+  }
+  
+  .category-badge {
+    max-width: 50px;
+    font-size: 9px;
+    padding: 1px 4px;
+  }
+  
+  .username {
+    max-width: 70px;
   }
 }
 
@@ -1031,14 +960,70 @@ onMounted(() => {
   left: 0;
   width: 100%;
   height: auto;
-  background-color: #333;
+  background-color: #409eff;
   color: white;
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 12px 16px;
   z-index: 9999; /* 确保最高层级 */
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 8px rgba(64, 158, 255, 0.2);
   box-sizing: border-box;
+}
+
+/* 分类相关样式 */
+.post-category {
+  margin-top: 4px;
+  margin-bottom: 6px;
+}
+
+.category-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-size: 10px;
+  color: #409EFF;
+  margin-left: 6px;
+  background-color: rgba(64, 158, 255, 0.05);
+  border: 1px solid rgba(64, 158, 255, 0.3);
+  white-space: nowrap;
+  max-width: 60px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.category-option {
+  display: flex;
+  align-items: center;
+}
+
+/* 分类筛选样式 */
+.category-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px;
+  background-color: #ffffff;
+  margin-bottom: 12px;
+  position: sticky;
+  top: 56px;
+  z-index: 10;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.03);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.02);
+}
+
+.category-chip {
+  padding: 6px 12px;
+  border: 1px solid #ebeef5;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.category-chip.active {
+  border-color: #409EFF;
+  background-color: #409EFF;
+  color: white;
 }
 </style>

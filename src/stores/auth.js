@@ -384,28 +384,23 @@ export const useAuthStore = defineStore("auth", {
     },
 
     initializeTheme() {
-      // 从本地存储加载主题设置，默认为亮色主题
-      const savedTheme = localStorage.getItem("theme") || "light";
-      this.theme = savedTheme;
-      localStorage.setItem("theme", savedTheme);
-      this.applyTheme(savedTheme);
+      // 设置为亮色主题
+      this.theme = "light";
+      localStorage.setItem("theme", "light");
+      this.applyTheme("light");
     },
 
     setTheme(newTheme) {
-      // 设置新主题
-      this.theme = newTheme;
-      localStorage.setItem("theme", newTheme);
-      this.applyTheme(newTheme);
+      // 无论传入什么值，都设置为亮色主题
+      this.theme = "light";
+      localStorage.setItem("theme", "light");
+      this.applyTheme("light");
     },
 
     applyTheme(theme) {
-      // 应用主题
-      document.documentElement.setAttribute("data-theme", theme);
-      if (theme === "dark") {
-        document.documentElement.classList.add("dark");
-      } else {
-        document.documentElement.classList.remove("dark");
-      }
+      // 应用亮色主题
+      document.documentElement.setAttribute("data-theme", "light");
+      document.documentElement.classList.remove("dark");
     },
 
     checkSavedLogin() {
