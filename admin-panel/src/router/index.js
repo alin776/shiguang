@@ -43,6 +43,15 @@ const routes = [
           requiresAuth: true,
           title: '小记管理'
         }
+      },
+      {
+        path: 'versions',
+        name: 'versions',
+        component: () => import('../views/VersionManage.vue'),
+        meta: { 
+          requiresAuth: true,
+          title: '版本管理'
+        }
       }
     ]
   },

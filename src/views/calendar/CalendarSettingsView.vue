@@ -10,7 +10,7 @@
 
     <div class="settings-content page-content">
       <h4 class="settings-title">打卡项目</h4>
-      <div class="checkin-settings tech-card enhanced-border">
+      <div class="checkin-settings">
         <div
           v-for="item in availableCheckIns"
           :key="item.id"
@@ -44,7 +44,7 @@
               @click="openNewColorPicker"
             ></div>
           </div>
-          <el-button @click="addNewCheckIn" class="glow-button">添加</el-button>
+          <el-button type="primary" @click="addNewCheckIn">添加</el-button>
         </div>
       </div>
     </div>
@@ -57,9 +57,7 @@
       <template #footer>
         <span class="dialog-footer">
           <el-button @click="showColorPicker = false">取消</el-button>
-          <el-button type="primary" @click="confirmColor" class="glow-button"
-            >确定</el-button
-          >
+          <el-button type="primary" @click="confirmColor">确定</el-button>
         </span>
       </template>
     </el-dialog>
@@ -85,7 +83,7 @@ const checkInColors = {
   reading: "#4CAF50",
   meditation: "#2196F3",
   writing: "#FFC107",
-  default: "#9C27B0",
+  default: "#409EFF",
 };
 
 // 设置相关状态
@@ -163,15 +161,15 @@ const addNewCheckIn = async () => {
             parseInt(rgbValues[1]).toString(16).padStart(2, "0") +
             parseInt(rgbValues[2]).toString(16).padStart(2, "0");
         } else {
-          colorValue = "#9C27B0"; // 默认颜色
+          colorValue = "#409EFF"; // 默认颜色
         }
       } else {
         // 如果不是rgba格式但仍然太长，使用默认颜色
-        colorValue = "#9C27B0";
+        colorValue = "#409EFF";
       }
     } catch (e) {
       console.error("颜色转换失败:", e);
-      colorValue = "#9C27B0"; // 转换失败时使用默认颜色
+      colorValue = "#409EFF"; // 转换失败时使用默认颜色
     }
   }
 
@@ -196,7 +194,7 @@ const addNewCheckIn = async () => {
 
 // 确认删除打卡项目
 const confirmDeleteCheckIn = (item) => {
-  ElMessageBox.confirm("确定要删除这个打卡项目吗？", "提示", {
+  ElMessageBox.confirm(`确定要删除 "${item.name}" 打卡项目吗？`, "提示", {
     confirmButtonText: "确定",
     cancelButtonText: "取消",
     type: "warning",
@@ -205,17 +203,17 @@ const confirmDeleteCheckIn = (item) => {
       try {
         await checkInStore.deleteCheckInItem(item.id);
         ElMessage.success("删除成功");
-        const index = availableCheckIns.value.findIndex(
-          (i) => i.id === item.id
+        // 从列表中移除该项目
+        availableCheckIns.value = availableCheckIns.value.filter(
+          (i) => i.id !== item.id
         );
-        if (index !== -1) {
-          availableCheckIns.value.splice(index, 1);
-        }
       } catch (error) {
-        ElMessage.error("删除失败: " + (error.message || "未知错误"));
+        ElMessage.error("删除失败: " + error.message);
       }
     })
-    .catch(() => {});
+    .catch(() => {
+      // 用户取消操作
+    });
 };
 
 // 保存设置
@@ -238,121 +236,59 @@ const saveSettings = async () => {
   }
 };
 
-onMounted(() => {
-  loadCheckInItems();
+onMounted(async () => {
+  await loadCheckInItems();
 });
 </script>
 
 <style scoped>
 .calendar-settings-page {
   min-height: 100vh;
-  background-color: rgba(18, 18, 30, 0.9);
-  padding-bottom: 60px;
-  color: white;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  background-color: #f7f8fa;
   position: relative;
-  overflow-x: hidden;
-  padding: 0 16px;
+  padding-bottom: 70px;
 }
 
 .page-header {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  background: transparent;
-  height: 56px;
+  position: relative;
+  padding: 15px;
+  background-color: #fff;
   display: flex;
   align-items: center;
-  padding: 0 16px;
-  width: 100%;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 }
 
 .back-icon {
+  margin-right: 15px;
   font-size: 20px;
-  color: white;
   cursor: pointer;
-  padding: 8px;
-  margin-right: 8px;
-  transition: all 0.3s ease;
-}
-
-.back-icon:hover {
-  transform: translateX(-3px);
-  text-shadow: 0 0 8px rgba(147, 51, 234, 0.7);
+  color: #333;
 }
 
 .page-header h2 {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: 18px;
   font-weight: 600;
-  flex: 1;
-  color: white;
-  text-shadow: 0 0 10px rgba(147, 51, 234, 0.7);
-}
-
-.page-content {
-  width: 100%;
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 20px 0;
+  color: #333;
 }
 
 .settings-content {
-  padding: 16px;
+  padding: 15px;
 }
 
 .settings-title {
+  margin-top: 0;
+  margin-bottom: 15px;
   font-size: 16px;
-  font-weight: 500;
-  margin-bottom: 16px;
-  color: white;
-  text-shadow: 0 0 10px rgba(147, 51, 234, 0.7);
+  font-weight: 600;
+  color: #333;
 }
 
 .checkin-settings {
-  position: relative;
-  z-index: 0;
-  padding: 24px;
-  border-radius: 16px;
-  border: 2px solid transparent;
-  background-clip: padding-box;
-  background: rgba(20, 20, 30, 0.7);
-  box-shadow: 0 0 20px rgba(147, 51, 234, 0.4);
-  border-radius: 12px;
-}
-
-/* 渐变边框效果 */
-.tech-card {
-  background: rgba(30, 30, 40, 0.5);
-  border-radius: 16px;
-  overflow: hidden;
-  position: relative;
-  margin-bottom: 16px;
-}
-
-.enhanced-border {
-  position: relative;
-  z-index: 0;
-}
-
-.enhanced-border::before {
-  content: "";
-  position: absolute;
-  z-index: -1;
-  inset: 0;
-  padding: 2px;
-  border-radius: 16px;
-  background: linear-gradient(
-    45deg,
-    rgba(56, 189, 248, 0.6),
-    rgba(147, 51, 234, 0.6)
-  );
-  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
+  background-color: #fff;
+  border-radius: 8px;
+  padding: 15px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 }
 
 .checkin-setting-item {
@@ -360,12 +296,7 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 12px;
-  border-bottom: 1px solid rgba(147, 51, 234, 0.3);
-  transition: all 0.2s ease;
-}
-
-.checkin-setting-item:hover {
-  background: rgba(147, 51, 234, 0.1);
+  border-bottom: 1px solid #f0f0f0;
 }
 
 .checkin-setting-item:last-child {
@@ -375,7 +306,7 @@ onMounted(() => {
 .setting-actions {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .color-dot {
@@ -383,21 +314,23 @@ onMounted(() => {
   height: 24px;
   border-radius: 50%;
   cursor: pointer;
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 0 8px currentColor;
-  transition: all 0.3s ease;
+  transition: transform 0.2s;
+  border: 2px solid #fff;
+  box-shadow: 0 0 3px rgba(0, 0, 0, 0.2);
 }
 
 .color-dot:hover {
-  transform: scale(1.2);
-  box-shadow: 0 0 12px currentColor;
+  transform: scale(1.1);
 }
 
 .add-checkin {
-  margin-top: 16px;
+  margin-top: 15px;
+  padding: 12px;
   display: flex;
-  gap: 8px;
+  gap: 10px;
   align-items: center;
+  background-color: #f9f9f9;
+  border-radius: 8px;
 }
 
 .color-select {
@@ -409,67 +342,6 @@ onMounted(() => {
   display: flex;
   justify-content: center;
   padding: 20px 0;
-}
-
-:deep(.el-checkbox__label) {
-  color: white !important;
-  text-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
-}
-
-:deep(.el-dialog) {
-  background-color: rgba(20, 20, 30, 0.9);
-  border: 1px solid rgba(147, 51, 234, 0.3);
-  box-shadow: 0 0 20px rgba(147, 51, 234, 0.4);
-}
-
-:deep(.el-dialog__title) {
-  color: white;
-  text-shadow: 0 0 8px rgba(147, 51, 234, 0.7);
-}
-
-:deep(.el-button) {
-  transition: all 0.3s;
-}
-
-.glow-button {
-  background: linear-gradient(45deg, #8b5cf6, #d946ef);
-  border: none;
-  font-weight: 600;
-  box-shadow: 0 4px 10px rgba(147, 51, 234, 0.4);
-}
-
-.glow-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 15px rgba(147, 51, 234, 0.6);
-}
-
-.glow-button:active {
-  transform: translateY(1px);
-  box-shadow: 0 2px 5px rgba(147, 51, 234, 0.4);
-}
-
-:deep(.el-input__wrapper) {
-  background-color: transparent !important;
-  border: 1px solid rgba(147, 51, 234, 0.3) !important;
-  box-shadow: none !important;
-  color: white !important;
-}
-
-:deep(.el-input__wrapper:hover) {
-  border-color: rgba(147, 51, 234, 0.7) !important;
-  background-color: rgba(147, 51, 234, 0.05) !important;
-  box-shadow: 0 0 8px rgba(147, 51, 234, 0.3) !important;
-}
-
-:deep(.el-input__wrapper:focus-within) {
-  border-color: rgba(147, 51, 234, 0.9) !important;
-  background-color: rgba(147, 51, 234, 0.1) !important;
-  box-shadow: 0 0 12px rgba(147, 51, 234, 0.5) !important;
-}
-
-:deep(.el-input__inner) {
-  color: white !important;
-  background-color: transparent !important;
 }
 
 @media screen and (max-width: 767px) {

@@ -50,9 +50,6 @@
       </div>
       <div v-if="checkInItems.length === 0" class="empty-checkins">
         <p>还没有打卡项目，请前往设置添加</p>
-        <el-button @click="$emit('go-to-settings')" size="small">
-          去设置
-        </el-button>
       </div>
     </div>
   </div>

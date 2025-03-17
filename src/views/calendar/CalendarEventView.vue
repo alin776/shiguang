@@ -1,5 +1,5 @@
 <template>
-  <div class="event-page no-extra-padding">
+  <div class="event-page">
     <div class="page-content">
       <!-- 顶部导航 -->
       <div class="event-header">
@@ -10,8 +10,8 @@
         </div>
       </div>
 
-      <!-- 表单区域 - 增强边框效果 -->
-      <div class="event-form-container tech-card enhanced-border">
+      <!-- 表单区域 -->
+      <div class="event-form-container">
         <el-form
           ref="eventFormRef"
           :model="eventForm"
@@ -25,7 +25,6 @@
               v-model="eventForm.title"
               placeholder="给你的事件起个名字"
               clearable
-              class="tech-input"
             />
           </el-form-item>
 
@@ -37,7 +36,7 @@
               placeholder="选择日期"
               format="YYYY-MM-DD"
               value-format="YYYY-MM-DD"
-              class="tech-input"
+              style="width: 100%"
             />
           </el-form-item>
 
@@ -49,7 +48,7 @@
                 v-model="eventForm.startTime"
                 placeholder="开始时间"
                 format="HH:mm"
-                class="tech-input"
+                style="width: 100%"
               />
             </el-form-item>
 
@@ -59,7 +58,7 @@
                 v-model="eventForm.endTime"
                 placeholder="结束时间"
                 format="HH:mm"
-                class="tech-input"
+                style="width: 100%"
               />
             </el-form-item>
           </div>
@@ -85,7 +84,6 @@
               type="textarea"
               :rows="4"
               placeholder="添加事件备注"
-              class="tech-input"
             />
           </el-form-item>
         </el-form>
@@ -93,7 +91,6 @@
         <!-- 提交按钮 -->
         <div class="form-actions">
           <el-button
-            class="submit-btn glow-button"
             type="primary"
             @click="submitForm"
             :loading="submitting"
@@ -368,239 +365,70 @@ onBeforeUnmount(() => {
 <style scoped>
 .event-page {
   min-height: 100vh;
-  background-color: rgba(255, 255, 255, 0.98); /* 增加不透明度代替模糊效果 */
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  position: relative;
-  overflow-x: hidden; /* 防止水平滚动 */
-  padding: 0 16px; /* 添加左右内边距 */
-  color: var(--text-color); /* 添加文字颜色 */
+  background-color: #f7f8fa;
+  padding-bottom: 60px;
 }
 
 .page-content {
   width: 100%;
-  max-width: 800px; /* 最大宽度 */
+  max-width: 800px;
   margin: 0 auto;
-  padding: 20px 0;
+  padding: 20px 15px;
 }
 
 .event-header {
   display: flex;
   align-items: center;
   margin-bottom: 20px;
-  padding: 16px 0;
+  padding: 16px;
   border-radius: 8px;
   position: relative;
+  background-color: #fff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 }
 
 .back-icon {
-  font-size: 24px;
+  font-size: 20px;
   cursor: pointer;
-  color: var(--text-color);
+  color: #333;
   margin-right: 16px;
-  transition: all 0.3s ease;
-}
-
-.back-icon:hover {
-  transform: translateX(-3px);
-  text-shadow: 0 0 8px rgba(147, 51, 234, 0.7);
 }
 
 .event-header h2 {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: 18px;
   font-weight: 600;
   flex: 1;
-  color: var(--text-color);
-  text-shadow: 0 0 10px rgba(147, 51, 234, 0.7);
+  color: #333;
 }
 
 .delete-button {
   cursor: pointer;
   color: #ff4d4f;
   font-size: 18px;
-  transition: all 0.3s ease;
   padding: 8px;
 }
 
-.delete-button:hover {
-  transform: scale(1.1);
-  text-shadow: 0 0 8px rgba(255, 77, 79, 0.7);
-}
-
 .event-form-container {
-  padding: 24px;
-  margin-bottom: 30px;
+  padding: 20px;
+  margin-bottom: 20px;
   position: relative;
-  background: rgba(20, 20, 30, 0.5); /* 暗色半透明背景 */
-  border-radius: 16px;
-  overflow: hidden;
-}
-
-/* 渐变边框 */
-.enhanced-border {
-  position: relative;
-  z-index: 0;
-  padding: 24px;
-  border-radius: 16px;
-  border: 2px solid transparent; /* 透明边框 */
-  background-clip: padding-box; /* 确保背景不延伸到边框 */
-  background: rgba(20, 20, 30, 0.7); /* 暗色背景 */
-  box-shadow: 0 0 20px rgba(147, 51, 234, 0.4);
-}
-
-.enhanced-border::before {
-  content: "";
-  position: absolute;
-  z-index: -1;
-  inset: -2px; /* 减小边框厚度 */
-  border-radius: 18px;
-  background: linear-gradient(
-    45deg,
-    rgba(147, 51, 234, 0.9),
-    rgba(56, 189, 248, 0.9),
-    rgba(236, 72, 153, 0.9),
-    rgba(147, 51, 234, 0.9)
-  );
-  background-size: 400% 400%;
-  animation: border-glow 6s ease infinite;
-  box-shadow: 0 0 25px rgba(147, 51, 234, 0.6);
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  padding: 3px;
-}
-
-.enhanced-border::after {
-  content: "";
-  position: absolute;
-  z-index: -2;
-  inset: 0;
-  border-radius: 20px;
-  background: rgba(20, 20, 30, 0.5);
-}
-
-@keyframes shadow-pulse {
-  0% {
-    opacity: 0.5;
-    /* 删除模糊效果 */
-  }
-  100% {
-    opacity: 0.8;
-    /* 删除模糊效果 */
-  }
-}
-
-@keyframes border-glow {
-  0% {
-    background-position: 0% 50%;
-    box-shadow: 0 0 20px rgba(147, 51, 234, 0.6);
-  }
-  50% {
-    background-position: 100% 50%;
-    box-shadow: 0 0 35px rgba(236, 72, 153, 0.8);
-  }
-  100% {
-    background-position: 0% 50%;
-    box-shadow: 0 0 20px rgba(147, 51, 234, 0.6);
-  }
-}
-
-.tech-card {
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-  transition: all 0.3s ease;
-}
-
-.tech-card:hover {
-  box-shadow: 0 15px 40px rgba(147, 51, 234, 0.4);
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 }
 
 .event-form {
   margin-bottom: 20px;
 }
 
-.tech-input {
-  width: 100%;
-  border-radius: 8px;
-  transition: all 0.3s ease;
-}
-
-:deep(.el-input__wrapper),
-:deep(.el-textarea__inner) {
-  background-color: transparent !important;
-  border: 1px solid rgba(147, 51, 234, 0.3) !important;
-  box-shadow: none !important;
-  color: var(--text-color) !important;
-}
-
-:deep(.el-input__wrapper:hover),
-:deep(.el-textarea__inner:hover) {
-  border-color: rgba(147, 51, 234, 0.7) !important;
-  background-color: rgba(147, 51, 234, 0.05) !important;
-  box-shadow: 0 0 8px rgba(147, 51, 234, 0.3) !important;
-}
-
-:deep(.el-input__wrapper:focus-within),
-:deep(.el-textarea__inner:focus) {
-  border-color: rgba(147, 51, 234, 0.9) !important;
-  background-color: rgba(147, 51, 234, 0.1) !important;
-  box-shadow: 0 0 12px rgba(147, 51, 234, 0.5) !important;
-}
-
-:deep(.el-input__inner),
-:deep(.el-textarea__inner) {
-  color: var(--text-color) !important;
-  background-color: transparent !important;
-}
-
-:deep(.el-form-item__label) {
-  color: var(--text-color) !important;
-  font-weight: 500;
-  font-size: 0.95rem;
-  margin-bottom: 6px;
-  text-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
-}
-
 .time-section {
   display: flex;
-  gap: 20px;
+  gap: 15px;
 }
 
 .time-item {
-  flex: 1;
-}
-
-:deep(.el-picker__popper) {
-  background-color: rgba(255, 255, 255, 0.98) !important; /* 增加不透明度代替模糊效果 */
-  border: 1px solid rgba(147, 51, 234, 0.5) !important;
-  box-shadow: 0 0 15px rgba(147, 51, 234, 0.3) !important;
-  /* 删除模糊效果 */
-}
-
-:deep(.el-picker-panel),
-:deep(.el-time-panel) {
-  background-color: rgba(255, 255, 255, 0.98) !important; /* 增加不透明度代替模糊效果 */
-  color: #333333 !important; /* 调整文字颜色，确保在白色背景上可见 */
-}
-
-:deep(.el-date-table td.current:not(.disabled) .el-date-table-cell__text) {
-  background-color: rgba(147, 51, 234, 0.8) !important;
-  color: white !important;
-}
-
-:deep(.el-date-table td.today .el-date-table-cell__text) {
-  color: rgba(147, 51, 234, 0.9) !important;
-  font-weight: bold;
-}
-
-:deep(.el-time-spinner__item:hover) {
-  background-color: rgba(147, 51, 234, 0.15) !important;
-}
-
-:deep(.el-time-spinner__item.active) {
-  color: rgba(147, 51, 234, 0.9) !important;
-  font-weight: bold;
+  width: 50%;
 }
 
 /* 颜色选择 */
@@ -617,52 +445,31 @@ onBeforeUnmount(() => {
   height: 36px;
   border-radius: 50%;
   cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
 .color-option:hover {
   transform: scale(1.1);
-  box-shadow: 0 0 12px currentColor;
 }
 
 .color-option.active {
   transform: scale(1.15);
-  box-shadow: 0 0 15px currentColor;
-  border: 2px solid var(--text-color);
+  border: 2px solid #fff;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
 }
 
 /* 提交按钮 */
-.submit-btn,
 .form-actions {
   display: flex;
   justify-content: center;
   margin-top: 20px;
 }
 
-:deep(.el-button) {
-  min-width: 120px;
-  background: linear-gradient(45deg, #8b5cf6, #d946ef);
-  border: none;
-  font-weight: 600;
-  box-shadow: 0 4px 10px rgba(147, 51, 234, 0.4);
-  transition: all 0.3s;
-}
-
-:deep(.el-button:hover) {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 15px rgba(147, 51, 234, 0.6);
-}
-
-:deep(.el-button:active) {
-  transform: translateY(1px);
-  box-shadow: 0 2px 5px rgba(147, 51, 234, 0.4);
-}
-
 /* 响应式调整 */
 @media (max-width: 768px) {
   .page-content {
-    padding: 15px 5px;
+    padding: 15px 10px;
     width: 100%;
   }
 
@@ -679,20 +486,13 @@ onBeforeUnmount(() => {
     padding: 16px;
   }
 
-  .enhanced-border {
-    padding: 16px;
-  }
-
   .event-header h2 {
-    font-size: 1.2rem;
-  }
-
-  .color-picker {
-    flex-wrap: wrap;
-    justify-content: center;
+    font-size: 16px;
   }
 
   .color-option {
+    width: 30px;
+    height: 30px;
     margin: 4px;
   }
 }

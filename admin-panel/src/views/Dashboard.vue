@@ -34,6 +34,10 @@
           <el-icon><Notebook /></el-icon>
           <span>小记管理</span>
         </el-menu-item>
+        <el-menu-item index="/versions">
+          <el-icon><Connection /></el-icon>
+          <span>版本管理</span>
+        </el-menu-item>
       </el-menu>
     </div>
     
@@ -49,6 +53,7 @@
             <el-breadcrumb-item v-if="$route.name === 'categories'">分类管理</el-breadcrumb-item>
             <el-breadcrumb-item v-if="$route.name === 'feedbacks'">反馈管理</el-breadcrumb-item>
             <el-breadcrumb-item v-if="$route.name === 'notes'">小记管理</el-breadcrumb-item>
+            <el-breadcrumb-item v-if="$route.name === 'versions'">版本管理</el-breadcrumb-item>
           </el-breadcrumb>
         </div>
         <div class="user-actions">
@@ -79,7 +84,7 @@ import { ref, computed } from 'vue'
 import { useUserStore } from '@/store/user'
 import { useRouter } from 'vue-router'
 import { ElMessageBox } from 'element-plus'
-import { Menu, Document, FolderOpened, ArrowDown, ChatDotRound, Notebook } from '@element-plus/icons-vue'
+import { Menu, Document, FolderOpened, ArrowDown, ChatDotRound, Notebook, Connection } from '@element-plus/icons-vue'
 
 const userStore = useUserStore()
 const router = useRouter()
