@@ -17,6 +17,7 @@ import NoteView from "../views/NoteView.vue"; // 添加小记页面组件导入
 import SubmitNoteView from "../views/SubmitNoteView.vue"; // 添加小记投稿页面组件导入
 import AboutView from "../views/AboutView.vue";
 import CreatePostView from "../views/CreatePostView.vue"; // 添加发布帖子页面组件导入
+import VersionHistory from "../views/VersionHistory.vue"; // 添加版本历史页面组件导入
 import { ref } from "vue";
 
 const routes = [
@@ -185,6 +186,12 @@ const routes = [
       requiresAuth: true,
       title: "关于我们",
     },
+  },
+  {
+    path: "/version-history",
+    name: "VersionHistory",
+    component: VersionHistory,
+    meta: { requiresAuth: false },
   },
   {
     path: "/:pathMatch(.*)*",

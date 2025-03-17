@@ -258,6 +258,91 @@ server {
 }
 ```
 
+## 自动更新系统指南
+
+时光App现已集成了自动更新检查和远程更新系统，以确保用户总能使用最新版本。以下是更新系统的主要功能和部署说明：
+
+### 功能概述
+
+- **自动版本检查**：应用启动时自动检查新版本
+- **手动检查更新**：用户可在设置中手动触发检查
+- **版本历史记录**：显示应用所有版本的历史记录
+- **跨平台支持**：支持Web、Android和iOS平台
+- **强制更新选项**：可设置必须更新的版本
+
+### 部署指南
+
+#### 后端部署
+
+1. 更新服务器端应用版本配置：编辑`server/controllers/updateController.js`文件中的版本信息：
+
+```js
+const appVersions = {
+  // Android版本信息
+  android: [
+    {
+      version: '1.1.0',  // 版本号
+      buildNumber: '2',  // 构建号
+      releaseDate: '2024-03-17', // 发布日期
+      forceUpdate: false, // 是否强制更新
+      releaseNotes: `...`, // 更新说明
+      downloadUrl: 'https://你的下载服务器地址/shiguang-1.1.0.apk', // 下载地址
+      minOsVersion: '8.0.0' // 最低操作系统版本
+    },
+    // ...更多版本
+  ],
+  
+  // iOS和Web版本配置类似
+}
+```
+
+2. 发布新版本APK到您的下载服务器，确保`downloadUrl`地址正确
+
+#### 前端配置
+
+1. 更新`package.json`中的版本号：
+
+```json
+{
+  "name": "shiguang",
+  "private": true,
+  "version": "1.1.0", // 更新版本号
+  // ...
+}
+```
+
+2. Android版本更新：
+   - 修改`capacitor.config.ts`中的版本号
+   - 使用Capacitor构建新版本APK：
+   ```bash
+   npm run build
+   npx cap sync
+   npx cap open android
+   ```
+   
+3. iOS版本更新：
+   - 更新App Store版本信息
+   - 在`updateController.js`中更新`appStoreUrl`
+
+### 测试更新系统
+
+1. 设置低版本号测试：
+   - 在前端设置较低版本号(如0.9.0)
+   - 启动应用，应出现更新提示
+
+2. 查看版本历史：
+   - 进入"设置 -> 版本历史"查看完整版本记录
+
+3. 手动检查更新：
+   - 进入"设置 -> 检查更新"触发手动更新检查
+
+### 注意事项
+
+- Android平台更新需要APK签名一致
+- iOS平台更新需通过App Store审核
+- Web平台更新只需刷新页面即可应用新版本
+- 建议使用[语义化版本号](https://semver.org/lang/zh-CN/)管理版本
+
 ## 功能截图
 
 ![社区首页](screenshots/community.png)

@@ -6,6 +6,13 @@
 // API基础URL
 export const API_BASE_URL = "http://47.98.210.7:3000";
 
+// 应用版本信息
+export const APP_VERSION = {
+  VERSION: '1.0.0',     // 当前版本号
+  BUILD_NUMBER: '1',    // 构建号
+  RELEASE_DATE: '2024-03-17' // 发布日期
+};
+
 // 上传路径配置
 export const UPLOAD_PATHS = {
   AVATARS: "/uploads/avatars/",

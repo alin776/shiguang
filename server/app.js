@@ -13,6 +13,7 @@ const uploadRoutes = require("./routes/uploadRoutes");
 const checkInRoutes = require("./routes/checkInRoutes");
 const noteRoutes = require("./routes/noteRoutes");
 const categoryRoutes = require("./routes/categoryRoutes");
+const updateRoutes = require("./routes/updateRoutes");
 
 const app = express();
 
@@ -97,6 +98,7 @@ app.use("/api/feedback", feedbackRoutes);
 app.use("/api/checkins", checkInRoutes);
 app.use("/api/notes", noteRoutes);
 app.use("/api/categories", categoryRoutes);
+app.use("/api/updates", updateRoutes);
 
 // 错误处理中间件
 app.use((err, req, res, next) => {

@@ -55,9 +55,9 @@
         </div>
       </div>
 
-      <!-- 反馈与帮助 -->
+      <!-- 应用信息组 -->
       <div class="settings-group tech-card enhanced-border">
-        <div class="group-title">反馈与帮助</div>
+        <div class="group-title">应用信息</div>
         <div class="settings-item link" @click="goToFeedback">
           <span>问题反馈</span>
           <el-icon><ArrowRight /></el-icon>
@@ -66,13 +66,21 @@
           <span>联系我们</span>
           <el-icon><ArrowRight /></el-icon>
         </div>
+        <div class="settings-item link" @click="goToVersionHistory">
+          <span>版本历史</span>
+          <el-icon><ArrowRight /></el-icon>
+        </div>
+        <div class="settings-item link" @click="checkForUpdates">
+          <span>检查更新</span>
+          <div class="version-info">
+            <span class="version-text">{{ updateStore.currentVersion }}</span>
+            <el-tag v-if="isCheckingUpdate" size="small" type="info">检查中...</el-tag>
+            <el-tag v-else-if="updateStore.updateAvailable" size="small" type="success">发现新版本</el-tag>
+          </div>
+        </div>
         <div class="settings-item link" @click="showAbout">
           <span>关于我们</span>
           <el-icon><ArrowRight /></el-icon>
-        </div>
-        <div class="settings-item">
-          <span>当前版本</span>
-          <span class="version-text">1.0.0</span>
         </div>
       </div>
 
@@ -126,27 +134,26 @@
 
 <script setup>
 import { ref, reactive, onMounted, computed } from "vue";
-import { useRouter, useRoute } from "vue-router";
-import { ElMessage } from "element-plus";
-import { ArrowLeft, ArrowRight } from "@element-plus/icons-vue";
-import { useSettingsStore } from "@/stores/settings";
-import { useAuthStore } from "@/stores/auth";
-import { useFeedbackStore } from "@/stores/feedback";
-import { useClipboard } from "@vueuse/core";
+import { useRouter } from "vue-router";
+import { ElMessage, ElMessageBox } from "element-plus";
 import axios from "axios";
-import { getAvatarUrl } from "@/utils/imageHelpers";
+import { useAuthStore } from "../stores/auth";
+import { useSettingsStore } from "../stores/settings";
+import { API_BASE_URL } from "../config";
+import { getAvatarUrl } from "../utils/imageHelpers";
+import { ArrowLeft, ArrowRight, Setting } from "@element-plus/icons-vue";
+import { useClipboard } from "@vueuse/core";
+import { useUpdateStore } from "../stores/updateStore";
 
-const router = useRouter();
-const route = useRoute();
-const settingsStore = useSettingsStore();
 const authStore = useAuthStore();
-const feedbackStore = useFeedbackStore();
-const loading = ref(false);
-const cacheSize = ref("0.0MB");
-const showContact = ref(false);
-const { copy } = useClipboard();
+const settingsStore = useSettingsStore();
+const updateStore = useUpdateStore();
+const router = useRouter();
 const avatarInput = ref(null);
-const API_BASE_URL = "http://47.98.210.7:3000";
+const showContact = ref(false);
+const loading = ref(false);
+const cacheSize = ref("12.5MB");
+const isCheckingUpdate = ref(false);
 
 const settings = reactive({
   account: {
@@ -257,6 +264,8 @@ const showContactDialog = () => {
   showContact.value = true;
 };
 
+const { copy } = useClipboard();
+
 const copyText = async (text) => {
   try {
     await copy(text);
@@ -268,6 +277,28 @@ const copyText = async (text) => {
 
 const showAbout = () => {
   router.push("/about");
+};
+
+const goToVersionHistory = () => {
+  router.push("/version-history");
+};
+
+const checkForUpdates = async () => {
+  try {
+    isCheckingUpdate.value = true;
+    const hasUpdate = await updateStore.checkForUpdates(true);
+    
+    if (hasUpdate) {
+      ElMessage.success("发现新版本，请前往更新");
+    } else {
+      ElMessage.info("当前已是最新版本");
+    }
+  } catch (error) {
+    ElMessage.error("检查更新失败，请稍后重试");
+    console.error("检查更新失败:", error);
+  } finally {
+    isCheckingUpdate.value = false;
+  }
 };
 
 const handleLogout = async () => {
@@ -294,104 +325,59 @@ const handleLogout = async () => {
 }
 
 .settings-header {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  background: #ffffff;
-  height: 56px;
   display: flex;
   align-items: center;
+  height: 56px;
   padding: 0 16px;
-  width: 100%;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
-  margin-bottom: 16px;
+  background-color: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  position: relative;
+  z-index: 100;
 }
 
 .back-icon {
   font-size: 20px;
-  color: #333;
+  margin-right: 12px;
   cursor: pointer;
-  padding: 8px;
-  margin-right: 8px;
-  transition: all 0.3s ease;
-  border-radius: 50%;
-}
-
-.back-icon:hover {
-  transform: translateX(-3px);
-  color: #6366f1;
-  background-color: rgba(99, 102, 241, 0.08);
+  color: #333;
 }
 
 .settings-header h2 {
-  margin: 0;
   font-size: 18px;
+  margin: 0;
   font-weight: 600;
-  flex: 1;
   color: #333;
-  text-align: center;
-  letter-spacing: 0.5px;
+  flex: 1;
 }
 
 .settings-list {
-  padding: 0 16px 16px;
-  max-width: 800px;
-  margin: 0 auto;
+  padding: 12px;
 }
 
 .settings-group {
-  position: relative;
-  z-index: 0;
-  padding: 0;
-  border-radius: 12px;
   margin-bottom: 16px;
-  background: #ffffff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  overflow: hidden;
-}
-
-/* 边框效果 */
-.tech-card {
-  background: #ffffff;
   border-radius: 12px;
   overflow: hidden;
-  position: relative;
-  margin-bottom: 16px;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.tech-card:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-}
-
-.enhanced-border {
-  position: relative;
-  z-index: 0;
-  border: 1px solid rgba(0, 0, 0, 0.05);
+  background: #ffffff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
 }
 
 .group-title {
-  font-size: 14px;
-  color: #555;
   padding: 12px 16px;
-  background: #f9fafb;
+  font-size: 15px;
   font-weight: 600;
-  letter-spacing: 0.3px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+  color: #333;
+  background-color: rgba(0, 0, 0, 0.02);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.03);
 }
 
 .settings-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 16px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
-  transition: all 0.2s ease;
-}
-
-.settings-item:hover {
-  background: #f9fafb;
+  padding: 16px;
+  position: relative;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.03);
 }
 
 .settings-item:last-child {
@@ -488,6 +474,12 @@ const handleLogout = async () => {
 .version-text {
   color: #909399;
   font-size: 14px;
+}
+
+.version-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 :deep(.el-select) {

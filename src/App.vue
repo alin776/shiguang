@@ -6,6 +6,7 @@
 
   <el-config-provider v-if="isAppReady" :locale="zhCn">
     <router-view />
+    <UpdateChecker />
   </el-config-provider>
 </template>
 
@@ -14,22 +15,52 @@ import zhCn from "element-plus/dist/locale/zh-cn.mjs";
 import { useAuthStore } from "./stores/auth";
 import { onMounted, ref, watch } from "vue";
 import { App as CapacitorApp } from "@capacitor/app";
+import UpdateChecker from "./components/UpdateChecker.vue";
+import { useUpdateStore } from "./stores/updateStore";
+import { APP_VERSION } from "./config";
 
 const authStore = useAuthStore();
+const updateStore = useUpdateStore();
 const isCapacitorEnabled = ref(false);
 const isAppReady = ref(false);
 
 onMounted(async () => {
   // 检查是否在 Capacitor 环境中
   if (import.meta.env.PROD && CapacitorApp) {
-    isCapacitorEnabled.value = true;
-    CapacitorApp.addListener("backButton", ({ canGoBack }) => {
-      if (canGoBack) {
-        window.history.back();
+    try {
+      // 检查是否在原生平台
+      if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+        isCapacitorEnabled.value = true;
+        
+        // 获取应用信息并设置当前版本
+        try {
+          const appInfo = await CapacitorApp.getInfo();
+          updateStore.setCurrentVersion(appInfo.version || APP_VERSION.VERSION);
+        } catch (error) {
+          console.error('获取应用信息失败:', error);
+          updateStore.setCurrentVersion(APP_VERSION.VERSION);
+        }
+        
+        CapacitorApp.addListener("backButton", ({ canGoBack }) => {
+          if (canGoBack) {
+            window.history.back();
+          } else {
+            CapacitorApp.exitApp();
+          }
+        });
       } else {
-        CapacitorApp.exitApp();
+        // Web环境，使用配置文件中的版本
+        console.log('Web环境，使用配置版本:', APP_VERSION.VERSION);
+        updateStore.setCurrentVersion(APP_VERSION.VERSION);
       }
-    });
+    } catch (error) {
+      console.error('Capacitor初始化错误:', error);
+      updateStore.setCurrentVersion(APP_VERSION.VERSION);
+    }
+  } else {
+    // 开发环境或非Capacitor环境
+    console.log('开发环境或非Capacitor环境，使用配置版本:', APP_VERSION.VERSION);
+    updateStore.setCurrentVersion(APP_VERSION.VERSION);
   }
 
   try {
