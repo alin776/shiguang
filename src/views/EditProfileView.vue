@@ -20,7 +20,7 @@
         <div class="dark-overlay"></div>
         <el-upload
           class="upload-cover"
-          :action="`${API_BASE_URL}/api/v1/users/upload/cover`"
+          :action="`${API_BASE_URL}/api/users/upload/cover`"
           :headers="uploadHeaders"
           :show-file-list="false"
           :on-success="handleCoverSuccess"
@@ -487,7 +487,6 @@ const displayCover = computed(() => {
 :deep(.el-input__wrapper:focus-within),
 :deep(.el-textarea__wrapper:focus-within) {
   box-shadow: 0 0 0 1px #4e95ff inset;
-  border-color: #4e95ff;
 }
 
 /* 修复表单样式在浅色模式下的问题 */

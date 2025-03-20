@@ -13,11 +13,12 @@ export const getImageUrl = (path) => {
     cleanPath = cleanPath.replace(/[？?]+$/, '');
   }
   
-  // 简单日志
-  console.log('处理图片URL:', cleanPath);
+  // 更详细的日志
+  console.log('处理图片URL:', cleanPath, '类型:', typeof cleanPath);
   
   // 已经是完整URL的情况，直接返回
   if (cleanPath.startsWith("http")) {
+    console.log('完整URL直接返回:', cleanPath);
     return cleanPath;
   }
   
@@ -25,23 +26,31 @@ export const getImageUrl = (path) => {
   
   // 1. avatar-开头的文件 - 用户头像
   if (cleanPath.startsWith("avatar-")) {
-    return `${API_BASE_URL}/uploads/avatars/${cleanPath}`;
+    const result = `${API_BASE_URL}/uploads/avatars/${cleanPath}`;
+    console.log('处理头像URL:', result);
+    return result;
   }
   
   // 2. post-开头的文件 - 帖子图片
   if (cleanPath.startsWith("post-")) {
-    return `${API_BASE_URL}/uploads/posts/${cleanPath}`;
+    const result = `${API_BASE_URL}/uploads/posts/${cleanPath}`;
+    console.log('处理帖子图片URL:', result);
+    return result;
   }
   
   // 3. 以/uploads开头的完整路径
   if (cleanPath.startsWith("/uploads")) {
-    return `${API_BASE_URL}${cleanPath}`;
+    const result = `${API_BASE_URL}${cleanPath}`;
+    console.log('处理完整路径URL:', result);
+    return result;
   }
   
   // 4. 其他情况 - 添加/分隔符
-  return cleanPath.startsWith("/") 
+  const result = cleanPath.startsWith("/") 
     ? `${API_BASE_URL}${cleanPath}`
     : `${API_BASE_URL}/${cleanPath}`;
+  console.log('其他情况处理URL:', result);
+  return result;
 };
 
 // 创建 axios 实例

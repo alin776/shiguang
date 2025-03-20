@@ -65,18 +65,24 @@ const followers = ref([]);
 const currentUserId = computed(() => authStore.user?.id);
 
 const API_BASE_URL = "http://47.98.210.7:3000";
+const LOCAL_URL = "http://localhost:3000";
 
 const getAvatarUrl = (avatar) => {
   if (!avatar) return "";
 
-  if (avatar.includes(`${API_BASE_URL}/uploads/avatars/`)) {
-    const matches = avatar.match(/avatar-[\w-]+\.\w+$/);
-    if (matches) {
-      return `${API_BASE_URL}/uploads/avatars/${matches[0]}`;
-    }
+  if (avatar.includes(LOCAL_URL)) {
+    return avatar.replace(LOCAL_URL, API_BASE_URL);
+  }
+
+  if (avatar.includes(`${API_BASE_URL}${API_BASE_URL}`)) {
+    return avatar.replace(`${API_BASE_URL}${API_BASE_URL}`, API_BASE_URL);
   }
 
   if (avatar.startsWith("http")) return avatar;
+
+  if (avatar.startsWith("/")) {
+    return `${API_BASE_URL}${avatar}`;
+  }
 
   return `${API_BASE_URL}/uploads/avatars/${avatar}`;
 };
@@ -85,15 +91,27 @@ const loadFollowers = async () => {
   try {
     const userId = route.params.id || authStore.user.id;
     const response = await communityStore.getFollowers(userId);
-    followers.value = response.users.map((user) => ({
-      ...user,
-      avatar: user.avatar
-        ? user.avatar.includes(`${API_BASE_URL}${API_BASE_URL}`)
-          ? user.avatar.replace(API_BASE_URL, "")
-          : user.avatar
-        : null,
-    }));
+    
+    followers.value = response.users.map((user) => {
+      let avatarUrl = user.avatar;
+      
+      if (avatarUrl && avatarUrl.includes(LOCAL_URL)) {
+        avatarUrl = avatarUrl.replace(LOCAL_URL, API_BASE_URL);
+      }
+      
+      if (avatarUrl && avatarUrl.includes(`${API_BASE_URL}${API_BASE_URL}`)) {
+        avatarUrl = avatarUrl.replace(`${API_BASE_URL}${API_BASE_URL}`, API_BASE_URL);
+      }
+      
+      return {
+        ...user,
+        avatar: avatarUrl
+      };
+    });
+    
+    console.log("加载粉丝列表成功:", followers.value);
   } catch (error) {
+    console.error("获取粉丝列表失败:", error);
     ElMessage.error("获取粉丝列表失败");
   }
 };

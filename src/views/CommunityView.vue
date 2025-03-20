@@ -12,44 +12,61 @@
             @clear="handleSearch"
             @keyup.enter="handleSearch"
           />
+          <div class="filter-button" @click="showFilterMenu = !showFilterMenu">
+            <el-icon><Filter /></el-icon>
+          </div>
           <div class="notification-container">
             <NotificationBadge />
           </div>
         </div>
       </div>
 
-      <!-- 排序选项卡 -->
-      <div class="sort-tabs">
-        <div
-          v-for="tab in sortTabs"
-          :key="tab.value"
-          class="tab-item"
-          :class="{ active: currentSort === tab.value }"
-          @click="changeSort(tab.value)"
-        >
-          {{ tab.label }}
+      <!-- 筛选菜单 -->
+      <div class="filter-menu" v-if="showFilterMenu">
+        <div class="filter-section">
+          <div class="filter-section-title">排序方式</div>
+          <div class="filter-options">
+            <div
+              v-for="tab in sortTabs"
+              :key="tab.value"
+              class="filter-option"
+              :class="{ active: currentSort === tab.value }"
+              @click="changeSort(tab.value)"
+            >
+              {{ tab.label }}
+            </div>
+          </div>
+        </div>
+        
+        <div class="filter-section" v-if="categories.length > 0">
+          <div class="filter-section-title">内容分类</div>
+          <div class="filter-options category-options">
+            <div 
+              class="filter-option"
+              :class="{ active: !selectedCategoryId }"
+              @click="changeCategory(null)"
+            >
+              全部
+            </div>
+            <div 
+              v-for="category in categories" 
+              :key="category.id"
+              class="filter-option"
+              :class="{ active: selectedCategoryId === category.id }"
+              @click="changeCategory(category.id)"
+            >
+              {{ category.name }}
+            </div>
+          </div>
+        </div>
+        
+        <div class="filter-footer">
+          <el-button type="primary" class="close-filter-btn" @click="showFilterMenu = false">确定</el-button>
         </div>
       </div>
-      
-      <!-- 分类筛选 -->
-      <div class="category-filter" v-if="categories.length > 0">
-        <div 
-          class="category-chip"
-          :class="{ active: !selectedCategoryId }"
-          @click="changeCategory(null)"
-        >
-          全部
-        </div>
-        <div 
-          v-for="category in categories" 
-          :key="category.id"
-          class="category-chip"
-          :class="{ active: selectedCategoryId === category.id }"
-          @click="changeCategory(category.id)"
-        >
-          {{ category.name }}
-        </div>
-      </div>
+
+      <!-- 覆盖层 - 点击关闭筛选菜单 -->
+      <div class="filter-overlay" v-if="showFilterMenu" @click="showFilterMenu = false"></div>
 
       <!-- 悬浮发帖按钮 -->
       <div class="floating-button pulse-on-click" @click="router.push('/community/create')">
@@ -81,15 +98,8 @@
 
             <!-- 帖子内容 -->
             <div class="post-content">
-              <h3 class="post-title">{{ post.title }}</h3>
-              
-              <!-- 帖子文字内容 (仅在没有图片时显示更多文字) -->
-              <p class="post-text" v-if="!post.images?.length">{{ post.content }}</p>
-            </div>
-
-            <!-- 帖子底部信息 -->
-            <div class="post-footer">
-              <div class="user-info">
+              <!-- 用户信息 - 移到帖子内容上方 -->
+              <div class="post-author">
                 <el-avatar
                   :size="24"
                   :src="post.user?.avatar"
@@ -99,8 +109,19 @@
                   {{ post.user?.username?.charAt(0).toUpperCase() || "?" }}
                 </el-avatar>
                 <span class="username">{{ post.user?.username || "匿名用户" }}</span>
-                <!-- 显示分类 -->
-                <span class="category-badge" v-if="post.category_name">
+              </div>
+
+              <h3 class="post-title">{{ post.title }}</h3>
+              
+              <!-- 帖子文字内容 (仅在没有图片时显示更多文字) -->
+              <p class="post-text" v-if="!post.images?.length">{{ post.content }}</p>
+            </div>
+
+            <!-- 帖子底部信息 -->
+            <div class="post-footer">
+              <!-- 显示分类 -->
+              <div class="category-container" v-if="post.category_name">
+                <span class="category-badge">
                   {{ post.category_name }}
                 </span>
               </div>
@@ -137,15 +158,8 @@
 
             <!-- 帖子内容 -->
             <div class="post-content">
-              <h3 class="post-title">{{ post.title }}</h3>
-              
-              <!-- 帖子文字内容 (仅在没有图片时显示更多文字) -->
-              <p class="post-text" v-if="!post.images?.length">{{ post.content }}</p>
-            </div>
-
-            <!-- 帖子底部信息 -->
-            <div class="post-footer">
-              <div class="user-info">
+              <!-- 用户信息 - 移到帖子内容上方 -->
+              <div class="post-author">
                 <el-avatar
                   :size="24"
                   :src="post.user?.avatar"
@@ -155,8 +169,19 @@
                   {{ post.user?.username?.charAt(0).toUpperCase() || "?" }}
                 </el-avatar>
                 <span class="username">{{ post.user?.username || "匿名用户" }}</span>
-                <!-- 显示分类 -->
-                <span class="category-badge" v-if="post.category_name">
+              </div>
+
+              <h3 class="post-title">{{ post.title }}</h3>
+              
+              <!-- 帖子文字内容 (仅在没有图片时显示更多文字) -->
+              <p class="post-text" v-if="!post.images?.length">{{ post.content }}</p>
+            </div>
+
+            <!-- 帖子底部信息 -->
+            <div class="post-footer">
+              <!-- 显示分类 -->
+              <div class="category-container" v-if="post.category_name">
+                <span class="category-badge">
                   {{ post.category_name }}
                 </span>
               </div>
@@ -190,7 +215,7 @@
 import { ref, onMounted, computed, nextTick } from "vue";
 import { useRouter } from "vue-router";
 import { ElMessage, ElMessageBox } from "element-plus";
-import { Search, Plus, Picture, View, ChatDotRound, Star, StarFilled, VideoPlay, VideoPause } from "@element-plus/icons-vue";
+import { Search, Plus, Picture, View, ChatDotRound, Star, StarFilled, VideoPlay, VideoPause, Filter } from "@element-plus/icons-vue";
 import BottomNavBar from "@/components/BottomNavBar.vue";
 import NotificationBadge from "@/components/NotificationBadge.vue";
 import AudioRecorder from "@/components/AudioRecorder.vue";
@@ -215,6 +240,7 @@ const currentPage = ref(1);
 const noMoreData = ref(false);
 const currentSort = ref("latest");
 const likedPostIds = ref(new Set());
+const showFilterMenu = ref(false);
 
 // 排序选项
 const sortTabs = [
@@ -594,6 +620,29 @@ const changeCategory = (categoryId) => {
   selectedCategoryId.value = categoryId;
   loadPosts();
 };
+
+const getActiveFilterText = () => {
+  const parts = [];
+  
+  // 添加排序方式
+  if (currentSort.value !== 'latest') {
+    if (currentSort.value === 'hot') {
+      parts.push('最热');
+    } else if (currentSort.value === 'recommend') {
+      parts.push('推荐');
+    }
+  }
+  
+  // 添加选中的分类
+  if (selectedCategoryId.value) {
+    const category = categories.value.find(c => c.id === selectedCategoryId.value);
+    if (category) {
+      parts.push(category.name);
+    }
+  }
+  
+  return parts.length > 0 ? parts.join('·') : '筛选';
+};
 </script>
 
 <style scoped>
@@ -616,7 +665,7 @@ const changeCategory = (categoryId) => {
   right: 0;
   height: 56px;
   background-color: #ffffff;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.05);
   display: flex;
   align-items: center;
   padding: 0 16px;
@@ -634,45 +683,121 @@ const changeCategory = (categoryId) => {
   align-items: center;
 }
 
+:deep(.el-input .el-input__wrapper) {
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08);
+  border-radius: 8px;
+  padding: 0 12px;
+  background-color: #f5f7fa;
+}
+
+:deep(.el-input .el-input__wrapper:hover) {
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.12);
+}
+
+:deep(.el-input .el-input__inner) {
+  font-size: 14px;
+  height: 36px;
+  color: #333;
+}
+
 .notification-container {
   margin-left: 12px;
   position: relative;
   z-index: 9950;
 }
 
-/* 排序选项卡 */
-.sort-tabs {
+/* 筛选按钮 */
+.filter-button {
   display: flex;
-  justify-content: space-between;
-  padding: 12px 16px;
-  background-color: #ffffff;
-  margin-bottom: 12px;
-  position: sticky;
-  top: 56px;
-  z-index: 10;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.03);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.02);
-}
-
-.tab-item {
-  font-size: 14px;
-  color: #909399;
+  align-items: center;
+  justify-content: center;
+  margin-left: 12px;
+  margin-right: 12px;
   cursor: pointer;
-  position: relative;
-  padding: 6px 12px;
-  border-radius: 14px;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
+  color: #666;
+  width: 24px;
+  height: 24px;
 }
 
-.tab-item.active {
-  color: #409eff;
-  font-weight: 600;
-  background-color: rgba(64, 158, 255, 0.08);
+.filter-button:hover {
+  color: #1677ff;
 }
 
-.tab-item:hover:not(.active) {
-  color: #409eff;
-  background-color: rgba(64, 158, 255, 0.05);
+/* 筛选菜单 */
+.filter-menu {
+  position: fixed;
+  top: 56px;
+  left: 0;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+  background-color: white;
+  z-index: 100;
+  padding: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-bottom-left-radius: 16px;
+  border-bottom-right-radius: 16px;
+  animation: slideDown 0.3s ease;
+}
+
+.filter-section:last-child {
+  margin-bottom: 0;
+}
+
+.filter-section-title {
+  font-size: 16px;
+  font-weight: 500;
+  margin-bottom: 12px;
+  color: #333;
+}
+
+.filter-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.filter-option {
+  padding: 8px 16px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  color: #666;
+  background-color: #f5f7fa;
+  border: none;
+}
+
+.filter-option:active {
+  transform: scale(0.98);
+}
+
+.filter-option.active {
+  background-color: #1677ff;
+  color: white;
+}
+
+.category-options {
+  margin-top: 6px;
+}
+
+.filter-footer {
+  text-align: center;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid #f0f0f0;
+}
+
+/* 覆盖层 */
+.filter-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.4);
+  z-index: 99;
 }
 
 /* 帖子列表 */
@@ -694,9 +819,9 @@ const changeCategory = (categoryId) => {
 
 .post-card {
   background-color: #ffffff;
-  border-radius: 12px;
+  border-radius: 8px;
   overflow: hidden;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
   transition: all 0.3s ease;
   border: none;
   cursor: pointer;
@@ -704,8 +829,8 @@ const changeCategory = (categoryId) => {
 }
 
 .post-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 6px 16px rgba(64, 158, 255, 0.1);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .post-cover {
@@ -721,25 +846,25 @@ const changeCategory = (categoryId) => {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.5s ease;
+  transition: transform 0.3s ease;
 }
 
 .post-card:hover .post-cover img {
-  transform: scale(1.03);
+  transform: scale(1.05);
 }
 
 .image-count {
   position: absolute;
   bottom: 8px;
   right: 8px;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(0, 0, 0, 0.4);
   color: white;
-  padding: 2px 6px;
-  border-radius: 10px;
-  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
   display: flex;
   align-items: center;
-  gap: 3px;
+  gap: 4px;
 }
 
 /* 帖子内容 */
@@ -748,11 +873,35 @@ const changeCategory = (categoryId) => {
   position: relative;
 }
 
+.post-author {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.user-avatar {
+  border: 1px solid white;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  width: 24px;
+  height: 24px;
+}
+
+.username {
+  font-size: 13px;
+  color: #666;
+  font-weight: 500;
+  max-width: 150px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .post-title {
   font-size: 15px;
   font-weight: 600;
   margin: 0 0 6px;
-  color: #303133;
+  color: #333;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -762,7 +911,7 @@ const changeCategory = (categoryId) => {
 
 .post-text {
   font-size: 13px;
-  color: #606266;
+  color: #666;
   margin: 0 0 8px;
   display: -webkit-box;
   -webkit-line-clamp: 3;
@@ -776,61 +925,63 @@ const changeCategory = (categoryId) => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 6px 10px;
-  border-top: 1px solid rgba(0, 0, 0, 0.04);
-  background-color: #f9fafc;
+  padding: 8px 12px;
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  background-color: #fafafa;
 }
 
-.user-info {
+.category-container {
   display: flex;
+}
+
+.category-badge {
+  display: inline-flex;
   align-items: center;
-  gap: 4px;
-  max-width: 70%;
-  overflow: hidden;
-}
-
-.user-avatar {
-  border: 1px solid white;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-  width: 24px;
-  height: 24px;
-}
-
-.username {
-  font-size: 11px;
-  color: #606266;
-  font-weight: 500;
-  max-width: 100px;
+  justify-content: center;
+  padding: 2px 10px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: normal;
+  color: #ffffff;
+  background-color: transparent;
+  background-image: linear-gradient(to right, #36a9e1, #1677ff);
+  border: none;
   white-space: nowrap;
+  max-width: 120px;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.category-badge:hover {
+  opacity: 0.9;
 }
 
 .like-area {
   display: flex;
   align-items: center;
-  gap: 0;
-  background-color: #f5f7fa;
-  padding: 2px 6px 2px 4px;
-  border-radius: 12px;
-  margin-right: 6px;
+  gap: 4px;
+  background-color: #f0f2f5;
+  padding: 3px 8px;
+  border-radius: 14px;
+  margin-right: 16px;
+  margin-left: auto;
   position: relative;
 }
 
 .like-icon {
   font-size: 14px;
-  color: #409eff;
+  color: #1677ff;
 }
 
 .like-icon.liked {
-  color: #409eff;
+  color: #1677ff;
   transform: scale(1.1);
 }
 
 .like-count {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
-  color: #606266;
+  color: #666;
 }
 
 /* 悬浮发帖按钮 */
@@ -839,30 +990,31 @@ const changeCategory = (categoryId) => {
   bottom: 80px;
   right: 16px;
   width: auto;
-  height: 48px;
-  padding: 0 20px;
-  border-radius: 24px;
-  background: linear-gradient(135deg, #409eff, #66b1ff);
+  height: 44px;
+  padding: 0 18px;
+  border-radius: 22px;
+  background: #1677ff;
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.25);
+  gap: 6px;
+  box-shadow: 0 4px 12px rgba(22, 119, 255, 0.2);
   transition: all 0.3s ease;
   cursor: pointer;
   z-index: 10;
   font-weight: 500;
+  font-size: 14px;
 }
 
 .floating-button:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 6px 16px rgba(64, 158, 255, 0.35);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(22, 119, 255, 0.3);
 }
 
 .floating-button:active {
   transform: translateY(0);
-  box-shadow: 0 2px 8px rgba(64, 158, 255, 0.3);
+  box-shadow: 0 2px 8px rgba(22, 119, 255, 0.25);
 }
 
 .pulse-on-click:active {
@@ -952,9 +1104,10 @@ const changeCategory = (categoryId) => {
   }
   
   .category-badge {
-    max-width: 50px;
-    font-size: 9px;
-    padding: 1px 4px;
+    max-width: 80px;
+    font-size: 12px;
+    padding: 1px 8px;
+    border-radius: 16px;
   }
   
   .username {
@@ -1009,53 +1162,36 @@ const changeCategory = (categoryId) => {
   margin-bottom: 6px;
 }
 
-.category-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 1px 6px;
-  border-radius: 10px;
-  font-size: 10px;
-  color: #409EFF;
-  margin-left: 6px;
-  background-color: rgba(64, 158, 255, 0.05);
-  border: 1px solid rgba(64, 158, 255, 0.3);
-  white-space: nowrap;
-  max-width: 60px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
 .category-option {
   display: flex;
   align-items: center;
 }
 
-/* 分类筛选样式 */
-.category-filter {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 12px;
-  background-color: #ffffff;
-  margin-bottom: 12px;
-  position: sticky;
-  top: 56px;
-  z-index: 10;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.03);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.02);
+@keyframes slideDown {
+  from {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
-.category-chip {
-  padding: 6px 12px;
-  border: 1px solid #ebeef5;
-  border-radius: 12px;
-  cursor: pointer;
-  transition: all 0.3s ease;
+.filter-section {
+  margin-bottom: 20px;
 }
 
-.category-chip.active {
-  border-color: #409EFF;
-  background-color: #409EFF;
-  color: white;
+.filter-option:hover:not(.active) {
+  background-color: #e8f3ff;
+  color: #1677ff;
+}
+
+/* 关闭按钮样式 */
+.close-filter-btn {
+  width: 120px;
+  padding: 10px 0;
+  font-size: 15px;
+  border-radius: 20px !important;
 }
 </style>

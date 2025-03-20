@@ -79,10 +79,10 @@
     
     <!-- 底部工具栏 -->
     <div class="bottom-tools">
-      <div class="tool-button edit-button" @click="goToSubmitNote">
+      <div class="tool-button" @click="goToSubmitNote">
         <el-icon class="tool-icon"><EditPen /></el-icon>
       </div>
-      <div class="tool-button share-button" @click="showShareDialog">
+      <div class="tool-button" @click="showShareDialog">
         <el-icon class="tool-icon"><Share /></el-icon>
       </div>
     </div>
@@ -991,21 +991,22 @@ const handleImageError = (event) => {
 
 .note-image-container {
   width: 100%;
-  height: 60%; /* 减少图片容器高度，从68%修改为60% */
+  height: 240px; /* 设置固定高度而非百分比 */
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-  position: relative; /* 添加相对定位，用于错误消息定位 */
-  background-color: #f5f5f5; /* 添加背景色 */
+  position: relative;
+  background-color: #f5f5f5;
 }
 
 .note-image {
   width: 100%;
   height: 100%;
-  object-fit: contain; /* 改为contain确保图片完整显示不裁剪 */
-  background-color: #f5f5f5; /* 添加背景色 */
-  transition: opacity 0.3s; /* 添加过渡效果 */
+  object-fit: cover; /* 改为cover确保填充整个容器 */
+  object-position: center; /* 确保图片居中显示 */
+  background-color: #f5f5f5;
+  transition: all 0.3s ease;
 }
 
 .note-text-container {
@@ -1035,12 +1036,15 @@ const handleImageError = (event) => {
 }
 
 .note-text {
-  font-size: 16px;
-  line-height: 1.6;
-  color: #2c3e50;
-  font-weight: 500;
+  font-size: 17px;
+  line-height: 1.8;
+  color: #333333;
+  font-weight: 400;
   text-align: left;
   white-space: pre-line;
+  font-family: 'STSong', 'SimSun', 'FangSong', serif;
+  letter-spacing: 0.5px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
   /* 提高字体清晰度 */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -1121,41 +1125,40 @@ const handleImageError = (event) => {
 /* 底部工具栏 */
 .bottom-tools {
   display: flex;
-  justify-content: space-around;
+  justify-content: center;
   align-items: center;
-  padding: 5px 20px;
-  background-color: #ffffff;
-  border-top: 1px solid #f0f0f0;
+  padding: 12px 20px;
+  background-color: transparent;
+  border-top: none;
   width: 100%;
   box-sizing: border-box;
   position: relative;
   z-index: 10;
-  overflow: hidden; /* 防止溢出 */
+  gap: 50px;
+  margin-top: -35px;
 }
 
 .tool-button {
   display: flex;
-  flex-direction: column;
+  justify-content: center;
   align-items: center;
-  gap: 5px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #f5f7fa;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
   cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tool-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
+  background-color: #e8f3ff;
 }
 
 .tool-icon {
-  font-size: 22px;
-  color: #2c3e50;
-}
-
-.edit-button {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 5px;
-  cursor: pointer;
-}
-
-.edit-button .tool-icon {
-  font-size: 22px;
+  font-size: 20px;
   color: #2c3e50;
 }
 

@@ -42,6 +42,20 @@ app.use("/uploads", (req, res, next) => {
   res.header("Access-Control-Allow-Origin", "*"); // 允许所有来源访问静态资源
   res.header("Access-Control-Allow-Methods", "GET, OPTIONS");
   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+  
+  // 修复PNG文件的MIME类型
+  const filePath = req.path;
+  if (filePath.toLowerCase().endsWith('.png')) {
+    res.type('image/png');
+  } else if (filePath.toLowerCase().endsWith('.jpg') || filePath.toLowerCase().endsWith('.jpeg')) {
+    res.type('image/jpeg');
+  }
+  
+  console.log("静态资源请求:", {
+    路径: req.path,
+    MIME类型: res.get('Content-Type') || '未设置'
+  });
+  
   next();
 }, express.static(path.join(__dirname, "public/uploads")));
 

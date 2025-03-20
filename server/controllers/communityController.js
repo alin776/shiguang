@@ -30,10 +30,13 @@ const upload = multer({
   storage,
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
   fileFilter: (req, file, cb) => {
-    if (file.mimetype.startsWith("image/")) {
+    console.log("上传文件类型:", file.mimetype);
+    
+    if (file.mimetype === "image/png" || file.mimetype === "image/jpeg" || file.mimetype === "image/jpg") {
       cb(null, true);
     } else {
-      cb(new Error("只允许上传图片文件"));
+      console.error("不支持的文件类型:", file.mimetype);
+      cb(new Error("只允许上传JPG或PNG格式的图片"));
     }
   },
 }).single("file"); // Element Plus Upload 组件默认使用 'file' 作为字段名
@@ -723,14 +726,26 @@ exports.getMyLikedPosts = async (req, res) => {
 // 上传图片
 exports.uploadImage = async (req, res) => {
   try {
+    console.log("开始处理图片上传...");
+    
     upload(req, res, async (err) => {
       if (err) {
+        console.error("上传过程中发生错误:", err);
         return res.status(400).json({ message: err.message });
       }
 
       if (!req.file) {
+        console.error("未找到上传的文件");
         return res.status(400).json({ message: "请选择要上传的图片" });
       }
+
+      console.log("文件上传成功:", {
+        文件名: req.file.filename,
+        原始文件名: req.file.originalname,
+        文件类型: req.file.mimetype,
+        文件大小: req.file.size,
+        保存路径: req.file.path
+      });
 
       // 添加CORS头部
       res.header("Access-Control-Allow-Origin", "*");
@@ -738,8 +753,11 @@ exports.uploadImage = async (req, res) => {
       res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
 
       // 返回图片URL
+      const imageUrl = `/uploads/posts/${req.file.filename}`;
+      console.log("返回的图片URL:", imageUrl);
+      
       res.json({
-        url: `/uploads/posts/${req.file.filename}`,
+        url: imageUrl,
         name: req.file.originalname,
       });
     });

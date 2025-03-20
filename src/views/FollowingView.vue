@@ -56,6 +56,7 @@ import { useCommunityStore } from "../stores/community";
 import SpaceBackground from "./calendar/components/SpaceBackground.vue";
 
 const API_BASE_URL = "http://47.98.210.7:3000";
+const LOCAL_URL = "http://localhost:3000";
 const router = useRouter();
 const authStore = useAuthStore();
 const communityStore = useCommunityStore();
@@ -68,15 +69,29 @@ const loadFollowing = async () => {
   try {
     const userId = route.params.id || authStore.user.id;
     const response = await communityStore.getFollowing(userId);
-    following.value = response.users.map((user) => ({
-      ...user,
-      avatar: user.avatar
-        ? user.avatar.includes(`${API_BASE_URL}${API_BASE_URL}`)
-          ? user.avatar.replace(API_BASE_URL, "")
-          : user.avatar
-        : null,
-    }));
+    
+    following.value = response.users.map((user) => {
+      let avatarUrl = user.avatar;
+      
+      // 替换localhost为服务器地址
+      if (avatarUrl && avatarUrl.includes(LOCAL_URL)) {
+        avatarUrl = avatarUrl.replace(LOCAL_URL, API_BASE_URL);
+      }
+      
+      // 处理重复域名问题
+      if (avatarUrl && avatarUrl.includes(`${API_BASE_URL}${API_BASE_URL}`)) {
+        avatarUrl = avatarUrl.replace(`${API_BASE_URL}${API_BASE_URL}`, API_BASE_URL);
+      }
+      
+      return {
+        ...user,
+        avatar: avatarUrl
+      };
+    });
+    
+    console.log("加载关注列表成功:", following.value);
   } catch (error) {
+    console.error("获取关注列表失败:", error);
     ElMessage.error("获取关注列表失败");
   }
 };
@@ -101,19 +116,25 @@ const viewUserProfile = (userId) => {
 const getAvatarUrl = (avatar) => {
   if (!avatar) return "";
 
-  // 处理重复的 URL 问题
-  if (avatar.includes(`${API_BASE_URL}/uploads/avatars/`)) {
-    // 提取实际的文件名
-    const matches = avatar.match(/avatar-[\w-]+\.\w+$/);
-    if (matches) {
-      return `${API_BASE_URL}/uploads/avatars/${matches[0]}`;
-    }
+  // 替换localhost为服务器地址
+  if (avatar.includes(LOCAL_URL)) {
+    return avatar.replace(LOCAL_URL, API_BASE_URL);
   }
 
-  // 如果是以 http 开头的完整 URL，直接返回
+  // 处理重复域名问题
+  if (avatar.includes(`${API_BASE_URL}${API_BASE_URL}`)) {
+    return avatar.replace(`${API_BASE_URL}${API_BASE_URL}`, API_BASE_URL);
+  }
+
+  // 如果已经是完整URL，直接返回
   if (avatar.startsWith("http")) return avatar;
 
-  // 否则，添加 API_BASE_URL 前缀
+  // 如果是相对路径，添加API基础URL
+  if (avatar.startsWith("/")) {
+    return `${API_BASE_URL}${avatar}`;
+  }
+
+  // 默认作为文件名处理
   return `${API_BASE_URL}/uploads/avatars/${avatar}`;
 };
 

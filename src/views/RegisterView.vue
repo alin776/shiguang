@@ -1,97 +1,116 @@
 <template>
   <div class="register-container">
-    <!-- 简约风格背景 -->
-    <div class="background-elements">
-      <div class="circle circle-1"></div>
-      <div class="circle circle-2"></div>
-      <div class="circle circle-3"></div>
+    <div class="background-shapes">
+      <div class="shape shape-1"></div>
+      <div class="shape shape-2"></div>
+      <div class="shape shape-3"></div>
+      <div class="shape shape-4"></div>
     </div>
     
-    <div class="register-content">
-      <div class="register-header">
-        <img src="../assets/logo.png" alt="时光" class="logo" />
-        <h1 class="register-title">时光</h1>
-        <p class="register-subtitle">创建新账号</p>
+    <div class="register-card">
+      <div class="form-header">
+        <h1 class="title">创建新账号</h1>
+        <p class="subtitle">加入我们，开启全新旅程</p>
       </div>
-
+      
       <el-form
         :model="registerForm"
         :rules="rules"
         ref="registerFormRef"
-        label-position="top"
-        class="register-form focus-glow"
+        label-position="left"
+        label-width="80px"
+        class="register-form"
       >
-        <el-form-item label="用户名" prop="username">
-          <el-input v-model="registerForm.username" />
-        </el-form-item>
-
-        <el-form-item label="邮箱" prop="email">
-          <div class="verification-group">
-            <el-input v-model="registerForm.email" />
-            <el-button 
-              type="primary" 
-              :disabled="cooldown > 0" 
-              @click="sendVerificationCode"
-              :loading="sendingCode"
-            >
-              {{ cooldown > 0 ? `${cooldown}秒` : '获取验证码' }}
-            </el-button>
-          </div>
-        </el-form-item>
-
-        <el-form-item label="验证码" prop="verificationCode">
-          <el-input 
-            v-model="registerForm.verificationCode" 
-            placeholder="请输入邮箱验证码"
-          />
-        </el-form-item>
-
-        <el-form-item label="手机号" prop="phone">
-          <el-input v-model="registerForm.phone" />
-        </el-form-item>
-
-        <el-form-item label="密码" prop="password">
-          <el-input
-            v-model="registerForm.password"
-            type="password"
-            show-password
-          />
-          <div
-            class="password-strength tech-badge"
-            v-if="registerForm.password"
-          >
-            密码强度：
-            <span :class="['strength-indicator', passwordStrengthClass]">{{
-              passwordStrength
-            }}</span>
-          </div>
-        </el-form-item>
-
-        <el-form-item label="确认密码" prop="confirmPassword">
-          <el-input
-            v-model="registerForm.confirmPassword"
-            type="password"
-            show-password
-          />
-        </el-form-item>
-
-        <el-form-item>
-          <div class="button-container">
-            <el-button
-              class="register-button glow-button pulse-on-click"
-              @click="handleRegister"
-              :loading="loading"
-              round
-            >
-              注册
-            </el-button>
-          </div>
-        </el-form-item>
+        <div class="form-row">
+          <el-form-item label="用户名" prop="username">
+            <div class="input-wrapper">
+              <el-input v-model="registerForm.username" placeholder="请输入用户名" />
+            </div>
+          </el-form-item>
+        </div>
+        
+        <div class="form-row">
+          <el-form-item label="邮箱" prop="email">
+            <div class="input-group">
+              <div class="input-wrapper">
+                <el-input v-model="registerForm.email" placeholder="请输入邮箱" />
+              </div>
+              <el-button 
+                class="code-button"
+                :disabled="cooldown > 0" 
+                @click="sendVerificationCode"
+                :loading="sendingCode"
+              >
+                {{ cooldown > 0 ? `${cooldown}秒` : '获取验证码' }}
+              </el-button>
+            </div>
+          </el-form-item>
+        </div>
+        
+        <div class="form-row">
+          <el-form-item label="验证码" prop="verificationCode">
+            <div class="input-wrapper">
+              <el-input 
+                v-model="registerForm.verificationCode" 
+                placeholder="请输入验证码"
+              />
+            </div>
+          </el-form-item>
+        </div>
+        
+        <div class="form-row">
+          <el-form-item label="手机号" prop="phone">
+            <div class="input-wrapper">
+              <el-input v-model="registerForm.phone" placeholder="请输入手机号" />
+            </div>
+          </el-form-item>
+        </div>
+        
+        <div class="form-row">
+          <el-form-item label="密码" prop="password">
+            <div class="input-wrapper">
+              <el-input
+                v-model="registerForm.password"
+                type="password"
+                show-password
+                placeholder="请输入密码"
+              />
+            </div>
+            <div class="password-strength-wrapper" v-if="registerForm.password">
+              <div class="strength-label">密码强度：</div>
+              <div class="strength-box" :class="passwordStrengthClass">
+                <span>{{ passwordStrength }}</span>
+              </div>
+            </div>
+          </el-form-item>
+        </div>
+        
+        <div class="form-row">
+          <el-form-item label="确认密码" prop="confirmPassword">
+            <div class="input-wrapper">
+              <el-input
+                v-model="registerForm.confirmPassword"
+                type="password"
+                show-password
+                placeholder="请再次输入密码"
+              />
+            </div>
+          </el-form-item>
+        </div>
+        
+        <button 
+          class="submit-button" 
+          @click.prevent="handleRegister"
+          :class="{ 'loading': loading }"
+        >
+          <span class="button-text">注册账号</span>
+          <span class="button-loader" v-if="loading"></span>
+        </button>
       </el-form>
 
       <div class="login-link">
         <span>已有账号？</span>
-        <el-link type="primary" @click="goToLogin">返回登录</el-link>
+        <a @click="goToLogin" class="link-text">返回登录</a>
       </div>
     </div>
   </div>
@@ -141,11 +160,10 @@ const passwordStrength = computed(() => {
 
 const passwordStrengthClass = computed(() => {
   const strength = passwordStrength.value;
-  return {
-    "text-danger": strength === "弱",
-    "text-warning": strength === "中",
-    "text-success": strength === "强",
-  };
+  if (strength === "弱") return "strength-weak";
+  if (strength === "中") return "strength-medium";
+  if (strength === "强") return "strength-strong";
+  return "";
 });
 
 const rules = {
@@ -254,256 +272,423 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+/* 导入字体 */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap');
+
 .register-container {
   display: flex;
-  flex-direction: column;
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  padding: 20px;
-  background: linear-gradient(135deg, #e0f7fa, #bbdefb);
-  background-size: cover;
+  padding: 10px;
+  background-color: #f8fbfd;
+  font-family: 'Poppins', 'Microsoft YaHei', sans-serif;
+  position: relative;
   overflow: hidden;
-  position: relative;
 }
 
-.register-content {
-  position: relative;
-  z-index: 2;
-  width: 100%;
-  max-width: 400px;
-  background-color: rgba(255, 255, 255, 0.95);
-  border-radius: 16px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-  padding: 30px;
-  transition: transform 0.3s, box-shadow 0.3s;
-}
-
-.register-content:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
-}
-
-.register-header {
-  text-align: center;
-  margin-bottom: 24px;
-}
-
-.register-title {
-  font-size: 32px;
-  color: var(--primary-color);
-  font-weight: 700;
-  margin-top: 12px;
-  letter-spacing: 1px;
-  text-shadow: 1px 1px 0 rgba(255, 255, 255, 0.8);
-}
-
-.register-subtitle {
-  font-size: 16px;
-  color: var(--text-color-light);
-  margin-top: 8px;
-}
-
-.register-form {
-  width: 100%;
-  margin-top: 10px;
-}
-
-.button-container {
-  display: flex;
-  justify-content: center;
-  margin-top: 20px;
-  width: 100%;
-}
-
-.register-button {
-  height: 44px;
-  font-size: 16px;
-  width: 80%;
-  max-width: 300px;
-  background: linear-gradient(135deg, var(--primary-color), #2980b9);
-  border: none;
-  font-weight: 600;
-  box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3);
-  transition: all 0.3s ease;
-  color: white;
-  border-radius: 8px;
-}
-
-.glow-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 15px rgba(74, 144, 226, 0.5);
-}
-
-.glow-button:active {
-  transform: translateY(1px);
-  box-shadow: 0 2px 5px rgba(74, 144, 226, 0.3);
-}
-
-.login-link {
-  text-align: center;
-  margin-top: 24px;
-}
-
-.login-link span {
-  color: var(--text-color-light);
-  margin-right: 8px;
-}
-
-/* 输入框样式调整 - 提高优先级 */
-:deep(.el-form .el-input .el-input__wrapper) {
-  background-color: white !important;
-  border: 1px solid rgba(74, 144, 226, 0.2) !important;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05) !important;
-  border-radius: 8px !important;
-  height: 44px;
-  transition: all 0.3s ease;
-}
-
-:deep(.el-input .el-input__inner) {
-  color: #333333 !important;
-  background-color: white !important;
-  font-weight: 500 !important;
-  font-size: 15px !important;
-}
-
-:deep(.el-form .el-input .el-input__wrapper:hover) {
-  border-color: rgba(74, 144, 226, 0.5) !important;
-  background-color: white !important;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08) !important;
-}
-
-:deep(.el-form .el-input .el-input__wrapper:focus-within) {
-  border-color: var(--primary-color) !important;
-  background-color: white !important;
-  box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2) !important;
-}
-
-/* 表单标签样式 */
-:deep(.el-form-item__label) {
-  padding-bottom: 8px;
-  font-size: 15px;
-  color: #333333 !important;
-  font-weight: 600;
-}
-
-/* 图标颜色 */
-:deep(.el-input__suffix-inner svg, .el-input__prefix-inner svg) {
-  color: var(--primary-color);
-}
-
-/* 密码强度指示器 */
-.password-strength {
-  margin-top: 8px;
-  font-size: 12px;
-  color: var(--text-color-light);
-  display: inline-block;
-  padding: 4px 0;
-}
-
-.strength-indicator {
-  font-weight: 600;
-  padding: 2px 6px;
-  border-radius: 4px;
-}
-
-.text-danger {
-  color: var(--danger-color);
-}
-
-.text-warning {
-  color: var(--warning-color);
-}
-
-.text-success {
-  color: var(--success-color);
-}
-
-/* 背景元素 */
-.background-elements {
+/* 背景形状 */
+.background-shapes {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  overflow: hidden;
-  z-index: 1;
+  z-index: 0;
 }
 
-.circle {
+.shape {
   position: absolute;
   border-radius: 50%;
-  opacity: 0.8;
+  opacity: 0.4;
+  filter: blur(50px);
 }
 
-.circle-1 {
-  width: 300px;
-  height: 300px;
-  background: linear-gradient(45deg, #4A90E2, #56CCF2);
-  top: -100px;
-  right: -50px;
-}
-
-.circle-2 {
+.shape-1 {
   width: 200px;
   height: 200px;
-  background: linear-gradient(45deg, #F5A623, #F8E71C);
-  bottom: -50px;
-  left: -60px;
+  background-color: #a8e6cf; /* 薄荷绿 */
+  top: -80px;
+  left: -100px;
+  animation: float 8s ease-in-out infinite;
 }
 
-.circle-3 {
+.shape-2 {
+  width: 180px;
+  height: 180px;
+  background-color: #dcedc1; /* 浅黄绿 */
+  bottom: -80px;
+  right: -80px;
+  animation: float 7s ease-in-out infinite 1s;
+}
+
+.shape-3 {
   width: 150px;
   height: 150px;
-  background: linear-gradient(45deg, #4CD964, #B8E986);
-  top: 60%;
+  background-color: #ffd3b6; /* 樱花粉 */
+  bottom: 80px;
+  left: 15%;
+  animation: float 6s ease-in-out infinite 0.5s;
+}
+
+.shape-4 {
+  width: 120px;
+  height: 120px;
+  background-color: #ffaaa5; /* 珊瑚粉 */
+  top: 10%;
   right: 10%;
+  animation: float 9s ease-in-out infinite 1.5s;
 }
 
-.logo {
-  width: 80px;
-  height: 80px;
-  object-fit: contain;
-  margin-bottom: 12px;
+@keyframes float {
+  0% {
+    transform: translatey(0px);
+  }
+  50% {
+    transform: translatey(-20px);
+  }
+  100% {
+    transform: translatey(0px);
+  }
+}
+
+/* 卡片样式 */
+.register-card {
+  position: relative;
+  width: 100%;
+  max-width: 450px;
+  background-color: #ffffff;
   border-radius: 16px;
-  background-color: white;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  padding: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
+  padding: 25px 20px;
+  z-index: 1;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  animation: cardEntrance 0.6s ease-out;
 }
 
-/* 错误提示样式 */
-:deep(.el-form-item__error) {
-  color: var(--danger-color);
-  font-size: 12px;
-  margin-top: 4px;
+.register-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.1);
 }
 
-/* 输入框验证失败状态 */
-:deep(.el-form-item.is-error .el-input__wrapper) {
-  border-color: var(--danger-color) !important;
-  box-shadow: 0 0 0 1px rgba(255, 59, 48, 0.1) !important;
-}
-
-@media screen and (max-width: 480px) {
-  .register-content {
-    padding: 20px;
+@keyframes cardEntrance {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
   }
-  
-  :deep(.el-form-item) {
-    margin-bottom: 16px;
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
-.verification-group {
+/* 表单头部 */
+.form-header {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 6px;
+  background: linear-gradient(to right, #58c3af, #4a9eff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: #888;
+  margin: 0;
+}
+
+/* 表单样式 */
+.register-form {
+  width: 100%;
+}
+
+.form-row {
+  margin-bottom: 15px;
+}
+
+/* 表单项样式 */
+:deep(.el-form-item__label) {
+  padding: 0 8px 0 0;
+  line-height: 40px;
+  font-size: 14px;
+  color: #555 !important;
+  font-weight: 500;
+}
+
+.input-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.input-group {
   display: flex;
   gap: 10px;
 }
 
-.verification-group .el-input {
+.input-group .input-wrapper {
   flex: 1;
 }
 
-.verification-group .el-button {
-  width: 120px;
+/* 输入框样式 */
+:deep(.el-input .el-input__wrapper) {
+  background-color: #f9fafc !important;
+  box-shadow: none !important;
+  border: 1px solid #edf1f7 !important;
+  border-radius: 10px !important;
+  height: 42px;
+  transition: all 0.3s ease;
+}
+
+:deep(.el-input .el-input__wrapper:hover),
+:deep(.el-input .el-input__wrapper:focus-within) {
+  border-color: #a8e6cf !important;
+  box-shadow: 0 0 0 2px rgba(168, 230, 207, 0.2) !important;
+}
+
+:deep(.el-input .el-input__inner) {
+  color: #4a5568;
+  font-size: 15px;
+}
+
+:deep(.el-input .el-input__inner::placeholder) {
+  color: #a0aec0;
+}
+
+/* 错误提示样式 */
+:deep(.el-form-item__error) {
+  color: #ff6b6b;
+  font-size: 12px;
+  font-weight: 500;
+  padding-left: 5px;
+}
+
+/* 表单验证失败时的输入框样式 */
+:deep(.el-form-item.is-error .el-input__wrapper) {
+  border-color: #ff6b6b !important;
+  box-shadow: 0 0 0 1px rgba(255, 107, 107, 0.1) !important;
+}
+
+/* 密码强度样式 */
+.password-strength-wrapper {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.strength-label {
+  font-size: 13px;
+  color: #666;
+  white-space: nowrap;
+}
+
+.strength-box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 20px;
+  border-radius: 2px;
+  font-size: 12px;
+  font-weight: normal;
+  color: #ffffff;
+}
+
+.strength-weak {
+  background-color: #f56c6c;
+}
+
+.strength-medium {
+  background-color: #e6a23c;
+}
+
+.strength-strong {
+  background-color: #67c23a;
+}
+
+/* 获取验证码按钮 */
+.code-button {
+  height: 42px;
+  min-width: 100px;
+  border-radius: 10px !important;
+  background: linear-gradient(135deg, #a8e6cf, #58cedd) !important;
+  border: none !important;
+  color: white !important;
+  font-weight: 500;
+  font-size: 13px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 10px rgba(88, 206, 221, 0.2);
+}
+
+.code-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(88, 206, 221, 0.3);
+}
+
+.code-button:active {
+  transform: translateY(0);
+}
+
+.code-button:disabled {
+  background: #e2e8f0 !important;
+  color: #a0aec0 !important;
+  box-shadow: none;
+  transform: none;
+}
+
+/* 提交按钮 */
+.submit-button {
+  width: 100%;
+  height: 46px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #58c3af, #4a9eff);
+  border: none;
+  color: white;
+  font-size: 15px;
+  font-weight: 600;
+  margin-top: 15px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(74, 158, 255, 0.2);
+}
+
+.submit-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: all 0.5s ease;
+}
+
+.submit-button:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(74, 158, 255, 0.3);
+}
+
+.submit-button:hover::before {
+  left: 100%;
+}
+
+.submit-button:active {
+  transform: translateY(0);
+}
+
+.button-text {
+  position: relative;
+  z-index: 2;
+}
+
+/* 按钮加载状态 */
+.loading .button-text {
+  opacity: 0;
+}
+
+.button-loader {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: white;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
+/* 登录链接 */
+.login-link {
+  text-align: center;
+  margin-top: 20px;
+  font-size: 14px;
+  color: #718096;
+}
+
+.link-text {
+  color: #4a9eff;
+  text-decoration: none;
+  font-weight: 500;
+  margin-left: 5px;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.link-text::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background-color: #4a9eff;
+  transition: width 0.3s ease;
+}
+
+.link-text:hover::after {
+  width: 100%;
+}
+
+/* 响应式设计 */
+@media screen and (max-width: 480px) {
+  .register-card {
+    padding: 20px 16px;
+    margin: 10px;
+  }
+  
+  .title {
+    font-size: 22px;
+  }
+  
+  .subtitle {
+    font-size: 13px;
+  }
+  
+  :deep(.el-input .el-input__wrapper) {
+    height: 40px;
+  }
+  
+  :deep(.el-form-item__label) {
+    font-size: 13px;
+    line-height: 36px;
+  }
+  
+  .code-button {
+    height: 40px;
+    min-width: 90px;
+    font-size: 12px;
+  }
+  
+  .submit-button {
+    height: 44px;
+    font-size: 14px;
+  }
+  
+  .form-row {
+    margin-bottom: 12px;
+  }
+  
+  .password-strength-wrapper {
+    margin-top: 6px;
+  }
 }
 </style>

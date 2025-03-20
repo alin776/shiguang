@@ -93,11 +93,11 @@
 .user-stats {
   display: flex;
   justify-content: space-around;
-  margin: 20px 0;
-  background: rgba(255, 255, 255, 0.9);
-  border-radius: 16px;
-  padding: 16px 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+  margin: 15px 0;
+  background: #ffffff;
+  border-radius: 8px;
+  padding: 12px 8px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
 }
 
 .stat-item {
@@ -105,39 +105,54 @@
   flex-direction: column;
   align-items: center;
   cursor: pointer;
-  padding: 10px 0;
-  border-radius: 12px;
-  transition: all 0.3s ease;
+  padding: 6px 0;
   min-width: 60px;
 }
 
 .stat-item:hover {
-  background-color: rgba(44, 62, 80, 0.05);
-  transform: translateY(-2px);
+  opacity: 0.85;
 }
 
 .count {
-  font-size: 20px;
-  font-weight: 700;
-  color: #2c3e50;
+  font-size: 22px;
+  font-weight: 600;
+  color: #2c3e50; /* 默认黑色 */
+}
+
+/* 不同类型的数字颜色 */
+.following-count {
+  color: #2c3e50; /* 关注数 - 黑色 */
+}
+
+.followers-count {
+  color: #1677ff; /* 粉丝数 - 蓝色 */
+}
+
+.likes-received-count {
+  color: #52c41a; /* 获赞数 - 绿色 */
+}
+
+.posts-count {
+  color: #722ed1; /* 帖子数 - 紫色 */
 }
 
 .label {
   font-size: 14px;
   color: #7f8c8d;
-  margin-top: 6px;
+  margin-top: 2px;
 }
 
 /* 用户简介 */
 .user-bio {
-  margin-top: 18px;
+  margin-top: 12px;
   font-size: 15px;
-  line-height: 1.6;
+  line-height: 1.5;
   color: #34495e;
-  background-color: rgba(255, 255, 255, 0.9);
-  padding: 20px;
-  border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+  background-color: #ffffff;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+  text-align: center;
 }
 
 .empty-bio {

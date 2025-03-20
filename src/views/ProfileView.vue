@@ -33,24 +33,24 @@
         </div>
         <div class="user-stats">
           <div class="stat-item" @click="router.push('/following')">
-            <span class="count">{{ followingCount }}</span>
+            <span class="count following-count">{{ followingCount }}</span>
             <span class="label">关注</span>
           </div>
           <div class="stat-item" @click="router.push('/followers')">
-            <span class="count">{{ followersCount }}</span>
+            <span class="count followers-count">{{ followersCount }}</span>
             <span class="label">粉丝</span>
           </div>
           <div class="stat-item">
-            <span class="count">{{ totalLikesCount }}</span>
+            <span class="count likes-received-count">{{ totalLikesCount }}</span>
             <span class="label">获赞</span>
           </div>
           <div class="stat-item">
-            <span class="count">{{ postsCount }}</span>
+            <span class="count posts-count">{{ postsCount }}</span>
             <span class="label">帖子</span>
           </div>
         </div>
         <div class="user-bio">
-          <p>{{ bio }}</p>
+          <p>{{ bio || "很好看呢" }}</p>
           <div class="empty-bio" v-if="!bio">
             <el-icon><Edit /></el-icon>
             <span>添加简介</span>
