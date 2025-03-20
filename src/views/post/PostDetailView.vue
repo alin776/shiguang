@@ -196,9 +196,10 @@ const cancelReply = () => {
 // 提交评论
 const submitComment = async (commentData) => {
   try {
-    console.log('准备提交评论:', commentData);
     // 确保音频路径正确
     const audioPath = commentData.audio;
+    // 获取图片数据
+    const images = commentData.images || [];
     
     if (replyMode.value && replyToCommentId.value) {
       // 回复评论
@@ -215,7 +216,8 @@ const submitComment = async (commentData) => {
       await communityStore.createComment(
         post.value.id, 
         commentData.content || '', // 确保空内容传递为空字符串而不是null或undefined
-        audioPath
+        audioPath,
+        images
       );
       ElMessage.success("评论成功");
     }

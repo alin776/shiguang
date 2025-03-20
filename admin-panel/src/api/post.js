@@ -59,7 +59,7 @@ export function getPostComments(postId) {
 // 删除帖子
 export function deletePost(id) {
   return api({
-    url: `/community/posts/${id}`,
+    url: `/admin/posts/${id}`,
     method: 'delete'
   })
 }

@@ -23,10 +23,10 @@
             <input 
               v-model="postForm.title"
               class="simple-input" 
-              placeholder="请输入标题（最多50字）"
-              maxlength="50"
+              placeholder="请输入标题（最多10字）"
+              maxlength="10"
             />
-            <div class="word-counter">{{ postForm.title.length }}/50</div>
+            <div class="word-counter">{{ postForm.title.length }}/10</div>
           </div>
         </el-form-item>
 
@@ -150,7 +150,7 @@ const postForm = ref({
 const postRules = {
   title: [
     { required: true, message: "请输入标题", trigger: "blur" },
-    { min: 1, max: 50, message: "标题长度应在1-50个字符之间", trigger: "blur" },
+    { min: 1, max: 10, message: "标题长度应在1-10个字符之间", trigger: "blur" },
   ],
   content: [
     { required: true, message: "请输入内容", trigger: "blur" },

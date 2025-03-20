@@ -174,7 +174,7 @@ export const useCommunityStore = defineStore("community", {
     },
 
     // 创建评论
-    async createComment(postId, content, audio = null) {
+    async createComment(postId, content, audio = null, images = null) {
       try {
         this.loading = true;
         const authStore = useAuthStore();
@@ -183,6 +183,11 @@ export const useCommunityStore = defineStore("community", {
         // 添加音频数据
         if (audio) {
           data.audio = audio;
+        }
+        
+        // 添加图片数据
+        if (images && images.length > 0) {
+          data.images = images;
         }
         
         const response = await axios.post(
@@ -218,6 +223,7 @@ export const useCommunityStore = defineStore("community", {
           success: true,
           action: response.data.action,
           message: response.data.message,
+          reachedLikeLimit: response.data.reachedLikeLimit
         };
       } catch (error) {
         console.error("点赞失败:", error);

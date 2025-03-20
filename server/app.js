@@ -23,6 +23,7 @@ const noteRoutes = require("./routes/noteRoutes");
 const categoryRoutes = require("./routes/categoryRoutes");
 const updateRoutes = require("./routes/updateRoutes");
 const adminRoutes = require("./routes/adminRoutes");
+const taskRoutes = require("./routes/taskRoutes");
 const emailService = require("./services/emailService");
 
 const app = express();
@@ -124,6 +125,7 @@ app.use("/api/notes", noteRoutes);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/updates", updateRoutes);
+app.use("/api/tasks", taskRoutes);
 
 // 初始化邮件服务
 emailService.initMailer();
@@ -132,9 +134,14 @@ emailService.initMailer();
 app.use((err, req, res, next) => {
   console.error("服务器错误:", {
     error: err,
+    message: err.message,
     stack: err.stack,
     url: req.url,
     method: req.method,
+    params: req.params,
+    query: req.query,
+    body: req.body,
+    headers: req.headers,
     timestamp: new Date().toISOString(),
   });
 
@@ -142,6 +149,20 @@ app.use((err, req, res, next) => {
     message: "服务器错误",
     error: process.env.NODE_ENV === "development" ? err.message : undefined,
   });
+});
+
+// 404处理中间件 - 放在所有路由之后
+app.use((req, res) => {
+  console.log(`404错误: 未找到路由`, {
+    url: req.url,
+    method: req.method,
+    params: req.params,
+    query: req.query,
+    body: req.body,
+    headers: req.headers,
+    timestamp: new Date().toISOString(),
+  });
+  res.status(404).json({ message: '未找到请求的资源' });
 });
 
 const PORT = process.env.PORT || 3000;

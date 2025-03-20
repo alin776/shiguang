@@ -29,10 +29,39 @@ export const useNoteStore = defineStore('note', {
           ...this.filters
         }
         
+        console.log('请求参数:', params);
+        
         const response = await getNotes(params)
+        console.log('响应数据:', response.data);
+        
         this.notes = response.data.notes
         this.pagination = {
           ...this.pagination,
+          total: response.data.pagination.total,
+          pages: response.data.pagination.pages
+        }
+        return this.notes
+      } catch (error) {
+        console.error('获取小记列表失败:', error)
+        ElMessage.error('获取小记列表失败')
+        return []
+      } finally {
+        this.loading = false
+      }
+    },
+    
+    async fetchNotesWithParams(params) {
+      this.loading = true
+      try {
+        console.log('使用直接传入的参数获取小记:', params);
+        
+        const response = await getNotes(params)
+        console.log('响应数据:', response.data);
+        
+        this.notes = response.data.notes
+        this.pagination = {
+          ...this.pagination,
+          page: params.page,
           total: response.data.pagination.total,
           pages: response.data.pagination.pages
         }

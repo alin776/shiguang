@@ -22,6 +22,14 @@
           <el-icon><Document /></el-icon>
           <span>帖子管理</span>
         </el-menu-item>
+        <el-menu-item index="/users">
+          <el-icon><User /></el-icon>
+          <span>用户管理</span>
+        </el-menu-item>
+        <el-menu-item index="/tasks">
+          <el-icon><List /></el-icon>
+          <span>任务管理</span>
+        </el-menu-item>
         <el-menu-item index="/categories">
           <el-icon><FolderOpened /></el-icon>
           <span>分类管理</span>
@@ -50,6 +58,8 @@
             <el-breadcrumb-item :to="{ path: '/' }">首页</el-breadcrumb-item>
             <el-breadcrumb-item v-if="$route.name === 'posts'">帖子管理</el-breadcrumb-item>
             <el-breadcrumb-item v-if="$route.name === 'post-detail'">帖子详情</el-breadcrumb-item>
+            <el-breadcrumb-item v-if="$route.name === 'users'">用户管理</el-breadcrumb-item>
+            <el-breadcrumb-item v-if="$route.name === 'tasks'">任务管理</el-breadcrumb-item>
             <el-breadcrumb-item v-if="$route.name === 'categories'">分类管理</el-breadcrumb-item>
             <el-breadcrumb-item v-if="$route.name === 'feedbacks'">反馈管理</el-breadcrumb-item>
             <el-breadcrumb-item v-if="$route.name === 'notes'">小记管理</el-breadcrumb-item>
@@ -84,7 +94,7 @@ import { ref, computed } from 'vue'
 import { useUserStore } from '@/store/user'
 import { useRouter } from 'vue-router'
 import { ElMessageBox } from 'element-plus'
-import { Menu, Document, FolderOpened, ArrowDown, ChatDotRound, Notebook, Connection } from '@element-plus/icons-vue'
+import { Menu, Document, FolderOpened, ArrowDown, ChatDotRound, Notebook, Connection, User, List } from '@element-plus/icons-vue'
 
 const userStore = useUserStore()
 const router = useRouter()

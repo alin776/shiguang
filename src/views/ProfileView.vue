@@ -15,6 +15,13 @@
             <span>编辑资料</span>
           </div>
           <div
+            class="action-btn task-center-btn"
+            @click="router.push('/task-center')"
+          >
+            <el-icon><List /></el-icon>
+            <span>任务中心</span>
+          </div>
+          <div
             class="action-btn submit-note-btn"
             @click="router.push('/note/submit')"
           >
@@ -241,6 +248,7 @@ import {
   Picture,
   Collection,
   EditPen,
+  List,
 } from "@element-plus/icons-vue";
 import BottomNavBar from "../components/BottomNavBar.vue";
 import useProfileLogic from "../mine/js/profile.js";
@@ -284,6 +292,15 @@ const {
   background-color: #c0392b;
 }
 
+.action-btn.task-center-btn {
+  background-color: #3498db;
+  color: white;
+}
+
+.action-btn.task-center-btn:hover {
+  background-color: #2980b9;
+}
+
 @media (prefers-color-scheme: dark) {
   .action-btn.submit-note-btn {
     background-color: #e74c3c;
@@ -292,6 +309,15 @@ const {
   
   .action-btn.submit-note-btn:hover {
     background-color: #c0392b;
+  }
+  
+  .action-btn.task-center-btn {
+    background-color: #3498db;
+    color: #ecf0f1;
+  }
+  
+  .action-btn.task-center-btn:hover {
+    background-color: #2980b9;
   }
 }
 </style>

@@ -67,6 +67,7 @@ CREATE TABLE IF NOT EXISTS comments (
   user_id INT NOT NULL,
   content TEXT NOT NULL,
   audio VARCHAR(255) DEFAULT NULL,
+  images JSON DEFAULT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
@@ -226,6 +227,70 @@ CREATE TABLE IF NOT EXISTS `categories` (
   `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- 任务记录表
+CREATE TABLE IF NOT EXISTS `user_tasks` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `user_id` INT NOT NULL,
+  `task_type` VARCHAR(50) NOT NULL,
+  `progress` INT NOT NULL DEFAULT 0,
+  `target` INT NOT NULL,
+  `date` DATE NOT NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `completed_at` TIMESTAMP NULL,
+  FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
+  UNIQUE KEY `user_task_day` (`user_id`, `task_type`, `date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 经验值历史记录表
+CREATE TABLE IF NOT EXISTS `user_exp_history` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `user_id` INT NOT NULL,
+  `exp_gained` INT NOT NULL,
+  `source` VARCHAR(100) NOT NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 用户表情包表
+CREATE TABLE IF NOT EXISTS `user_emojis` (
+  `id` INT PRIMARY KEY AUTO_INCREMENT,
+  `user_id` INT NOT NULL,
+  `url` VARCHAR(255) NOT NULL,
+  `name` VARCHAR(50),
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  INDEX `idx_user_emojis` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- 任务定义表
+CREATE TABLE IF NOT EXISTS `tasks` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `task_type` VARCHAR(50) NOT NULL UNIQUE,
+  `title` VARCHAR(100) NOT NULL,
+  `description` VARCHAR(200) NOT NULL,
+  `target` INT NOT NULL,
+  `reward` INT NOT NULL,
+  `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 插入默认任务
+INSERT INTO `tasks` (`task_type`, `title`, `description`, `target`, `reward`, `is_active`) VALUES
+('post', '发布帖子', '在社区发布1篇帖子(额外奖励,每次发帖直接获得10经验)', 1, 10, 1),
+('comment', '评论互动', '在社区评论3次(额外奖励,每次评论直接获得5经验)', 3, 5, 1),
+('like', '点赞支持', '给帖子点赞5次(额外奖励,每次点赞直接获得2经验)', 5, 10, 1);
+
+-- 每日经验上限配置表
+CREATE TABLE IF NOT EXISTS `system_settings` (
+  `key` VARCHAR(50) PRIMARY KEY,
+  `value` VARCHAR(255) NOT NULL,
+  `description` VARCHAR(255),
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 插入经验上限配置
+INSERT INTO `system_settings` (`key`, `value`, `description`) VALUES
+('daily_exp_limit', '50', '用户每日可获取的最大经验值'); 
 -- 添加分类关联到帖子表
 ALTER TABLE posts ADD COLUMN category_id INT DEFAULT NULL;
 ALTER TABLE posts ADD FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL;

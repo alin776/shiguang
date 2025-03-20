@@ -30,6 +30,11 @@
       <span>反馈管理</span>
     </el-menu-item>
     
+    <el-menu-item index="/tasks">
+      <el-icon><List /></el-icon>
+      <span>任务管理</span>
+    </el-menu-item>
+    
     <el-menu-item index="/settings">
       <el-icon><Setting /></el-icon>
       <span>系统设置</span>
@@ -45,7 +50,8 @@ import {
   Document, 
   Collection, 
   Setting,
-  ChatLineRound
+  ChatLineRound,
+  List
 } from '@element-plus/icons-vue'
 
 const route = useRoute()

@@ -89,15 +89,16 @@
       
       <div class="pagination-container">
         <el-pagination
-          v-model:current-page="pagination.page"
-          :page-size="pagination.limit"
-          :small="small"
+          v-model:current-page="currentPage"
+          v-model:page-size="pageSize"
           :background="background"
           :page-sizes="[10, 20, 50, 100]"
           layout="total, sizes, prev, pager, next, jumper"
           :total="pagination.total"
-          @update:page-size="handleSizeChange"
+          @size-change="handleSizeChange"
+          @current-change="handleCurrentChange"
           @update:current-page="handleCurrentChange"
+          @update:page-size="handleSizeChange"
         />
       </div>
     </el-card>
@@ -184,6 +185,14 @@ const sortBy = ref('latest')
 // 分页参数
 const small = ref(false)
 const background = ref(true)
+const currentPage = computed({
+  get: () => pagination.value.page,
+  set: (val) => noteStore.setPage(val)
+})
+const pageSize = computed({
+  get: () => pagination.value.limit,
+  set: (val) => noteStore.setLimit(val)
+})
 
 // 新增表单
 const dialogVisible = ref(false)
@@ -216,11 +225,17 @@ onMounted(async () => {
 // 获取小记列表
 const fetchNotes = async () => {
   try {
+    console.log('开始获取小记列表，当前页码:', currentPage.value);
     noteStore.setFilters({
       search: searchQuery.value,
       sort: sortBy.value
     })
     await noteStore.fetchNotes()
+    console.log('小记列表获取完成，当前状态:', {
+      page: pagination.value.page,
+      total: pagination.value.total,
+      pages: pagination.value.pages
+    });
   } catch (error) {
     console.error('获取小记列表失败:', error)
   }
@@ -244,14 +259,47 @@ const handleReset = () => {
 
 // 页面大小变更
 const handleSizeChange = (size) => {
+  console.log('页面大小变更事件触发，新的大小:', size);
   noteStore.setLimit(size)
   fetchNotes()
 }
 
 // 页码变更
 const handleCurrentChange = (page) => {
+  console.log('页码变更事件触发，新的页码:', page);
   noteStore.setPage(page)
-  fetchNotes()
+  // 直接传递页码，避免状态同步问题
+  fetchNotesWithPage(page)
+}
+
+// 添加一个新函数，直接使用指定页码获取数据
+const fetchNotesWithPage = async (pageNum) => {
+  try {
+    console.log('带指定页码获取小记列表，页码:', pageNum);
+    noteStore.setFilters({
+      search: searchQuery.value,
+      sort: sortBy.value
+    })
+    
+    // 直接调用API而不是通过store
+    const params = {
+      page: pageNum,
+      limit: pagination.value.limit,
+      search: searchQuery.value,
+      sort: sortBy.value
+    };
+    
+    console.log('直接发送请求参数:', params);
+    await noteStore.fetchNotesWithParams(params)
+    
+    console.log('小记列表获取完成，当前状态:', {
+      page: pagination.value.page,
+      total: pagination.value.total,
+      pages: pagination.value.pages
+    });
+  } catch (error) {
+    console.error('获取小记列表失败:', error)
+  }
 }
 
 // 删除小记

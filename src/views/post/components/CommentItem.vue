@@ -19,6 +19,20 @@
       </div>
       <div class="comment-text">{{ comment.content }}</div>
       
+      <!-- 评论图片 -->
+      <div v-if="comment.images && comment.images.length > 0" class="comment-images">
+        <div 
+          v-for="(image, index) in comment.images" 
+          :key="index" 
+          class="comment-image-container"
+          @contextmenu.prevent="showContextMenu($event, image)"
+          @touchstart="handleTouchStart($event, image)"
+          @touchend="handleTouchEnd"
+        >
+          <img :src="image" alt="评论图片" class="comment-image" @click="previewImage(image)" />
+        </div>
+      </div>
+      
       <!-- 评论音频播放器 - 改进设计 -->
       <div v-if="comment.audio" class="comment-audio">
         <div class="audio-bubble" :class="{ 'playing': isPlaying }">
@@ -149,6 +163,8 @@ import { getAvatarUrl } from "../../../utils/imageHelpers";
 import { formatTime } from "../../../utils/timeHelpers";
 import { ref, computed, onMounted } from "vue";
 import { API_BASE_URL } from "@/config";
+import { ElMessage } from "element-plus";
+import { useAuthStore } from "@/stores/auth";
 
 const props = defineProps({
   comment: {
@@ -167,6 +183,7 @@ defineEmits([
   "like-comment",
   "delete-comment",
   "delete-reply",
+  "refresh-emojis",
 ]);
 
 // 音频播放相关
@@ -362,6 +379,160 @@ const getWaveformOpacity = (index, currentTime, totalDuration) => {
     return 1;
   } else {
     return 0.3;
+  }
+};
+
+// 图片预览
+const previewImage = (url) => {
+  const images = [url];
+  // 使用element-plus的图片预览或自定义预览逻辑
+  if (window.$imageViewer) {
+    window.$imageViewer({
+      urlList: images,
+      zIndex: 3000
+    });
+  } else {
+    window.open(url, '_blank');
+  }
+};
+
+// 长按定时器
+let longPressTimer = null;
+const longPressDuration = 500; // 毫秒
+
+// 处理触摸开始
+const handleTouchStart = (event, imageUrl) => {
+  event.preventDefault();
+  // 开始长按计时
+  longPressTimer = setTimeout(() => {
+    showContextMenu(event, imageUrl);
+  }, longPressDuration);
+};
+
+// 处理触摸结束
+const handleTouchEnd = () => {
+  // 清除长按计时器
+  if (longPressTimer) {
+    clearTimeout(longPressTimer);
+    longPressTimer = null;
+  }
+};
+
+// 显示上下文菜单
+const showContextMenu = (event, imageUrl) => {
+  // 阻止默认右键菜单
+  event.preventDefault();
+  
+  // 创建自定义菜单
+  const menuDiv = document.createElement('div');
+  menuDiv.className = 'custom-context-menu';
+  menuDiv.style.position = 'fixed';
+  menuDiv.style.zIndex = '3000';
+  menuDiv.style.background = '#fff';
+  menuDiv.style.boxShadow = '0 2px 12px 0 rgba(0, 0, 0, 0.1)';
+  menuDiv.style.borderRadius = '4px';
+  menuDiv.style.padding = '5px 0';
+  
+  // 添加菜单选项
+  const saveOption = document.createElement('div');
+  saveOption.className = 'menu-option';
+  saveOption.style.padding = '8px 16px';
+  saveOption.style.cursor = 'pointer';
+  saveOption.innerText = '保存图片';
+  saveOption.addEventListener('click', () => {
+    saveImage(imageUrl);
+    document.body.removeChild(menuDiv);
+  });
+  
+  const addEmojiOption = document.createElement('div');
+  addEmojiOption.className = 'menu-option';
+  addEmojiOption.style.padding = '8px 16px';
+  addEmojiOption.style.cursor = 'pointer';
+  addEmojiOption.innerText = '添加到表情包';
+  addEmojiOption.addEventListener('click', () => {
+    addToEmojis(imageUrl);
+    document.body.removeChild(menuDiv);
+  });
+  
+  const cancelOption = document.createElement('div');
+  cancelOption.className = 'menu-option';
+  cancelOption.style.padding = '8px 16px';
+  cancelOption.style.cursor = 'pointer';
+  cancelOption.style.borderTop = '1px solid #eee';
+  cancelOption.innerText = '取消';
+  cancelOption.addEventListener('click', () => {
+    document.body.removeChild(menuDiv);
+  });
+  
+  // 添加到菜单
+  menuDiv.appendChild(saveOption);
+  menuDiv.appendChild(addEmojiOption);
+  menuDiv.appendChild(cancelOption);
+  
+  // 定位菜单
+  if (event.clientX && event.clientY) {
+    menuDiv.style.left = `${event.clientX}px`;
+    menuDiv.style.top = `${event.clientY}px`;
+  } else {
+    // 触摸事件没有clientX/Y，使用触摸点坐标
+    const touch = event.touches ? event.touches[0] : event;
+    menuDiv.style.left = `${touch.clientX}px`;
+    menuDiv.style.top = `${touch.clientY}px`;
+  }
+  
+  // 添加到文档
+  document.body.appendChild(menuDiv);
+  
+  // 点击其他地方关闭菜单
+  const closeMenu = (e) => {
+    if (!menuDiv.contains(e.target)) {
+      // 添加检查确保菜单元素仍然在DOM中
+      if (document.body.contains(menuDiv)) {
+        document.body.removeChild(menuDiv);
+      }
+      document.removeEventListener('click', closeMenu);
+    }
+  };
+  
+  // 延迟添加事件，避免立即触发
+  setTimeout(() => {
+    document.addEventListener('click', closeMenu);
+  }, 100);
+};
+
+// 保存图片
+const saveImage = (url) => {
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'image_' + new Date().getTime() + '.jpg';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+};
+
+// 添加到表情包
+const addToEmojis = async (url) => {
+  try {
+    const authStore = useAuthStore();
+    const response = await fetch(`${API_BASE_URL}/api/community/emojis`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authStore.token}`
+      },
+      body: JSON.stringify({ url })
+    });
+    
+    if (response.ok) {
+      ElMessage.success('已添加到表情包');
+      // 通知评论组件刷新表情包
+      emit('refresh-emojis');
+    } else {
+      ElMessage.error('添加失败');
+    }
+  } catch (error) {
+    console.error('添加表情包失败:', error);
+    ElMessage.error('添加失败');
   }
 };
 </script>
@@ -665,5 +836,49 @@ const getWaveformOpacity = (index, currentTime, totalDuration) => {
     opacity: 1;
     height: var(--height);
   }
+}
+
+/* 评论图片样式 */
+.comment-images {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.comment-image-container {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  border-radius: 4px;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.comment-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.comment-image:hover {
+  opacity: 0.9;
+}
+
+/* 适应高分辨率屏幕 */
+@media screen and (min-width: 768px) {
+  .comment-image-container {
+    width: 100px;
+    height: 100px;
+  }
+}
+
+/* 自定义右键菜单样式 */
+:deep(.custom-context-menu) {
+  min-width: 120px;
+}
+
+:deep(.menu-option:hover) {
+  background-color: #f0f0f0;
 }
 </style>

@@ -535,7 +535,13 @@ const likePost = async (event, postId) => {
     } else {
       response = await communityStore.likePost(postId);
       likedPostIds.value.add(postIdStr);
-      ElMessage.success('点赞成功');
+      
+      // 检查响应中是否包含经验限制的信息
+      if (response.reachedLikeLimit) {
+        ElMessage.info('点赞成功！您今日获得经验的点赞次数已达上限(5次)');
+      } else {
+        ElMessage.success('点赞成功！获得2点经验');
+      }
     }
     
     // 更新点赞数量

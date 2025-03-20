@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import TaskManagementView from '../views/TaskManagementView.vue'
 
 const routes = [
   {
@@ -25,6 +26,16 @@ const routes = [
         path: 'categories',
         name: 'categories',
         component: () => import('../views/Categories.vue')
+      },
+      {
+        path: 'users',
+        name: 'users',
+        component: () => import('../views/Users.vue')
+      },
+      {
+        path: 'tasks',
+        name: 'tasks',
+        component: () => import('../views/Tasks.vue')
       },
       {
         path: 'feedbacks',
@@ -59,6 +70,15 @@ const routes = [
     path: '/login',
     name: 'login',
     component: () => import('../views/Login.vue')
+  },
+  {
+    path: '/tasks',
+    name: 'TaskManagement',
+    component: TaskManagementView,
+    meta: { 
+      requiresAuth: true,
+      title: '任务管理'
+    }
   }
 ]
 

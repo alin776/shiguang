@@ -18,6 +18,7 @@ import SubmitNoteView from "../views/SubmitNoteView.vue"; // 添加小记投稿�
 import AboutView from "../views/AboutView.vue";
 import CreatePostView from "../views/CreatePostView.vue"; // 添加发布帖子页面组件导入
 import VersionHistory from "../views/VersionHistory.vue"; // 添加版本历史页面组件导入
+import TaskCenterView from "../views/TaskCenterView.vue"; // 添加任务中心页面组件导入
 import { ref } from "vue";
 
 const routes = [
@@ -192,6 +193,15 @@ const routes = [
     name: "VersionHistory",
     component: VersionHistory,
     meta: { requiresAuth: false },
+  },
+  {
+    path: "/task-center",
+    name: "TaskCenter",
+    component: TaskCenterView,
+    meta: { 
+      requiresAuth: true,
+      title: "任务中心"
+    },
   },
   {
     path: "/:pathMatch(.*)*",

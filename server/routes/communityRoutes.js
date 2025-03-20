@@ -75,4 +75,13 @@ router.post(
 // 删除回复
 router.delete("/replies/:replyId", communityController.deleteReply);
 
+// 获取我的表情包
+router.get("/emojis", communityController.getUserEmojis);
+
+// 添加表情包
+router.post("/emojis", communityController.addEmoji);
+
+// 删除表情包
+router.delete("/emojis/:emojiId", communityController.deleteEmoji);
+
 module.exports = router;

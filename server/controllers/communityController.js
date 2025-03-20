@@ -4,6 +4,7 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 const { createNotification } = require("../controllers/notificationController");
+const taskController = require('./taskController');
 
 // 确保上传目录存在
 const uploadDir = "public/uploads/posts";
@@ -234,6 +235,20 @@ exports.getPost = async (req, res) => {
         name: posts[0].category_name
       } : null,
       is_liked: Boolean(posts[0].is_liked),
+      images: (() => {
+        if (!posts[0].images) return [];
+        try {
+          if (typeof posts[0].images === 'string') {
+            return JSON.parse(posts[0].images);
+          } else if (Array.isArray(posts[0].images)) {
+            return posts[0].images;
+          }
+          return [];
+        } catch (error) {
+          console.error('解析帖子图片数据失败:', error);
+          return [];
+        }
+      })()
     };
 
     // 获取评论及其点赞和回复信息
@@ -293,6 +308,20 @@ exports.getPost = async (req, res) => {
       },
       isLiked: Boolean(comment.is_liked),
       likes: comment.likes_count,
+      images: (() => {
+        if (!comment.images) return [];
+        try {
+          if (Array.isArray(comment.images)) {
+            return comment.images;
+          } else if (typeof comment.images === 'string') {
+            return JSON.parse(comment.images);
+          }
+          return [];
+        } catch (error) {
+          console.error('解析评论图片数据失败:', error);
+          return [];
+        }
+      })(),
     }));
 
     // 更新浏览量
@@ -309,24 +338,18 @@ exports.getPost = async (req, res) => {
 
 exports.createPost = async (req, res) => {
   try {
-    // 验证必要字段
-    if (!req.body.title || !req.body.content) {
-      return res.status(400).json({ message: "标题和内容不能为空" });
+    const { title, content, images = [], tags = [], category_id, audio } = req.body;
+    if (!content && (!images || images.length === 0)) {
+      return res.status(400).json({ message: "内容和图片不能同时为空" });
+    }
+    
+    // 验证标题长度
+    if (title && title.length > 10) {
+      return res.status(400).json({ message: "标题不能超过10个字符" });
     }
 
-    const { title, content, images, audio, category_id } = req.body;
-    let parsedImages = [];
-
-    try {
-      if (images) {
-        parsedImages = JSON.parse(images);
-      }
-    } catch (error) {
-      console.error("解析图片数据失败:", error);
-      // 如果解析失败，设置为空数组而不是 undefined
-      parsedImages = [];
-    }
-
+    const userId = req.user.id;
+    
     // 验证分类ID是否存在
     if (category_id) {
       const [categories] = await db.execute(
@@ -341,10 +364,10 @@ exports.createPost = async (req, res) => {
 
     // 确保所有参数都有值
     const params = [
-      req.user.id,
+      userId,
       title.trim(),
       content.trim(),
-      JSON.stringify(parsedImages || []), // 确保不会是 undefined
+      JSON.stringify(images || []), // 确保不会是 undefined
       audio || null, // 添加音频字段
       category_id || null, // 添加分类ID字段
     ];
@@ -359,22 +382,65 @@ exports.createPost = async (req, res) => {
       params
     );
 
-    // 增加用户经验值 - 发布帖子奖励10点经验
+    // 帖子创建成功后，更新任务进度
     try {
-      // 使用用户ID和token调用增加经验API
-      const token = req.headers.authorization;
+      // 查询用户今日任务记录
+      const today = new Date().toISOString().split('T')[0];
+      const [taskRecords] = await db.execute(
+        `SELECT * FROM user_tasks 
+         WHERE user_id = ? AND task_type = 'post' AND date = ?`,
+        [userId, today]
+      );
       
-      if (token) {
-        // 调用内部API增加经验值
+      if (taskRecords.length > 0) {
+        const task = taskRecords[0];
+        const newProgress = task.progress + 1;
+        
+        // 更新任务进度
         await db.execute(
-          "UPDATE users SET experience = experience + ?, level = CASE WHEN experience + ? >= 1500 THEN 6 WHEN experience + ? >= 1000 THEN 5 WHEN experience + ? >= 600 THEN 4 WHEN experience + ? >= 300 THEN 3 WHEN experience + ? >= 100 THEN 2 ELSE 1 END WHERE id = ?",
-          [10, 10, 10, 10, 10, 10, req.user.id]
+          `UPDATE user_tasks 
+           SET progress = ? 
+           WHERE id = ?`,
+          [newProgress, task.id]
         );
-        console.log(`用户 ${req.user.id} 发帖获得10点经验`);
+        
+        // 查询任务定义获取目标和奖励值
+        const [taskDefinitions] = await db.execute(
+          `SELECT * FROM tasks WHERE task_type = 'post'`
+        );
+        
+        if (taskDefinitions.length > 0) {
+          const taskDef = taskDefinitions[0];
+          
+          // 检查任务是否完成
+          if (task.progress < taskDef.target && newProgress >= taskDef.target) {
+            // 任务刚完成，添加经验值（考虑每日上限）
+            const earnedExp = await taskController.addUserExperience(
+              userId, 
+              taskDef.reward, 
+              `完成任务: ${taskDef.title}`
+            );
+            
+            if (earnedExp > 0) {
+              // 更新任务完成时间
+              await db.execute(
+                `UPDATE user_tasks SET completed_at = CURRENT_TIMESTAMP WHERE id = ?`,
+                [task.id]
+              );
+            }
+          }
+        }
       }
-    } catch (expError) {
-      // 经验值增加失败不影响发帖结果
-      console.error("增加经验值失败:", expError);
+      
+      // 每次发帖都单独奖励10点经验（与任务奖励独立）
+      await taskController.addUserExperience(
+        userId, 
+        10, 
+        '发布帖子'
+      );
+    } catch (taskError) {
+      console.error('更新任务进度失败:', taskError);
+      // 不影响主流程，继续返回创建帖子成功
     }
 
     res.status(201).json({
@@ -394,13 +460,13 @@ exports.createComment = async (req, res) => {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { postId } = req.params;
-    const { content, audio } = req.body;
+    const { content, audio, images: imageUrls } = req.body;
+    const postId = req.params.postId;
     const userId = req.user.id;
 
-    // 确保评论至少有文字内容或音频内容
-    if (!content && !audio) {
-      return res.status(400).json({ message: "评论必须包含文字或音频内容" });
+    // 确保评论至少有文字内容、音频内容或图片
+    if (!content && !audio && (!imageUrls || imageUrls.length === 0)) {
+      return res.status(400).json({ message: "评论必须包含文字、音频或图片内容" });
     }
 
     // 获取帖子作者ID
@@ -413,10 +479,13 @@ exports.createComment = async (req, res) => {
       return res.status(404).json({ message: "帖子不存在" });
     }
 
+    // 处理图片数组为JSON
+    const imagesJson = imageUrls && imageUrls.length ? JSON.stringify(imageUrls) : null;
+
     // 先创建评论
     const [result] = await db.execute(
-      "INSERT INTO comments (post_id, user_id, content, audio) VALUES (?, ?, ?, ?)",
-      [postId, userId, content || '', audio || null]
+      "INSERT INTO comments (post_id, user_id, content, audio, images) VALUES (?, ?, ?, ?, ?)",
+      [postId, userId, content || '', audio || null, imagesJson]
     );
     
     const commentId = result.insertId;
@@ -427,36 +496,94 @@ exports.createComment = async (req, res) => {
       await createNotification({
         userId: postResult[0].user_id,
         type: "comment",
-        content: `评论了你的帖子: ${postResult[0].title}`,
-        sourceId: postId,
+        content: `评论了你的帖子: ${postResult[0].title || ''}`,
+        sourceId: postId || null,
         sourceType: "post",
-        actorId: userId,
-        relatedId: commentId
+        actorId: userId || null,
+        relatedId: commentId || null
       });
     }
     
-    // 增加用户经验值 - 评论奖励5点经验
+    // 评论创建成功后，更新任务进度
     try {
-      // 使用用户ID和token调用增加经验API
-      const token = req.headers.authorization;
+      console.log('开始处理评论经验奖励，用户ID:', userId);
       
-      if (token) {
-        // 调用内部API增加经验值
+      // 查询用户今日任务记录
+      const today = new Date().toISOString().split('T')[0];
+      const [taskRecords] = await db.execute(
+        `SELECT * FROM user_tasks 
+         WHERE user_id = ? AND task_type = 'comment' AND date = ?`,
+        [userId, today]
+      );
+      
+      console.log('任务记录查询结果:', JSON.stringify(taskRecords));
+      
+      if (taskRecords.length > 0) {
+        const task = taskRecords[0];
+        const newProgress = task.progress + 1;
+        
+        console.log('当前任务进度:', task.progress, '新进度:', newProgress);
+        
+        // 更新任务进度
         await db.execute(
-          "UPDATE users SET experience = experience + ?, level = CASE WHEN experience + ? >= 1500 THEN 6 WHEN experience + ? >= 1000 THEN 5 WHEN experience + ? >= 600 THEN 4 WHEN experience + ? >= 300 THEN 3 WHEN experience + ? >= 100 THEN 2 ELSE 1 END WHERE id = ?",
-          [5, 5, 5, 5, 5, 5, userId]
+          `UPDATE user_tasks 
+           SET progress = ? 
+           WHERE id = ?`,
+          [newProgress, task.id]
         );
-        console.log(`用户 ${userId} 评论获得5点经验`);
+        
+        // 查询任务定义获取目标和奖励值
+        const [taskDefinitions] = await db.execute(
+          `SELECT * FROM tasks WHERE task_type = 'comment'`
+        );
+        
+        console.log('任务定义:', JSON.stringify(taskDefinitions));
+        
+        if (taskDefinitions.length > 0) {
+          const taskDef = taskDefinitions[0];
+          
+          // 检查任务是否完成
+          if (task.progress < taskDef.target && newProgress >= taskDef.target) {
+            console.log('任务达成条件满足，准备奖励经验');
+            
+            // 任务刚完成，添加经验值（考虑每日上限）
+            const earnedExp = await taskController.addUserExperience(
+              userId, 
+              taskDef.reward, 
+              `完成任务: ${taskDef.title}`
+            );
+            
+            console.log('任务完成奖励经验:', earnedExp);
+            
+            if (earnedExp > 0) {
+              // 更新任务完成时间
+              await db.execute(
+                `UPDATE user_tasks SET completed_at = CURRENT_TIMESTAMP WHERE id = ?`,
+                [task.id]
+              );
+            }
+          }
+        }
       }
-    } catch (expError) {
-      // 经验值增加失败不影响评论结果
-      console.error("增加经验值失败:", expError);
+      
+      // 每次评论都单独奖励5点经验（与任务奖励独立）
+      console.log('开始奖励评论基础经验(5点)');
+      const gainedExp = await taskController.addUserExperience(
+        userId, 
+        5, 
+        '发表评论'
+      );
+      console.log('评论获得基础经验:', gainedExp);
+      
+    } catch (taskError) {
+      console.error('更新任务进度失败:', taskError);
+      // 不影响主流程，继续返回创建评论成功
     }
 
     // 获取评论详情
     const [comments] = await db.execute(
       `SELECT 
-        c.id, c.post_id, c.user_id, c.content, c.created_at, c.audio,
+        c.id, c.post_id, c.user_id, c.content, c.created_at, c.audio, c.images,
         u.username, u.avatar
       FROM comments c
       JOIN users u ON c.user_id = u.id
@@ -469,6 +596,24 @@ exports.createComment = async (req, res) => {
     }
 
     const comment = comments[0];
+    
+    // 解析JSON图片数据，添加错误处理
+    let images = [];
+    if (comment.images) {
+      try {
+        // 检查是否已经是数组
+        if (Array.isArray(comment.images)) {
+          images = comment.images;
+        } else if (typeof comment.images === 'string') {
+          // 尝试解析JSON字符串
+          images = JSON.parse(comment.images);
+        }
+      } catch (error) {
+        console.error('解析评论图片数据失败:', error);
+        // 解析失败时使用空数组
+        images = [];
+      }
+    }
 
     res.status(201).json({
       message: "评论成功",
@@ -477,6 +622,7 @@ exports.createComment = async (req, res) => {
         content: comment.content,
         created_at: comment.created_at,
         audio: comment.audio,
+        images: images,
         user: {
           id: comment.user_id,
           username: comment.username,
@@ -495,6 +641,11 @@ exports.updatePost = async (req, res) => {
     const { postId } = req.params;
     const { title, content, category_id } = req.body;
     const userId = req.user.id;
+
+    // 验证标题长度
+    if (title && title.length > 10) {
+      return res.status(400).json({ message: "标题不能超过10个字符" });
+    }
 
     // 检查帖子是否存在且属于当前用户
     const [posts] = await db.execute(
@@ -596,77 +747,168 @@ exports.getComments = async (req, res) => {
 // 点赞帖子
 exports.likePost = async (req, res) => {
   try {
-    const { postId } = req.params;
     const userId = req.user.id;
+    // 获取帖子ID，支持使用postId或id参数
+    const postId = req.params.postId || req.params.id;
+    
+    if (!postId) {
+      console.error('点赞失败: 缺少帖子ID参数');
+      return res.status(400).json({ message: "缺少帖子ID参数" });
+    }
+    
+    console.log(`处理点赞请求: 用户ID=${userId}, 帖子ID=${postId}, 请求方法=${req.method}`);
 
-    // 获取帖子作者ID
-    const [posts] = await db.execute(
-      "SELECT user_id, title FROM posts WHERE id = ?",
-      [postId]
-    );
-
-    if (!posts.length) {
+    // 检查帖子是否存在
+    const [posts] = await db.execute("SELECT * FROM posts WHERE id = ?", [postId]);
+    if (posts.length === 0) {
+      console.error(`点赞失败: 帖子不存在 (ID: ${postId})`);
       return res.status(404).json({ message: "帖子不存在" });
     }
 
-    // 检查是否已经点赞
-    const [existingLike] = await db.execute(
-      "SELECT * FROM likes WHERE post_id = ? AND user_id = ?",
-      [postId, userId]
+    // 检查用户是否已点赞 - 修改表名为likes
+    const [likes] = await db.execute(
+      "SELECT * FROM likes WHERE user_id = ? AND post_id = ?",
+      [userId, postId]
     );
 
-    if (existingLike.length > 0) {
-      // 如果已经点赞，则取消点赞
-      await db.execute("DELETE FROM likes WHERE post_id = ? AND user_id = ?", [
-        postId,
-        userId,
-      ]);
-      await db.execute("UPDATE posts SET likes = likes - 1 WHERE id = ?", [
-        postId,
-      ]);
-      return res.json({ message: "取消点赞成功", action: "unlike" });
-    }
+    // DELETE请求或已点赞状态下的POST请求都视为取消点赞
+    const shouldUnlike = req.method === 'DELETE' || likes.length > 0;
 
-    // 如果没有点赞，则添加点赞
-    await db.execute("INSERT INTO likes (post_id, user_id) VALUES (?, ?)", [
-      postId,
-      userId,
-    ]);
-    await db.execute("UPDATE posts SET likes = likes + 1 WHERE id = ?", [
-      postId,
-    ]);
-
-    const authorId = posts[0].user_id;
-    
-    // 如果不是给自己的帖子点赞，增加被点赞者经验并发送通知
-    if (authorId !== userId) {
-      // 创建通知
-      await createNotification({
-        userId: authorId,
-        type: "like",
-        content: `赞了你的帖子"${posts[0].title}"`,
-        sourceId: postId,
-        sourceType: "post",
-        actorId: userId,
-      });
-      
-      // 为被点赞的帖子作者增加2点经验值
-      try {
+    if (shouldUnlike) {
+      // 取消点赞
+      if (likes.length > 0) {
+        // 修改表名为likes
         await db.execute(
-          "UPDATE users SET experience = experience + ?, level = CASE WHEN experience + ? >= 1500 THEN 6 WHEN experience + ? >= 1000 THEN 5 WHEN experience + ? >= 600 THEN 4 WHEN experience + ? >= 300 THEN 3 WHEN experience + ? >= 100 THEN 2 ELSE 1 END WHERE id = ?",
-          [2, 2, 2, 2, 2, 2, authorId]
+          "DELETE FROM likes WHERE user_id = ? AND post_id = ?",
+          [userId, postId]
         );
-        console.log(`用户 ${authorId} 收到点赞获得2点经验`);
-      } catch (expError) {
-        // 经验值增加失败不影响点赞结果
-        console.error("增加经验值失败:", expError);
+        
+        // 更新帖子的点赞计数（减少）
+        await db.execute(
+          "UPDATE posts SET likes = likes - 1 WHERE id = ?",
+          [postId]
+        );
+        
+        console.log(`用户${userId}成功取消点赞帖子${postId}`);
+      } else {
+        console.log(`用户${userId}尝试取消点赞未点赞的帖子${postId}`);
       }
-    }
 
-    res.json({ message: "点赞成功", action: "like" });
+      return res.json({ message: "取消点赞成功", action: "unlike" });
+    } else {
+      // 添加点赞 - 修改表名为likes
+      await db.execute(
+        "INSERT INTO likes (user_id, post_id) VALUES (?, ?)",
+        [userId, postId]
+      );
+      
+      // 更新帖子的点赞计数（增加）
+      await db.execute(
+        "UPDATE posts SET likes = likes + 1 WHERE id = ?",
+        [postId]
+      );
+      
+      console.log(`用户${userId}成功点赞帖子${postId}`);
+      
+      // 默认经验值获取状态为未达到限制
+      let reachedLikeLimit = false;
+
+      // 点赞成功后，更新任务进度
+      try {
+        // 查询用户今日任务记录
+        const today = new Date().toISOString().split('T')[0];
+        const [taskRecords] = await db.execute(
+          `SELECT * FROM user_tasks 
+           WHERE user_id = ? AND task_type = 'like' AND date = ?`,
+          [userId, today]
+        );
+        
+        if (taskRecords.length > 0) {
+          const task = taskRecords[0];
+          const newProgress = task.progress + 1;
+          
+          console.log(`更新点赞任务进度: 用户${userId}, 当前进度${task.progress}->新进度${newProgress}`);
+          
+          // 更新任务进度
+          await db.execute(
+            `UPDATE user_tasks 
+             SET progress = ? 
+             WHERE id = ?`,
+            [newProgress, task.id]
+          );
+          
+          // 查询任务定义获取目标和奖励值
+          const [taskDefinitions] = await db.execute(
+            `SELECT * FROM tasks WHERE task_type = 'like'`
+          );
+          
+          if (taskDefinitions.length > 0) {
+            const taskDef = taskDefinitions[0];
+            
+            // 检查任务是否完成
+            if (task.progress < taskDef.target && newProgress >= taskDef.target) {
+              console.log(`用户${userId}完成点赞任务，准备奖励经验`);
+              
+              // 任务刚完成，添加经验值（考虑每日上限）
+              const earnedExp = await taskController.addUserExperience(
+                userId, 
+                taskDef.reward, 
+                `完成任务: ${taskDef.title}`
+              );
+              
+              console.log(`用户${userId}完成点赞任务获得${earnedExp}点经验`);
+              
+              if (earnedExp > 0) {
+                // 更新任务完成时间
+                await db.execute(
+                  `UPDATE user_tasks SET completed_at = CURRENT_TIMESTAMP WHERE id = ?`,
+                  [task.id]
+                );
+              }
+            }
+          }
+        } else {
+          console.log(`用户${userId}今日无点赞任务记录`);
+        }
+        
+        // 检查用户今日获得经验的点赞次数（最多5次）
+        const [likeExpCount] = await db.execute(
+          `SELECT COUNT(*) as count FROM user_exp_history 
+           WHERE user_id = ? AND DATE(created_at) = ? AND source = '点赞帖子'`,
+          [userId, today]
+        );
+        
+        const dailyLikeCount = likeExpCount[0]?.count || 0;
+        console.log(`用户${userId}今日已获得经验的点赞次数: ${dailyLikeCount}`);
+        
+        // 每次点赞都单独奖励2点经验（与任务奖励独立），但每天最多获得5次
+        if (dailyLikeCount < 5) {
+          console.log(`为用户${userId}添加点赞基础经验(2点)`);
+          const gainedExp = await taskController.addUserExperience(
+            userId, 
+            2, 
+            '点赞帖子'
+          );
+          console.log(`用户${userId}点赞获得${gainedExp}点基础经验`);
+        } else {
+          console.log(`用户${userId}今日点赞获得经验次数已达上限(5次)`);
+          reachedLikeLimit = true;
+        }
+        
+      } catch (taskError) {
+        console.error('更新任务进度失败:', taskError);
+        // 不影响主流程，继续返回点赞成功
+      }
+
+      res.json({ 
+        message: "点赞成功", 
+        action: "like",
+        reachedLikeLimit: reachedLikeLimit
+      });
+    }
   } catch (error) {
-    console.error("点赞帖子失败:", error);
-    res.status(500).json({ message: "点赞失败" });
+    console.error("点赞操作失败:", error);
+    res.status(500).json({ message: "点赞失败，请稍后重试" });
   }
 };
 
@@ -920,9 +1162,9 @@ exports.followUser = async (req, res) => {
       userId: followedId,
       type: "follow",
       content: "关注了你",
-      sourceId: followerId,
+      sourceId: followerId || null,
       sourceType: "user",
-      actorId: followerId,
+      actorId: followerId || null,
     });
 
     await db.execute(
@@ -1033,10 +1275,10 @@ exports.likeComment = async (req, res) => {
       await createNotification({
         userId: comments[0].user_id,
         type: "like",
-        content: `赞了你在《${comments[0].title}》中的评论`,
-        sourceId: postId,
+        content: `赞了你在《${comments[0].title || ''}》中的评论`,
+        sourceId: postId || null,
         sourceType: "comment",
-        actorId: userId,
+        actorId: userId || null,
       });
     }
 
@@ -1111,10 +1353,10 @@ exports.replyToComment = async (req, res) => {
       await createNotification({
         userId: commentResult[0].user_id,
         type: "reply",
-        content: `回复了你在《${commentResult[0].title}》中的评论`,
-        sourceId: postId,
+        content: `回复了你在《${commentResult[0].title || ''}》中的评论`,
+        sourceId: postId || null,
         sourceType: "comment",
-        actorId: userId,
+        actorId: userId || null,
       });
     }
 
@@ -1123,10 +1365,10 @@ exports.replyToComment = async (req, res) => {
       await createNotification({
         userId: replyToId,
         type: "reply",
-        content: `在《${commentResult[0].title}》中提到了你`,
-        sourceId: postId,
+        content: `在《${commentResult[0].title || ''}》中提到了你`,
+        sourceId: postId || null,
         sourceType: "comment",
-        actorId: userId,
+        actorId: userId || null,
       });
     }
 
@@ -1223,24 +1465,10 @@ exports.createCommentReply = async (req, res) => {
       await createNotification({
         userId: commentResult[0].user_id,
         type: "reply",
-        content: `回复了你在《${commentResult[0].title}》中的评论`,
-        sourceId: postId,
+        content: `回复了你在《${commentResult[0].title || ''}》中的评论`,
+        sourceId: postId || null,
         sourceType: "comment",
-        actorId: userId,
-        relatedId: replyId
-      });
-    }
-
-    // 如果指定了回复对象，且不是自己，也要通知
-    if (replyToId && replyToId !== userId && replyToId !== commentResult[0].user_id) {
-      await createNotification({
-        userId: replyToId,
-        type: "reply",
-        content: `在《${commentResult[0].title}》中提到了你`,
-        sourceId: postId,
-        sourceType: "comment",
-        actorId: userId,
-        relatedId: replyId
+        actorId: userId || null,
       });
     }
 
@@ -1249,8 +1477,8 @@ exports.createCommentReply = async (req, res) => {
       replyId: replyId,
     });
   } catch (error) {
-    console.error("创建评论回复失败:", error);
-    res.status(500).json({ message: "创建回复失败" });
+    console.error("回复评论失败:", error);
+    res.status(500).json({ message: "回复失败" });
   }
 };
 
@@ -1297,4 +1525,77 @@ exports.uploadAudio = (req, res) => {
   });
 };
 
-// ... 其他控制器方法
+// 获取用户表情包列表
+exports.getUserEmojis = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    const [emojis] = await db.execute(
+      "SELECT id, url, name, created_at FROM user_emojis WHERE user_id = ? ORDER BY created_at DESC",
+      [userId]
+    );
+    
+    res.json({ emojis });
+  } catch (error) {
+    console.error("获取表情包失败:", error);
+    res.status(500).json({ message: "获取表情包失败" });
+  }
+};
+
+// 添加表情包
+exports.addEmoji = async (req, res) => {
+  try {
+    const { url, name } = req.body;
+    const userId = req.user.id;
+    
+    if (!url) {
+      return res.status(400).json({ message: "表情包URL不能为空" });
+    }
+    
+    const [result] = await db.execute(
+      "INSERT INTO user_emojis (user_id, url, name) VALUES (?, ?, ?)",
+      [userId, url, name || null]
+    );
+    
+    res.status(201).json({
+      message: "添加表情包成功",
+      emoji: {
+        id: result.insertId,
+        url,
+        name,
+        created_at: new Date()
+      }
+    });
+  } catch (error) {
+    console.error("添加表情包失败:", error);
+    res.status(500).json({ message: "添加表情包失败" });
+  }
+};
+
+// 删除表情包
+exports.deleteEmoji = async (req, res) => {
+  try {
+    const emojiId = req.params.emojiId;
+    const userId = req.user.id;
+    
+    // 检查是否是用户自己的表情包
+    const [emojis] = await db.execute(
+      "SELECT * FROM user_emojis WHERE id = ? AND user_id = ?",
+      [emojiId, userId]
+    );
+    
+    if (emojis.length === 0) {
+      return res.status(404).json({ message: "表情包不存在或无权限删除" });
+    }
+    
+    await db.execute(
+      "DELETE FROM user_emojis WHERE id = ?",
+      [emojiId]
+    );
+    
+    res.json({ message: "删除表情包成功" });
+  } catch (error) {
+    console.error("删除表情包失败:", error);
+    res.status(500).json({ message: "删除表情包失败" });
+  }
+};
