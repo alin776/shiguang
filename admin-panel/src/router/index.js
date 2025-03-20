@@ -63,6 +63,24 @@ const routes = [
           requiresAuth: true,
           title: '版本管理'
         }
+      },
+      {
+        path: 'content-review',
+        name: 'content-review',
+        component: () => import('../views/ContentReview.vue'),
+        meta: { 
+          requiresAuth: true,
+          title: '内容审核'
+        }
+      },
+      {
+        path: 'reports',
+        name: 'reports',
+        component: () => import('../views/ReportManagement.vue'),
+        meta: { 
+          requiresAuth: true,
+          title: '举报管理'
+        }
       }
     ]
   },

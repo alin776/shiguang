@@ -1150,6 +1150,522 @@ exports.deletePost = async (req, res) => {
   }
 };
 
+// 获取待审核的帖子列表
+exports.getPendingPosts = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+    
+    // 查询待审核的帖子
+    const [posts] = await db.execute(
+      `SELECT 
+        p.id, p.user_id, p.title, p.content, p.images, p.created_at, p.status,
+        u.username as author_name, u.avatar as author_avatar
+      FROM posts p
+      JOIN users u ON p.user_id = u.id
+      WHERE p.status = 'pending'
+      ORDER BY p.created_at DESC
+      LIMIT ? OFFSET ?`,
+      [limit, offset]
+    );
+    
+    // 获取总数
+    const [countResult] = await db.execute(
+      "SELECT COUNT(*) as total FROM posts WHERE status = 'pending'"
+    );
+    
+    const total = countResult[0].total;
+    
+    return res.status(200).json({
+      success: true,
+      data: {
+        posts,
+        pagination: {
+          total,
+          page,
+          totalPages: Math.ceil(total / limit)
+        }
+      }
+    });
+  } catch (error) {
+    console.error('获取待审核帖子失败:', error);
+    return res.status(500).json({
+      success: false,
+      message: '服务器错误',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+// 获取待审核的评论列表
+exports.getPendingComments = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+    
+    // 查询待审核的评论
+    const [comments] = await db.execute(
+      `SELECT 
+        c.id, c.post_id, c.user_id, c.content, c.images, c.created_at, c.status,
+        u.username as author_name, u.avatar as author_avatar,
+        p.title as post_title
+      FROM comments c
+      JOIN users u ON c.user_id = u.id
+      JOIN posts p ON c.post_id = p.id
+      WHERE c.status = 'pending'
+      ORDER BY c.created_at DESC
+      LIMIT ? OFFSET ?`,
+      [limit, offset]
+    );
+    
+    // 获取总数
+    const [countResult] = await db.execute(
+      "SELECT COUNT(*) as total FROM comments WHERE status = 'pending'"
+    );
+    
+    const total = countResult[0].total;
+    
+    return res.status(200).json({
+      success: true,
+      data: {
+        comments,
+        pagination: {
+          total,
+          page,
+          totalPages: Math.ceil(total / limit)
+        }
+      }
+    });
+  } catch (error) {
+    console.error('获取待审核评论失败:', error);
+    return res.status(500).json({
+      success: false,
+      message: '服务器错误',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+// 获取待审核的小记列表
+exports.getPendingNotes = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+    
+    // 查询待审核的小记
+    const [notes] = await db.execute(
+      `SELECT 
+        n.id, n.author_id, n.content, n.image, n.created_at, n.status,
+        u.username as author_name, u.avatar as author_avatar
+      FROM notes n
+      JOIN users u ON n.author_id = u.id
+      WHERE n.status = 'pending'
+      ORDER BY n.created_at DESC
+      LIMIT ? OFFSET ?`,
+      [limit, offset]
+    );
+    
+    // 获取总数
+    const [countResult] = await db.execute(
+      "SELECT COUNT(*) as total FROM notes WHERE status = 'pending'"
+    );
+    
+    const total = countResult[0].total;
+    
+    return res.status(200).json({
+      success: true,
+      data: {
+        notes,
+        pagination: {
+          total,
+          page,
+          totalPages: Math.ceil(total / limit)
+        }
+      }
+    });
+  } catch (error) {
+    console.error('获取待审核小记失败:', error);
+    return res.status(500).json({
+      success: false,
+      message: '服务器错误',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+// 更新帖子审核状态
+exports.updatePostStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    
+    if (!['approved', 'rejected'].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: '状态值无效，必须是 approved 或 rejected'
+      });
+    }
+    
+    // 检查帖子是否存在
+    const [posts] = await db.execute(
+      "SELECT id FROM posts WHERE id = ?",
+      [id]
+    );
+    
+    if (posts.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: '帖子不存在'
+      });
+    }
+    
+    // 更新状态
+    await db.execute(
+      "UPDATE posts SET status = ? WHERE id = ?",
+      [status, id]
+    );
+    
+    return res.status(200).json({
+      success: true,
+      message: `帖子已${status === 'approved' ? '通过审核' : '拒绝'}`
+    });
+  } catch (error) {
+    console.error('更新帖子状态失败:', error);
+    return res.status(500).json({
+      success: false,
+      message: '服务器错误',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+// 更新评论审核状态
+exports.updateCommentStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    
+    if (!['approved', 'rejected'].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: '状态值无效，必须是 approved 或 rejected'
+      });
+    }
+    
+    // 检查评论是否存在
+    const [comments] = await db.execute(
+      "SELECT id FROM comments WHERE id = ?",
+      [id]
+    );
+    
+    if (comments.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: '评论不存在'
+      });
+    }
+    
+    // 更新状态
+    await db.execute(
+      "UPDATE comments SET status = ? WHERE id = ?",
+      [status, id]
+    );
+    
+    return res.status(200).json({
+      success: true,
+      message: `评论已${status === 'approved' ? '通过审核' : '拒绝'}`
+    });
+  } catch (error) {
+    console.error('更新评论状态失败:', error);
+    return res.status(500).json({
+      success: false,
+      message: '服务器错误',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+// 更新小记审核状态
+exports.updateNoteStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    
+    if (!['approved', 'rejected'].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: '状态值无效，必须是 approved 或 rejected'
+      });
+    }
+    
+    // 检查小记是否存在
+    const [notes] = await db.execute(
+      "SELECT id FROM notes WHERE id = ?",
+      [id]
+    );
+    
+    if (notes.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: '小记不存在'
+      });
+    }
+    
+    // 更新状态
+    await db.execute(
+      "UPDATE notes SET status = ? WHERE id = ?",
+      [status, id]
+    );
+    
+    return res.status(200).json({
+      success: true,
+      message: `小记已${status === 'approved' ? '通过审核' : '拒绝'}`
+    });
+  } catch (error) {
+    console.error('更新小记状态失败:', error);
+    return res.status(500).json({
+      success: false,
+      message: '服务器错误',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+// 获取举报列表
+exports.getReports = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+    const status = req.query.status || 'pending'; // 默认查询待处理的举报
+    
+    // 查询举报列表
+    const [reports] = await db.execute(
+      `SELECT 
+        r.id, r.reporter_id, r.reported_type, r.reported_id, r.reason, 
+        r.status, r.created_at, r.processed_at,
+        u.username as reporter_name, u.avatar as reporter_avatar
+      FROM reports r
+      JOIN users u ON r.reporter_id = u.id
+      WHERE r.status = ?
+      ORDER BY r.created_at DESC
+      LIMIT ? OFFSET ?`,
+      [status, limit, offset]
+    );
+    
+    // 获取总数
+    const [countResult] = await db.execute(
+      "SELECT COUNT(*) as total FROM reports WHERE status = ?",
+      [status]
+    );
+    
+    const total = countResult[0].total;
+    
+    return res.status(200).json({
+      success: true,
+      data: {
+        reports,
+        pagination: {
+          total,
+          page,
+          totalPages: Math.ceil(total / limit)
+        }
+      }
+    });
+  } catch (error) {
+    console.error('获取举报列表失败:', error);
+    return res.status(500).json({
+      success: false,
+      message: '服务器错误',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+// 获取举报详情
+exports.getReportDetails = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // 查询举报详情
+    const [reports] = await db.execute(
+      `SELECT 
+        r.*, 
+        u.username as reporter_name, u.avatar as reporter_avatar,
+        a.username as processor_name
+      FROM reports r
+      JOIN users u ON r.reporter_id = u.id
+      LEFT JOIN admins a ON r.processed_by = a.id
+      WHERE r.id = ?`,
+      [id]
+    );
+    
+    if (reports.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: '举报不存在'
+      });
+    }
+    
+    const report = reports[0];
+    let reportedContent = null;
+    
+    // 根据举报类型获取被举报的内容
+    if (report.reported_type === 'post') {
+      const [posts] = await db.execute(
+        `SELECT 
+          p.*, u.username as author_name, u.avatar as author_avatar
+        FROM posts p
+        JOIN users u ON p.user_id = u.id
+        WHERE p.id = ?`,
+        [report.reported_id]
+      );
+      
+      if (posts.length > 0) {
+        reportedContent = {
+          type: 'post',
+          ...posts[0]
+        };
+      }
+    } else if (report.reported_type === 'comment') {
+      const [comments] = await db.execute(
+        `SELECT 
+          c.*, u.username as author_name, u.avatar as author_avatar,
+          p.id as post_id, p.title as post_title
+        FROM comments c
+        JOIN users u ON c.user_id = u.id
+        JOIN posts p ON c.post_id = p.id
+        WHERE c.id = ?`,
+        [report.reported_id]
+      );
+      
+      if (comments.length > 0) {
+        reportedContent = {
+          type: 'comment',
+          ...comments[0]
+        };
+      }
+    }
+    
+    return res.status(200).json({
+      success: true,
+      data: {
+        report,
+        reportedContent
+      }
+    });
+  } catch (error) {
+    console.error('获取举报详情失败:', error);
+    return res.status(500).json({
+      success: false,
+      message: '服务器错误',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+// 更新举报状态
+exports.updateReportStatus = async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    const { status, action } = req.body;
+    const adminId = req.admin.id;
+    
+    if (!['processed', 'dismissed'].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: '状态值无效，必须是 processed 或 dismissed'
+      });
+    }
+    
+    // 查询举报是否存在
+    const [reports] = await db.execute(
+      "SELECT * FROM reports WHERE id = ?",
+      [id]
+    );
+    
+    if (reports.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: '举报不存在'
+      });
+    }
+    
+    const report = reports[0];
+    
+    // 获取连接并开始事务
+    connection = await db.getConnection();
+    await connection.beginTransaction();
+    
+    try {
+      // 更新举报状态
+      await connection.execute(
+        "UPDATE reports SET status = ?, processed_by = ?, processed_at = NOW() WHERE id = ?",
+        [status, adminId, id]
+      );
+      
+      // 如果是处理并且需要采取行动，处理被举报的内容
+      if (status === 'processed' && action) {
+        if (report.reported_type === 'post') {
+          if (action === 'delete') {
+            // 删除帖子
+            await connection.execute(
+              "DELETE FROM posts WHERE id = ?",
+              [report.reported_id]
+            );
+          } else if (action === 'reject') {
+            // 将帖子设置为拒绝状态
+            await connection.execute(
+              "UPDATE posts SET status = 'rejected' WHERE id = ?",
+              [report.reported_id]
+            );
+          }
+        } else if (report.reported_type === 'comment') {
+          if (action === 'delete') {
+            // 删除评论
+            await connection.execute(
+              "DELETE FROM comments WHERE id = ?",
+              [report.reported_id]
+            );
+          } else if (action === 'reject') {
+            // 将评论设置为拒绝状态
+            await connection.execute(
+              "UPDATE comments SET status = 'rejected' WHERE id = ?",
+              [report.reported_id]
+            );
+          }
+        }
+      }
+      
+      // 提交事务
+      await connection.commit();
+      
+      return res.status(200).json({
+        success: true,
+        message: `举报已${status === 'processed' ? '处理' : '驳回'}`
+      });
+    } catch (error) {
+      // 回滚事务
+      if (connection) await connection.rollback();
+      throw error;
+    } finally {
+      // 释放连接
+      if (connection) connection.release();
+    }
+  } catch (error) {
+    console.error('更新举报状态失败:', error);
+    return res.status(500).json({
+      success: false,
+      message: '服务器错误',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
 module.exports = {
   login: exports.login,
   getProfile: exports.getProfile,
@@ -1185,5 +1701,14 @@ module.exports = {
   getTasks: exports.getTasks,
   getDashboardData: exports.getDashboardData,
   createAdmin: exports.createAdmin,
-  getAllAdmins: exports.getAllAdmins
+  getAllAdmins: exports.getAllAdmins,
+  getPendingPosts: exports.getPendingPosts,
+  getPendingComments: exports.getPendingComments,
+  getPendingNotes: exports.getPendingNotes,
+  updatePostStatus: exports.updatePostStatus,
+  updateCommentStatus: exports.updateCommentStatus,
+  updateNoteStatus: exports.updateNoteStatus,
+  getReports: exports.getReports,
+  getReportDetails: exports.getReportDetails,
+  updateReportStatus: exports.updateReportStatus
 }; 

@@ -691,5 +691,59 @@ export const useCommunityStore = defineStore("community", {
         return { likedPosts: [] };
       }
     },
+
+    // 举报帖子
+    async reportPost(postId, reason, detail = "") {
+      try {
+        const authStore = useAuthStore();
+        let reportData = {
+          reason: reason
+        };
+        
+        if (detail) {
+          reportData.reason = `${reason}: ${detail}`;
+        }
+        
+        const response = await axios.post(
+          `${API_BASE_URL}/api/community/posts/${postId}/report`,
+          reportData,
+          {
+            headers: { Authorization: `Bearer ${authStore.token}` }
+          }
+        );
+        
+        return response.data;
+      } catch (error) {
+        console.error("举报帖子失败:", error);
+        throw error;
+      }
+    },
+    
+    // 举报评论
+    async reportComment(commentId, reason, detail = "") {
+      try {
+        const authStore = useAuthStore();
+        let reportData = {
+          reason: reason
+        };
+        
+        if (detail) {
+          reportData.reason = `${reason}: ${detail}`;
+        }
+        
+        const response = await axios.post(
+          `${API_BASE_URL}/api/community/comments/${commentId}/report`,
+          reportData,
+          {
+            headers: { Authorization: `Bearer ${authStore.token}` }
+          }
+        );
+        
+        return response.data;
+      } catch (error) {
+        console.error("举报评论失败:", error);
+        throw error;
+      }
+    },
   },
 });

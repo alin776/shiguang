@@ -21,6 +21,7 @@
         :userId="currentUserId"
         @like="toggleLike"
         @follow="toggleFollow"
+        @report="openReportDialog"
       />
 
       <!-- 评论区域 -->
@@ -36,6 +37,7 @@
         @delete-reply="handleDeleteReply"
         @submit-comment="submitComment"
         @cancel-reply="cancelReply"
+        @report-comment="openCommentReportDialog"
       />
     </div>
 
@@ -48,6 +50,76 @@
         <span class="dialog-footer">
           <el-button @click="showDeleteConfirm = false">取消</el-button>
           <el-button type="danger" @click="confirmDelete">确定删除</el-button>
+        </span>
+      </template>
+    </el-dialog>
+    
+    <!-- 举报对话框 -->
+    <el-dialog v-model="showReportDialog" title="举报帖子" width="90%" center>
+      <div class="report-form">
+        <p>请选择举报原因：</p>
+        <el-form :model="reportForm" label-position="top">
+          <el-form-item label="举报原因">
+            <el-radio-group v-model="reportForm.reason">
+              <el-radio label="垃圾广告">垃圾广告</el-radio>
+              <el-radio label="色情低俗">色情低俗</el-radio>
+              <el-radio label="违法违规">违法违规</el-radio>
+              <el-radio label="人身攻击">人身攻击</el-radio>
+              <el-radio label="引战谩骂">引战谩骂</el-radio>
+              <el-radio label="其他">其他</el-radio>
+            </el-radio-group>
+          </el-form-item>
+          <el-form-item v-if="reportForm.reason === '其他'" label="补充说明">
+            <el-input
+              v-model="reportForm.detail"
+              type="textarea"
+              :rows="3"
+              placeholder="请描述具体情况..."
+              maxlength="200"
+              show-word-limit
+            />
+          </el-form-item>
+        </el-form>
+      </div>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="showReportDialog = false">取消</el-button>
+          <el-button type="primary" @click="submitReport" :disabled="!reportForm.reason">提交举报</el-button>
+        </span>
+      </template>
+    </el-dialog>
+
+    <!-- 评论举报对话框 -->
+    <el-dialog v-model="showCommentReportDialog" title="举报评论" width="90%" center>
+      <div class="report-form">
+        <p>请选择举报原因：</p>
+        <el-form :model="commentReportForm" label-position="top">
+          <el-form-item label="举报原因">
+            <el-radio-group v-model="commentReportForm.reason">
+              <el-radio label="垃圾广告">垃圾广告</el-radio>
+              <el-radio label="色情低俗">色情低俗</el-radio>
+              <el-radio label="违法违规">违法违规</el-radio>
+              <el-radio label="人身攻击">人身攻击</el-radio>
+              <el-radio label="引战谩骂">引战谩骂</el-radio>
+              <el-radio label="其他">其他</el-radio>
+            </el-radio-group>
+          </el-form-item>
+          <el-form-item v-if="commentReportForm.reason === '其他'" label="补充说明">
+            <el-input
+              v-model="commentReportForm.detail"
+              type="textarea"
+              :rows="3"
+              placeholder="请描述具体情况..."
+              maxlength="200"
+              show-word-limit
+            />
+          </el-form-item>
+        </el-form>
+      </div>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="showCommentReportDialog = false">取消</el-button>
+          <el-button type="primary" @click="submitCommentReport" :disabled="!commentReportForm.reason">提交举报</el-button>
         </span>
       </template>
     </el-dialog>
@@ -83,6 +155,10 @@ const replyToCommentId = ref(null);
 const replyToUserId = ref(null);
 const replyUsername = ref("");
 const showDeleteConfirm = ref(false);
+const showReportDialog = ref(false);
+const showCommentReportDialog = ref(false);
+const reportForm = ref({ reason: "", detail: "" });
+const commentReportForm = ref({ reason: "", detail: "", commentId: null });
 
 // 计算属性
 const currentUserId = computed(() => authStore.user?.id);
@@ -305,10 +381,44 @@ const handleDeleteReply = async (replyId) => {
   }
 };
 
+// 显示举报对话框
+const openReportDialog = () => {
+  reportForm.value = { reason: "", detail: "" };
+  showReportDialog.value = true;
+};
+
+// 显示评论举报对话框
+const openCommentReportDialog = (commentId) => {
+  commentReportForm.value = { reason: "", detail: "", commentId };
+  showCommentReportDialog.value = true;
+};
+
 // 导航到用户个人页
 const navigateToUserProfile = (userId) => {
   if (userId) {
     router.push(`/user/${userId}`);
+  }
+};
+
+// 提交举报
+const submitReport = async () => {
+  try {
+    await communityStore.reportPost(post.value.id, reportForm.value.reason, reportForm.value.detail);
+    ElMessage.success("举报提交成功");
+    showReportDialog.value = false;
+  } catch (error) {
+    ElMessage.error("举报提交失败: " + (error.message || "未知错误"));
+  }
+};
+
+// 提交评论举报
+const submitCommentReport = async () => {
+  try {
+    await communityStore.reportComment(commentReportForm.value.commentId, commentReportForm.value.reason, commentReportForm.value.detail);
+    ElMessage.success("评论举报提交成功");
+    showCommentReportDialog.value = false;
+  } catch (error) {
+    ElMessage.error("评论举报提交失败: " + (error.message || "未知错误"));
   }
 };
 

@@ -24,11 +24,19 @@
     >
       <span>{{ post.user?.is_following ? "已关注" : "关注" }}</span>
     </div>
+    <div
+      class="action-item report-action"
+      v-if="post.user?.id !== userId"
+      @click="$emit('report')"
+    >
+      <el-icon><Warning /></el-icon>
+      <span>举报</span>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { Star, View, ChatDotRound } from "@element-plus/icons-vue";
+import { Star, View, ChatDotRound, Warning } from "@element-plus/icons-vue";
 
 defineProps({
   post: {
@@ -41,7 +49,7 @@ defineProps({
   },
 });
 
-defineEmits(["like", "follow"]);
+defineEmits(["like", "follow", "report"]);
 </script>
 
 <style scoped>
@@ -84,5 +92,15 @@ defineEmits(["like", "follow"]);
 .follow-action.following {
   background: #e0e0e0;
   color: #666666;
+}
+
+.report-action {
+  margin-left: auto;
+  margin-right: 0;
+  background: #ff3b30;
+  color: white;
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 12px;
 }
 </style>

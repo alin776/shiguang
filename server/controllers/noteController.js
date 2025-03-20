@@ -34,12 +34,14 @@ exports.getNotes = async (req, res) => {
         notes n
       JOIN 
         users u ON n.author_id = u.id
+      WHERE
+        n.status = 'approved'
       ORDER BY 
         n.created_at DESC
       LIMIT ? OFFSET ?
     `;
     
-    const countQuery = `SELECT COUNT(*) AS total FROM notes`;
+    const countQuery = `SELECT COUNT(*) AS total FROM notes WHERE status = 'approved'`;
     
     connection = await createConnection();
     const [notes] = await connection.execute(query, [limit, offset]);
@@ -84,6 +86,7 @@ exports.getNotes = async (req, res) => {
 exports.getNoteById = async (req, res) => {
   let connection;
   try {
+    const userId = req.user ? req.user.id : null;
     const query = `
       SELECT 
         n.id, 
@@ -99,11 +102,11 @@ exports.getNoteById = async (req, res) => {
       JOIN 
         users u ON n.author_id = u.id
       WHERE 
-        n.id = ?
+        n.id = ? AND (n.status = 'approved' OR n.author_id = ?)
     `;
     
     connection = await createConnection();
-    const [results] = await connection.execute(query, [req.params.id]);
+    const [results] = await connection.execute(query, [req.params.id, userId]);
     
     if (results.length === 0) {
       return res.status(404).json({
@@ -148,7 +151,7 @@ exports.createNote = async (req, res) => {
     const userId = req.user.id;
 
     // 创建新小记
-    const query = `INSERT INTO notes (content, author_id, image) VALUES (?, ?, ?)`;
+    const query = `INSERT INTO notes (content, author_id, image, status) VALUES (?, ?, ?, 'pending')`;
     
     connection = await createConnection();
     const [result] = await connection.execute(query, [content, userId, image || null]);

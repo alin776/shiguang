@@ -15,7 +15,12 @@
         <div class="username">
           {{ comment.user?.username || "匿名用户" }}
         </div>
-        <div class="comment-time">{{ formatTime(comment.created_at) }}</div>
+        <div class="comment-actions-top">
+          <span class="report-btn" @click="$emit('report-comment', comment.id)" v-if="comment.user?.id !== userId">
+            <el-icon><Warning /></el-icon>
+          </span>
+          <div class="comment-time">{{ formatTime(comment.created_at) }}</div>
+        </div>
       </div>
       <div class="comment-text">{{ comment.content }}</div>
       
@@ -158,7 +163,7 @@
 </template>
 
 <script setup>
-import { Star, VideoPlay, VideoPause } from "@element-plus/icons-vue";
+import { Star, VideoPlay, VideoPause, Warning } from "@element-plus/icons-vue";
 import { getAvatarUrl } from "../../../utils/imageHelpers";
 import { formatTime } from "../../../utils/timeHelpers";
 import { ref, computed, onMounted } from "vue";
@@ -184,6 +189,7 @@ defineEmits([
   "delete-comment",
   "delete-reply",
   "refresh-emojis",
+  "report-comment",
 ]);
 
 // 音频播放相关
@@ -556,9 +562,9 @@ const addToEmojis = async (url) => {
 
 .comment-meta {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  margin-bottom: 4px;
-  justify-content: flex-start;
+  margin-bottom: 8px;
 }
 
 .username {
@@ -880,5 +886,26 @@ const addToEmojis = async (url) => {
 
 :deep(.menu-option:hover) {
   background-color: #f0f0f0;
+}
+
+.comment-actions-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.report-btn {
+  cursor: pointer;
+  color: #909399;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  border-radius: 50%;
+}
+
+.report-btn:hover {
+  color: #ff4d4f;
+  background-color: rgba(255, 77, 79, 0.1);
 }
 </style>

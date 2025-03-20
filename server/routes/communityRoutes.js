@@ -84,4 +84,10 @@ router.post("/emojis", communityController.addEmoji);
 // 删除表情包
 router.delete("/emojis/:emojiId", communityController.deleteEmoji);
 
+// 举报帖子
+router.post("/posts/:postId/report", communityController.reportPost);
+
+// 举报评论
+router.post("/comments/:commentId/report", communityController.reportComment);
+
 module.exports = router;

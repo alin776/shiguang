@@ -65,6 +65,19 @@ console.log("已注册管理员删除帖子路由: /api/admin/posts/:id");
 // router.get("/stats/comments", adminController.getCommentStats);
 // router.get("/comments", adminController.getCommentList);
 
+// 内容审核路由
+router.get("/pending/posts", adminController.getPendingPosts);
+router.get("/pending/comments", adminController.getPendingComments);
+router.get("/pending/notes", adminController.getPendingNotes);
+router.put("/pending/posts/:id/status", adminController.updatePostStatus);
+router.put("/pending/comments/:id/status", adminController.updateCommentStatus);
+router.put("/pending/notes/:id/status", adminController.updateNoteStatus);
+
+// 举报处理路由
+router.get("/reports", adminController.getReports);
+router.put("/reports/:id/status", adminController.updateReportStatus);
+router.get("/reports/:id", adminController.getReportDetails);
+
 // 管理员设置
 // router.put("/settings", adminController.updateAdminSettings);
 

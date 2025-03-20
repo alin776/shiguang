@@ -18,6 +18,7 @@
         @delete-comment="$emit('delete-comment', $event)"
         @delete-reply="$emit('delete-reply', $event)"
         @refresh-emojis="refreshEmojis"
+        @report-comment="$emit('report-comment', $event)"
       />
     </div>
 
@@ -194,6 +195,7 @@ const emit = defineEmits([
   "delete-reply",
   "submit-comment",
   "cancel-reply",
+  "report-comment",
 ]);
 
 const commentContent = ref("");

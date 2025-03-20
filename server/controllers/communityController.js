@@ -84,13 +84,13 @@ exports.getPosts = async (req, res) => {
         END as avatar,
         u.id as author_id,
         c.name as category_name,
-        COALESCE((SELECT COUNT(*) FROM comments WHERE post_id = p.id), 0) as comments_count,
+        COALESCE((SELECT COUNT(*) FROM comments WHERE post_id = p.id AND status = 'approved'), 0) as comments_count,
         COALESCE((SELECT COUNT(*) FROM likes WHERE post_id = p.id), 0) as likes_count,
         IF(EXISTS(SELECT 1 FROM likes WHERE post_id = p.id AND user_id = ?), 1, 0) as is_liked
       FROM posts p
       LEFT JOIN users u ON p.user_id = u.id
       LEFT JOIN categories c ON p.category_id = c.id
-      WHERE 1=1
+      WHERE p.status = 'approved'
     `;
 
     const queryParams = [req.user.id];
@@ -129,7 +129,7 @@ exports.getPosts = async (req, res) => {
     let countQuery = `
       SELECT COUNT(*) as total 
       FROM posts p 
-      WHERE 1=1
+      WHERE p.status = 'approved'
     `;
 
     const countParams = [];
@@ -214,12 +214,12 @@ exports.getPost = async (req, res) => {
       FROM posts p
       LEFT JOIN users u ON p.user_id = u.id
       LEFT JOIN categories c ON p.category_id = c.id
-      WHERE p.id = ?`,
-      [currentUserId, currentUserId, postId]
+      WHERE p.id = ? AND (p.status = 'approved' OR p.user_id = ?)`,
+      [currentUserId, currentUserId, postId, currentUserId]
     );
 
     if (posts.length === 0) {
-      return res.status(404).json({ message: "帖子不存在" });
+      return res.status(404).json({ message: "帖子不存在或未通过审核" });
     }
 
     const post = {
@@ -262,9 +262,9 @@ exports.getPost = async (req, res) => {
         (SELECT COUNT(*) FROM comment_likes WHERE comment_id = c.id) as likes_count
       FROM comments c
       LEFT JOIN users u ON c.user_id = u.id
-      WHERE c.post_id = ?
+      WHERE c.post_id = ? AND (c.status = 'approved' OR c.user_id = ?)
       ORDER BY c.created_at DESC`,
-      [currentUserId, postId]
+      [currentUserId, postId, currentUserId]
     );
 
     // 获取评论的回复
@@ -378,7 +378,7 @@ exports.createPost = async (req, res) => {
     }
 
     const [result] = await db.execute(
-      "INSERT INTO posts (user_id, title, content, images, audio, category_id) VALUES (?, ?, ?, ?, ?, ?)",
+      "INSERT INTO posts (user_id, title, content, images, audio, category_id, status) VALUES (?, ?, ?, ?, ?, ?, 'pending')",
       params
     );
 
@@ -484,7 +484,7 @@ exports.createComment = async (req, res) => {
 
     // 先创建评论
     const [result] = await db.execute(
-      "INSERT INTO comments (post_id, user_id, content, audio, images) VALUES (?, ?, ?, ?, ?)",
+      "INSERT INTO comments (post_id, user_id, content, audio, images, status) VALUES (?, ?, ?, ?, ?, 'pending')",
       [postId, userId, content || '', audio || null, imagesJson]
     );
     
@@ -1597,5 +1597,99 @@ exports.deleteEmoji = async (req, res) => {
   } catch (error) {
     console.error("删除表情包失败:", error);
     res.status(500).json({ message: "删除表情包失败" });
+  }
+};
+
+// 举报帖子
+exports.reportPost = async (req, res) => {
+  try {
+    const { postId } = req.params;
+    const { reason } = req.body;
+    const userId = req.user.id;
+
+    if (!reason) {
+      return res.status(400).json({ message: "举报原因不能为空" });
+    }
+
+    // 检查帖子是否存在
+    const [posts] = await db.execute(
+      "SELECT id FROM posts WHERE id = ?",
+      [postId]
+    );
+
+    if (posts.length === 0) {
+      return res.status(404).json({ message: "帖子不存在" });
+    }
+
+    // 检查是否已举报过
+    const [existingReports] = await db.execute(
+      "SELECT id FROM reports WHERE reporter_id = ? AND reported_type = 'post' AND reported_id = ?",
+      [userId, postId]
+    );
+
+    if (existingReports.length > 0) {
+      return res.status(400).json({ message: "您已经举报过该帖子" });
+    }
+
+    // 创建举报记录
+    await db.execute(
+      "INSERT INTO reports (reporter_id, reported_type, reported_id, reason) VALUES (?, 'post', ?, ?)",
+      [userId, postId, reason]
+    );
+
+    return res.status(200).json({ 
+      success: true,
+      message: "举报成功，我们会尽快处理" 
+    });
+  } catch (error) {
+    console.error("举报帖子失败:", error);
+    return res.status(500).json({ message: "举报失败，请稍后再试" });
+  }
+};
+
+// 举报评论
+exports.reportComment = async (req, res) => {
+  try {
+    const { commentId } = req.params;
+    const { reason } = req.body;
+    const userId = req.user.id;
+
+    if (!reason) {
+      return res.status(400).json({ message: "举报原因不能为空" });
+    }
+
+    // 检查评论是否存在
+    const [comments] = await db.execute(
+      "SELECT id FROM comments WHERE id = ?",
+      [commentId]
+    );
+
+    if (comments.length === 0) {
+      return res.status(404).json({ message: "评论不存在" });
+    }
+
+    // 检查是否已举报过
+    const [existingReports] = await db.execute(
+      "SELECT id FROM reports WHERE reporter_id = ? AND reported_type = 'comment' AND reported_id = ?",
+      [userId, commentId]
+    );
+
+    if (existingReports.length > 0) {
+      return res.status(400).json({ message: "您已经举报过该评论" });
+    }
+
+    // 创建举报记录
+    await db.execute(
+      "INSERT INTO reports (reporter_id, reported_type, reported_id, reason) VALUES (?, 'comment', ?, ?)",
+      [userId, commentId, reason]
+    );
+
+    return res.status(200).json({ 
+      success: true,
+      message: "举报成功，我们会尽快处理" 
+    });
+  } catch (error) {
+    console.error("举报评论失败:", error);
+    return res.status(500).json({ message: "举报失败，请稍后再试" });
   }
 };

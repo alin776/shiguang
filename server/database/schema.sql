@@ -55,6 +55,7 @@ CREATE TABLE IF NOT EXISTS posts (
   audio VARCHAR(255) DEFAULT NULL,
   views INT DEFAULT 0,
   likes INT DEFAULT 0,
+  status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -68,6 +69,7 @@ CREATE TABLE IF NOT EXISTS comments (
   content TEXT NOT NULL,
   audio VARCHAR(255) DEFAULT NULL,
   images JSON DEFAULT NULL,
+  status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
@@ -199,6 +201,7 @@ CREATE TABLE IF NOT EXISTS `notes` (
   `author_id` INT NOT NULL,
   `image` VARCHAR(255) DEFAULT NULL,
   `likes` INT DEFAULT 0,
+  `status` ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (`author_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
@@ -294,3 +297,18 @@ INSERT INTO `system_settings` (`key`, `value`, `description`) VALUES
 -- 添加分类关联到帖子表
 ALTER TABLE posts ADD COLUMN category_id INT DEFAULT NULL;
 ALTER TABLE posts ADD FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL;
+
+-- 举报表
+CREATE TABLE IF NOT EXISTS `reports` (
+  `id` INT PRIMARY KEY AUTO_INCREMENT,
+  `reporter_id` INT NOT NULL,
+  `reported_type` ENUM('post', 'comment') NOT NULL,
+  `reported_id` INT NOT NULL,
+  `reason` TEXT NOT NULL,
+  `status` ENUM('pending', 'processed', 'dismissed') DEFAULT 'pending',
+  `processed_by` INT DEFAULT NULL,
+  `processed_at` TIMESTAMP NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (`reporter_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`processed_by`) REFERENCES `admins` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
