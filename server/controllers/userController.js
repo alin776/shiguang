@@ -205,32 +205,168 @@ const resetPassword = async (req, res) => {
   }
 };
 
+// 用户等级经验配置
+const LEVEL_EXPERIENCE = {
+  1: 0,      // 1级所需经验值
+  2: 100,    // 2级所需经验值
+  3: 300,    // 3级所需经验值
+  4: 600,    // 4级所需经验值
+  5: 1000,   // 5级所需经验值
+  6: 1500    // 6级所需经验值
+};
+
+// 获取用户经验和等级信息
+const getUserExperience = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // 查询用户经验和等级
+    const [users] = await db.execute(
+      "SELECT id, experience, level FROM users WHERE id = ?",
+      [userId]
+    );
+
+    if (users.length === 0) {
+      return res.status(404).json({ message: "用户不存在" });
+    }
+
+    const user = users[0];
+    
+    // 计算下一级所需经验
+    const nextLevel = user.level < 6 ? user.level + 1 : 6;
+    const currentLevelExp = LEVEL_EXPERIENCE[user.level] || 0;
+    const nextLevelExp = LEVEL_EXPERIENCE[nextLevel] || LEVEL_EXPERIENCE[6];
+    
+    // 当前级别的经验进度
+    const currentExp = user.experience - currentLevelExp;
+    const expNeeded = nextLevelExp - currentLevelExp;
+    const progress = Math.min(Math.floor((currentExp / expNeeded) * 100), 100);
+
+    res.json({
+      experience: user.experience,
+      level: user.level,
+      nextLevelExp: nextLevelExp,
+      currentLevelExp: currentLevelExp,
+      progress: progress,
+      maxLevel: 6
+    });
+  } catch (error) {
+    console.error("获取用户经验等级失败:", error);
+    res.status(500).json({ message: "获取用户经验等级失败" });
+  }
+};
+
+// 增加用户经验
+const addUserExperience = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { amount } = req.body;
+
+    if (!amount || isNaN(amount) || amount <= 0) {
+      return res.status(400).json({ message: "经验值必须是正数" });
+    }
+
+    // 获取当前用户信息
+    const [users] = await db.execute(
+      "SELECT id, experience, level FROM users WHERE id = ?",
+      [userId]
+    );
+
+    if (users.length === 0) {
+      return res.status(404).json({ message: "用户不存在" });
+    }
+
+    const user = users[0];
+    
+    // 计算新的经验值
+    const newExperience = user.experience + parseInt(amount);
+    
+    // 计算新的等级
+    let newLevel = user.level;
+    while (newLevel < 6 && newExperience >= LEVEL_EXPERIENCE[newLevel + 1]) {
+      newLevel++;
+    }
+
+    // 更新用户经验和等级
+    await db.execute(
+      "UPDATE users SET experience = ?, level = ? WHERE id = ?",
+      [newExperience, newLevel, userId]
+    );
+
+    // 如果等级提升，返回升级提醒
+    const levelUp = newLevel > user.level;
+
+    // 计算下一级所需经验
+    const nextLevel = newLevel < 6 ? newLevel + 1 : 6;
+    const currentLevelExp = LEVEL_EXPERIENCE[newLevel] || 0;
+    const nextLevelExp = LEVEL_EXPERIENCE[nextLevel] || LEVEL_EXPERIENCE[6];
+    
+    // 当前级别的经验进度
+    const currentExp = newExperience - currentLevelExp;
+    const expNeeded = nextLevelExp - currentLevelExp;
+    const progress = Math.min(Math.floor((currentExp / expNeeded) * 100), 100);
+
+    res.json({
+      experience: newExperience,
+      level: newLevel,
+      levelUp: levelUp,
+      nextLevelExp: nextLevelExp,
+      currentLevelExp: currentLevelExp,
+      progress: progress,
+      maxLevel: 6
+    });
+  } catch (error) {
+    console.error("增加用户经验失败:", error);
+    res.status(500).json({ message: "增加用户经验失败" });
+  }
+};
+
 // 获取当前用户信息
 const getCurrentUser = async (req, res) => {
   try {
+    const userId = req.user.id;
+
+    // 查询用户信息，增加经验和等级字段
     const [users] = await db.execute(
-      `SELECT id, username, email, phone, avatar, status, bio, cover_image
-       FROM users 
-       WHERE id = ?`,
-      [req.user?.userId || req.user?.id]
+      `SELECT u.id, u.username, u.email, u.phone, u.avatar, u.cover_image, u.bio, 
+              u.created_at, u.status, u.experience, u.level
+       FROM users u WHERE u.id = ?`,
+      [userId]
     );
 
-    const user = users[0];
-    if (!user) {
+    if (users.length === 0) {
       return res.status(404).json({ message: "用户不存在" });
     }
+
+    const user = users[0];
+
+    // 计算下一级所需经验
+    const nextLevel = user.level < 6 ? user.level + 1 : 6;
+    const currentLevelExp = LEVEL_EXPERIENCE[user.level] || 0;
+    const nextLevelExp = LEVEL_EXPERIENCE[nextLevel] || LEVEL_EXPERIENCE[6];
     
-    console.log("获取到的用户数据:", user);
-    
+    // 当前级别的经验进度
+    const currentExp = user.experience - currentLevelExp;
+    const expNeeded = nextLevelExp - currentLevelExp;
+    const progress = Math.min(Math.floor((currentExp / expNeeded) * 100), 100);
+
+    user.experienceProgress = {
+      currentExp: currentExp,
+      expNeeded: expNeeded,
+      progress: progress,
+      maxLevel: 6
+    };
+
     res.json({
-      ...user,
-      avatar: user.avatar ? `/uploads/avatars/${user.avatar}` : null,
-      coverImage: user.cover_image ? `/uploads/covers/${user.cover_image}` : null,
-      bio: user.bio || ""
+      user: {
+        ...user,
+        avatar: user.avatar ? `${API_BASE_URL}${user.avatar}` : null,
+        cover_image: user.cover_image ? `${API_BASE_URL}${user.cover_image}` : null
+      }
     });
   } catch (error) {
-    console.error("获取用户信息失败:", error);
-    res.status(500).json({ message: error.message });
+    console.error("获取当前用户信息错误:", error);
+    res.status(500).json({ message: "获取用户信息失败" });
   }
 };
 
@@ -679,6 +815,26 @@ const getUserProfile = async (req, res) => {
       isFollowing: user.isFollowing,
     });
 
+    // 添加经验和等级信息
+    if (user.experience !== undefined && user.level !== undefined) {
+      // 计算下一级所需经验
+      const nextLevel = user.level < 6 ? user.level + 1 : 6;
+      const currentLevelExp = LEVEL_EXPERIENCE[user.level] || 0;
+      const nextLevelExp = LEVEL_EXPERIENCE[nextLevel] || LEVEL_EXPERIENCE[6];
+      
+      // 当前级别的经验进度
+      const currentExp = user.experience - currentLevelExp;
+      const expNeeded = nextLevelExp - currentLevelExp;
+      const progress = Math.min(Math.floor((currentExp / expNeeded) * 100), 100);
+
+      user.experienceProgress = {
+        currentExp: currentExp,
+        expNeeded: expNeeded,
+        progress: progress,
+        maxLevel: 6
+      };
+    }
+
     res.json({
       user,
       posts: processedPosts,
@@ -782,4 +938,6 @@ module.exports = {
   getUserProfile,
   followUser,
   unfollowUser,
+  getUserExperience,
+  addUserExperience
 };

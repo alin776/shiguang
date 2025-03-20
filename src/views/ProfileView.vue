@@ -49,6 +49,18 @@
             <span class="label">帖子</span>
           </div>
         </div>
+
+        <!-- 用户经验和等级区域 -->
+        <div class="user-experience">
+          <div class="exp-header">
+            <div class="level-tag">Lv {{ userLevel }}</div>
+            <div class="exp-text">{{ currentExp }}/{{ expNeeded }}</div>
+          </div>
+          <div class="exp-bar-container">
+            <div class="exp-bar" :style="{ width: `${expProgress}%` }"></div>
+          </div>
+        </div>
+
         <div class="user-bio">
           <p>{{ bio || "很好看呢" }}</p>
           <div class="empty-bio" v-if="!bio">
@@ -250,6 +262,10 @@ const {
   userAvatar,
   userInitials,
   userCoverStyle,
+  userLevel,
+  currentExp,
+  expNeeded,
+  expProgress,
   goToSettings,
   handleLogout,
   showAbout,

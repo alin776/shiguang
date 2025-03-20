@@ -16,60 +16,65 @@
 
       <!-- 用户信息卡片 -->
       <div class="user-card">
-        <!-- 封面图片 -->
+        <!-- 用户基本信息区 -->
         <div 
-          class="cover-image"
+          class="user-info-container"
           :style="{
             backgroundImage: `url(${getCoverUrl(userProfile.coverImage)})`,
           }"
-        ></div>
-        
-        <!-- 用户基本信息区 -->
-        <div class="user-info-container">
-          <!-- 头像 -->
-          <div class="avatar-container">
-            <el-avatar
-              :size="80"
-              :src="getAvatarUrl(userProfile.avatar)"
-              @error="() => true"
-              class="profile-avatar"
-            >
-              {{ userProfile.username?.charAt(0).toUpperCase() || "?" }}
-            </el-avatar>
-          </div>
-          
-          <!-- 用户名和简介 -->
-          <div class="user-details">
-            <h1 class="username text-center">{{ userProfile.username }}</h1>
-            <p class="bio text-center">{{ userProfile.bio || "这个人很懒，什么都没写~" }}</p>
+        >
+          <div class="user-info-overlay">
+            <!-- 头像和用户名区域 -->
+            <div class="avatar-row">
+              <div class="avatar-container">
+                <el-avatar
+                  :size="70"
+                  :src="getAvatarUrl(userProfile.avatar)"
+                  @error="() => true"
+                  class="profile-avatar"
+                >
+                  {{ userProfile.username?.charAt(0).toUpperCase() || "?" }}
+                </el-avatar>
+              </div>
+              
+              <div class="username-action-container">
+                <div class="username-container">
+                  <h1 class="username">{{ userProfile.username }}</h1>
+                  <div class="level-tag">Lv.{{ userProfile.level || 1 }}</div>
+                </div>
+                
+                <div class="action-btn-container" v-if="!isOwnProfile">
+                  <el-button
+                    class="follow-btn"
+                    round
+                    type="primary"
+                    @click="toggleFollow"
+                  >
+                    {{ isFollowing ? "已关注" : "关注" }}
+                  </el-button>
+                </div>
+              </div>
+            </div>
             
-            <!-- 关注按钮 (只在查看他人主页时显示) -->
-            <div class="action-btn-container" v-if="!isOwnProfile">
-              <el-button
-                class="follow-btn"
-                round
-                :type="isFollowing ? 'info' : 'primary'"
-                @click="toggleFollow"
-              >
-                <el-icon v-if="isFollowing"><Check /></el-icon>
-                {{ isFollowing ? "已关注" : "关注" }}
-              </el-button>
+            <!-- 用户签名/简介 -->
+            <div class="bio-container">
+              <p class="bio">{{ userProfile.bio || "这个人很懒，什么都没写~" }}</p>
             </div>
-          </div>
-          
-          <!-- 用户统计信息 -->
-          <div class="stats-container">
-            <div class="stat-group hover-effect" @click="showFollowers">
-              <span class="count">{{ userProfile.followersCount || 0 }}</span>
-              <span class="label">粉丝</span>
-            </div>
-            <div class="stat-group hover-effect" @click="showFollowing">
-              <span class="count">{{ userProfile.followingCount || 0 }}</span>
-              <span class="label">关注</span>
-            </div>
-            <div class="stat-group">
-              <span class="count">{{ userProfile.postsCount || 0 }}</span>
-              <span class="label">帖子</span>
+            
+            <!-- 用户统计信息 -->
+            <div class="stats-container">
+              <div class="stat-group">
+                <span class="count">{{ totalLikes || 0 }}</span>
+                <span class="label">获赞</span>
+              </div>
+              <div class="stat-group hover-effect" @click="showFollowing">
+                <span class="count">{{ userProfile.followingCount || 0 }}</span>
+                <span class="label">关注</span>
+              </div>
+              <div class="stat-group hover-effect" @click="showFollowers">
+                <span class="count">{{ userProfile.followersCount || 0 }}</span>
+                <span class="label">粉丝</span>
+              </div>
             </div>
           </div>
         </div>
@@ -137,6 +142,7 @@ import {
   View,
   Star,
   Check,
+  Ticket
 } from "@element-plus/icons-vue";
 import { useAuthStore } from "@/stores/auth";
 import { useCommunityStore } from "@/stores/community";
@@ -158,6 +164,7 @@ const userProfile = ref({});
 const posts = ref([]);
 const isFollowing = ref(false);
 const defaultCover = "/default-cover.jpg";
+const totalLikes = ref(0);
 
 const isOwnProfile = computed(() => {
   return authStore.user?.id === userProfile.value?.id;
@@ -176,24 +183,13 @@ const loadUserProfile = async () => {
       followingCount: Number(response.user.followingCount),
       postsCount: Number(response.user.postsCount),
       coverImage: response.user.coverImage,
+      level: response.user.level || 1
     };
     posts.value = response.posts;
     isFollowing.value = response.user.isFollowing;
-
-    // 添加详细的打印信息
-    console.log("用户头像:", {
-      avatar: userProfile.value.avatar,
-      fullUrl: getAvatarUrl(userProfile.value.avatar),
-    });
-
-    console.log(
-      "帖子图片:",
-      posts.value.map((post) => ({
-        postId: post.id,
-        images: post.images,
-        fullUrls: post.images?.map((img) => getImageUrl(img)),
-      }))
-    );
+    
+    // 计算总获赞数
+    calculateTotalLikes();
 
     console.log("完整的用户数据:", userProfile.value);
     console.log("完整的帖子数据:", posts.value);
@@ -201,6 +197,16 @@ const loadUserProfile = async () => {
     if (!checkMounted()) return;
     ElMessage.error("获取用户资料失败");
   }
+};
+
+// 计算总获赞数
+const calculateTotalLikes = () => {
+  // 计算所有帖子的获赞数总和
+  totalLikes.value = posts.value.reduce((total, post) => {
+    // 使用likes_count或likes
+    const likeCount = post.likes_count || post.likes || 0;
+    return total + Number(likeCount);
+  }, 0);
 };
 
 const toggleFollow = async () => {
@@ -302,13 +308,6 @@ onMounted(() => {
   position: relative;
 }
 
-/* 工具类 */
-.text-center {
-  text-align: center !important;
-  width: 100% !important;
-  display: block !important;
-}
-
 /* 顶部导航 */
 .top-nav {
   position: absolute;
@@ -335,100 +334,144 @@ onMounted(() => {
 
 /* 用户卡片 */
 .user-card {
-  background-color: #fff;
-  border-radius: 0 0 20px 20px;
+  background-color: transparent;
+  border-radius: 12px;
   overflow: hidden;
   margin-bottom: 20px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 }
 
-/* 封面图片 */
-.cover-image {
-  height: 180px;
-  background-size: cover;
-  background-position: center;
-  position: relative;
-  background-color: #eef2f7;
-}
-
 /* 用户信息容器 */
 .user-info-container {
-  padding: 0 16px 24px;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  padding: 0;
   position: relative;
+  border-radius: 12px;
+}
+
+/* 用户信息覆盖层 */
+.user-info-overlay {
+  background: linear-gradient(to bottom, 
+    rgba(255,255,255,0) 0%, 
+    rgba(255,255,255,0) 30%,
+    rgba(255,255,255,0.5) 60%, 
+    rgba(255,255,255,0.95) 90%);
+  padding: 80px 16px 0;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  justify-content: flex-end;
+}
+
+/* 头像行 */
+.avatar-row {
+  display: flex;
+  margin-bottom: 16px;
+  margin-top: auto;
 }
 
 /* 头像容器 */
 .avatar-container {
-  margin-top: -40px;
-  margin-bottom: 20px;
-  display: flex;
-  justify-content: center;
-  position: relative;
-  z-index: 2;
-  width: 100%;
+  margin-right: 15px;
+  flex-shrink: 0;
 }
 
 .profile-avatar {
-  border: 4px solid #fff;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  width: 80px;
-  height: 80px;
+  border: 3px solid #fff;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  width: 70px;
+  height: 70px;
 }
 
-/* 用户详情 */
-.user-details {
-  text-align: center;
-  margin-bottom: 15px;
-  width: 100%;
+/* 用户名和操作按钮容器 */
+.username-action-container {
   display: flex;
   flex-direction: column;
+  flex: 1;
+  min-width: 0; /* 确保flex子元素可以正确收缩 */
+}
+
+/* 用户名和等级 */
+.username-container {
+  display: flex;
+  flex-direction: row;
   align-items: center;
+  flex-wrap: wrap;
+  width: 100%;
+  min-width: 0;
+  margin-bottom: 8px;
 }
 
 .username {
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 600;
-  margin: 0 0 12px;
-  color: #333;
-  width: 100%;
-  text-align: center;
-  line-height: 1.2;
+  margin: 0 12px 0 0;
+  color: #000;
+  text-shadow: 0px 1px 2px rgba(255, 255, 255, 0.8);
+  max-width: 100%;
+  word-break: break-word;
+  line-height: 1.3;
 }
 
-.bio {
+.level-tag {
+  background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+  padding: 2px 10px;
+  border-radius: 15px;
   font-size: 14px;
-  color: #666;
-  margin: 0 0 16px;
-  line-height: 1.5;
-  word-break: break-word;
-  width: 100%;
-  text-align: center;
+  font-weight: 700;
+  font-style: italic;
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+  white-space: nowrap;
+  margin-top: 6px;
 }
 
 /* 操作按钮 */
 .action-btn-container {
-  margin-top: 16px;
   display: flex;
-  justify-content: center;
-  width: 100%;
+  justify-content: flex-start;
+  margin-top: 6px;
 }
 
 .follow-btn {
-  min-width: 100px;
+  min-width: 80px;
   font-weight: 500;
+  border-radius: 30px;
+  font-size: 14px;
+  padding: 6px 12px;
+  background-color: #10b981;
+  border-color: #10b981;
+}
+
+.follow-btn:hover {
+  background-color: #059669;
+  border-color: #059669;
+}
+
+/* 简介容器 */
+.bio-container {
+  margin-bottom: 20px;
+  background-color: rgba(247, 247, 247, 0.8);
+  padding: 12px;
+  border-radius: 10px;
+  backdrop-filter: blur(5px);
+}
+
+.bio {
+  font-size: 14px;
+  color: #303133;
+  margin: 0;
+  line-height: 1.5;
+  word-break: break-word;
 }
 
 /* 统计信息 */
 .stats-container {
   display: flex;
   justify-content: space-around;
-  padding: 16px 10px;
-  border-top: 1px solid #f0f0f0;
-  width: 100%;
-  margin-top: 10px;
+  padding: 16px 0;
+  border-top: none;
 }
 
 .stat-group {
@@ -440,35 +483,25 @@ onMounted(() => {
   position: relative;
 }
 
-.stat-group:not(:last-child):after {
-  content: '';
-  position: absolute;
-  right: 0;
-  top: 20%;
-  height: 60%;
-  width: 1px;
-  background-color: #f0f0f0;
-}
-
 .hover-effect {
   cursor: pointer;
 }
 
 .hover-effect:hover .count {
-  color: #409eff;
+  color: #10b981;
 }
 
 .count {
-  font-size: 20px;
-  font-weight: 600;
-  color: #333;
+  font-size: 22px;
+  font-weight: 700;
+  color: #000;
   line-height: 1.2;
 }
 
 .label {
-  font-size: 13px;
-  color: #909399;
-  margin-top: 5px;
+  font-size: 14px;
+  color: #606266;
+  margin-top: 6px;
 }
 
 /* 帖子部分 */
@@ -590,10 +623,6 @@ onMounted(() => {
 @media screen and (min-width: 768px) {
   .profile-container {
     max-width: 700px;
-  }
-  
-  .cover-image {
-    height: 220px;
   }
   
   .post-card {

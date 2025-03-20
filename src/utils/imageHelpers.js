@@ -9,6 +9,8 @@ import { API_BASE_URL, UPLOAD_PATHS } from "@/config";
 export const getAvatarUrl = (avatar) => {
   if (!avatar) return "";
 
+  console.log("原始头像URL:", avatar);
+
   // 修复重复域名问题 - 检测多个http://或https://
   if (avatar.includes("http://") || avatar.includes("https://")) {
     // 清理URL - 提取最后一个完整URL或路径部分
@@ -20,7 +22,9 @@ export const getAvatarUrl = (avatar) => {
       const path = matches[2];
       // 确保路径以/开头
       const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-      return `${API_BASE_URL}${normalizedPath}`;
+      const resultUrl = `${API_BASE_URL}${normalizedPath}`;
+      console.log("处理后的头像URL:", resultUrl);
+      return resultUrl;
     }
     
     // 如果无法提取，但确实是HTTP URL，返回原始URL
@@ -29,11 +33,20 @@ export const getAvatarUrl = (avatar) => {
 
   // 处理相对路径
   if (avatar.startsWith("/")) {
-    return `${API_BASE_URL}${avatar}`;
+    const resultUrl = `${API_BASE_URL}${avatar}`;
+    console.log("处理后的头像URL:", resultUrl);
+    return resultUrl;
   }
 
-  // 否则，添加 API_BASE_URL 前缀
-  return `${API_BASE_URL}${UPLOAD_PATHS.AVATARS}${avatar}`;
+  // 确保API_BASE_URL末尾有斜杠
+  const baseUrl = API_BASE_URL.endsWith('/') ? API_BASE_URL : `${API_BASE_URL}/`;
+  const avatarPath = UPLOAD_PATHS.AVATARS.startsWith('/') ? 
+    UPLOAD_PATHS.AVATARS.substring(1) : UPLOAD_PATHS.AVATARS;
+
+  // 组合URL
+  const resultUrl = `${baseUrl}${avatarPath}${avatar}`;
+  console.log("处理后的头像URL:", resultUrl);
+  return resultUrl;
 };
 
 /**
@@ -44,7 +57,7 @@ export const getAvatarUrl = (avatar) => {
 export const getImageUrl = (image) => {
   if (!image) return "";
   
-  console.log("处理图片URL:", image);
+  console.log("原始图片URL:", image);
 
   // 修复重复域名问题 - 检测多个http://或https://
   if (image.includes("http://") || image.includes("https://")) {
@@ -59,7 +72,9 @@ export const getImageUrl = (image) => {
       // 确保路径以/开头
       const normalizedPath = path.startsWith('/') ? path : `/${path}`;
       console.log("通过URL正则提取路径:", normalizedPath);
-      return `${API_BASE_URL}${normalizedPath}`;
+      const resultUrl = `${API_BASE_URL}${normalizedPath}`;
+      console.log("处理后的图片URL:", resultUrl);
+      return resultUrl;
     }
     
     // 如果无法提取，但确实是HTTP URL，返回原始URL
@@ -68,23 +83,40 @@ export const getImageUrl = (image) => {
 
   // 处理相对路径
   if (image.startsWith("/")) {
-    console.log("处理绝对路径:", `${API_BASE_URL}${image}`);
-    return `${API_BASE_URL}${image}`;
+    const resultUrl = `${API_BASE_URL}${image}`;
+    console.log("处理绝对路径:", resultUrl);
+    return resultUrl;
   }
+
+  // 确保API_BASE_URL末尾有斜杠
+  const baseUrl = API_BASE_URL.endsWith('/') ? API_BASE_URL : `${API_BASE_URL}/`;
 
   // 尝试确定图片类型
   if (image.match(/cover-[\w-]+\.\w+$/)) {
-    console.log("匹配到封面图格式:", `${API_BASE_URL}${UPLOAD_PATHS.COVERS}${image}`);
-    return `${API_BASE_URL}${UPLOAD_PATHS.COVERS}${image}`;
+    // 确保路径正确
+    const coverPath = UPLOAD_PATHS.COVERS.startsWith('/') ? 
+      UPLOAD_PATHS.COVERS.substring(1) : UPLOAD_PATHS.COVERS;
+    const resultUrl = `${baseUrl}${coverPath}${image}`;
+    console.log("匹配到封面图格式:", resultUrl);
+    return resultUrl;
   } else if (image.match(/post-[\w-]+\.\w+$/)) {
-    return `${API_BASE_URL}${UPLOAD_PATHS.POSTS}${image}`;
+    const postPath = UPLOAD_PATHS.POSTS.startsWith('/') ? 
+      UPLOAD_PATHS.POSTS.substring(1) : UPLOAD_PATHS.POSTS;
+    const resultUrl = `${baseUrl}${postPath}${image}`;
+    console.log("匹配到帖子图格式:", resultUrl);
+    return resultUrl;
   } else if (image.match(/avatar-[\w-]+\.\w+$/)) {
-    return `${API_BASE_URL}${UPLOAD_PATHS.AVATARS}${image}`;
+    const avatarPath = UPLOAD_PATHS.AVATARS.startsWith('/') ? 
+      UPLOAD_PATHS.AVATARS.substring(1) : UPLOAD_PATHS.AVATARS;
+    const resultUrl = `${baseUrl}${avatarPath}${image}`;
+    console.log("匹配到头像格式:", resultUrl);
+    return resultUrl;
   }
 
   // 否则，添加 API_BASE_URL 前缀（假设是通用上传路径）
-  console.log("使用默认路径:", `${API_BASE_URL}/uploads/${image}`);
-  return `${API_BASE_URL}/uploads/${image}`;
+  const resultUrl = `${baseUrl}uploads/${image}`;
+  console.log("使用默认路径:", resultUrl);
+  return resultUrl;
 };
 
 /**

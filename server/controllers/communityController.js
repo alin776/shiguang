@@ -359,6 +359,24 @@ exports.createPost = async (req, res) => {
       params
     );
 
+    // 增加用户经验值 - 发布帖子奖励10点经验
+    try {
+      // 使用用户ID和token调用增加经验API
+      const token = req.headers.authorization;
+      
+      if (token) {
+        // 调用内部API增加经验值
+        await db.execute(
+          "UPDATE users SET experience = experience + ?, level = CASE WHEN experience + ? >= 1500 THEN 6 WHEN experience + ? >= 1000 THEN 5 WHEN experience + ? >= 600 THEN 4 WHEN experience + ? >= 300 THEN 3 WHEN experience + ? >= 100 THEN 2 ELSE 1 END WHERE id = ?",
+          [10, 10, 10, 10, 10, 10, req.user.id]
+        );
+        console.log(`用户 ${req.user.id} 发帖获得10点经验`);
+      }
+    } catch (expError) {
+      // 经验值增加失败不影响发帖结果
+      console.error("增加经验值失败:", expError);
+    }
+
     res.status(201).json({
       id: result.insertId,
       message: "发布成功",
@@ -409,21 +427,66 @@ exports.createComment = async (req, res) => {
       await createNotification({
         userId: postResult[0].user_id,
         type: "comment",
-        content: `评论了你的帖子"${postResult[0].title}"`,
+        content: `评论了你的帖子: ${postResult[0].title}`,
         sourceId: postId,
         sourceType: "post",
         actorId: userId,
         relatedId: commentId
       });
     }
+    
+    // 增加用户经验值 - 评论奖励5点经验
+    try {
+      // 使用用户ID和token调用增加经验API
+      const token = req.headers.authorization;
+      
+      if (token) {
+        // 调用内部API增加经验值
+        await db.execute(
+          "UPDATE users SET experience = experience + ?, level = CASE WHEN experience + ? >= 1500 THEN 6 WHEN experience + ? >= 1000 THEN 5 WHEN experience + ? >= 600 THEN 4 WHEN experience + ? >= 300 THEN 3 WHEN experience + ? >= 100 THEN 2 ELSE 1 END WHERE id = ?",
+          [5, 5, 5, 5, 5, 5, userId]
+        );
+        console.log(`用户 ${userId} 评论获得5点经验`);
+      }
+    } catch (expError) {
+      // 经验值增加失败不影响评论结果
+      console.error("增加经验值失败:", expError);
+    }
+
+    // 获取评论详情
+    const [comments] = await db.execute(
+      `SELECT 
+        c.id, c.post_id, c.user_id, c.content, c.created_at, c.audio,
+        u.username, u.avatar
+      FROM comments c
+      JOIN users u ON c.user_id = u.id
+      WHERE c.id = ?`,
+      [commentId]
+    );
+
+    if (!comments.length) {
+      return res.status(201).json({ message: "评论成功，但获取评论详情失败" });
+    }
+
+    const comment = comments[0];
 
     res.status(201).json({
-      message: "评论创建成功",
-      commentId: commentId,
+      message: "评论成功",
+      comment: {
+        id: comment.id,
+        content: comment.content,
+        created_at: comment.created_at,
+        audio: comment.audio,
+        user: {
+          id: comment.user_id,
+          username: comment.username,
+          avatar: comment.avatar
+        }
+      }
     });
   } catch (error) {
-    console.error("创建评论错误:", error);
-    res.status(500).json({ message: "创建评论失败" });
+    console.error("发表评论失败:", error);
+    res.status(500).json({ message: "发表评论失败" });
   }
 };
 
@@ -573,16 +636,31 @@ exports.likePost = async (req, res) => {
       postId,
     ]);
 
-    // 如果不是给自己的帖子点赞，才发送通知
-    if (posts[0].user_id !== userId) {
+    const authorId = posts[0].user_id;
+    
+    // 如果不是给自己的帖子点赞，增加被点赞者经验并发送通知
+    if (authorId !== userId) {
+      // 创建通知
       await createNotification({
-        userId: posts[0].user_id,
+        userId: authorId,
         type: "like",
         content: `赞了你的帖子"${posts[0].title}"`,
         sourceId: postId,
         sourceType: "post",
         actorId: userId,
       });
+      
+      // 为被点赞的帖子作者增加2点经验值
+      try {
+        await db.execute(
+          "UPDATE users SET experience = experience + ?, level = CASE WHEN experience + ? >= 1500 THEN 6 WHEN experience + ? >= 1000 THEN 5 WHEN experience + ? >= 600 THEN 4 WHEN experience + ? >= 300 THEN 3 WHEN experience + ? >= 100 THEN 2 ELSE 1 END WHERE id = ?",
+          [2, 2, 2, 2, 2, 2, authorId]
+        );
+        console.log(`用户 ${authorId} 收到点赞获得2点经验`);
+      } catch (expError) {
+        // 经验值增加失败不影响点赞结果
+        console.error("增加经验值失败:", expError);
+      }
     }
 
     res.json({ message: "点赞成功", action: "like" });

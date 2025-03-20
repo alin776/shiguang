@@ -1242,7 +1242,7 @@ const handleImageError = (event) => {
   font-size: 16px;
   font-weight: 500;
   color: #2c3e50;
-  font-family: 'Helvetica Neue', Arial, sans-serif;
+  font-family: 'STSong', 'SimSun', serif;
 }
 
 .share-location {
@@ -1250,7 +1250,7 @@ const handleImageError = (event) => {
   font-weight: 400;
   color: #2c3e50;
   text-align: right;
-  font-family: 'Helvetica Neue', Arial, sans-serif;
+  font-family: 'STSong', 'SimSun', serif;
 }
 
 .share-note-content {
@@ -1274,23 +1274,32 @@ const handleImageError = (event) => {
 }
 
 .share-photo-info {
-  font-size: 14px;
-  color: #555;
-  padding: 8px 20px;
+  font-size: 12px;
+  color: #999;
+  padding: 6px 20px;
   text-align: left;
-  font-family: 'Helvetica Neue', Arial, sans-serif;
-  font-weight: 400;
+  font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  font-weight: 300;
+  letter-spacing: 0.5px;
 }
 
 .share-text {
-  font-size: 16px;
-  line-height: 1.6;
-  color: #2c3e50;
+  font-size: 17px;
+  line-height: 1.8;
+  color: #333333;
   padding: 20px;
   white-space: pre-line;
   text-align: left;
-  font-family: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  font-family: 'STSong', 'SimSun', 'FangSong', serif;
   font-weight: 400;
+  letter-spacing: 0.5px;
+  /* 提高字体清晰度 */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* 防止文本模糊 */
+  transform: translateZ(0);
+  /* 防止字体缩放导致的模糊 */
+  text-rendering: optimizeLegibility;
 }
 
 .share-footer {
@@ -1303,7 +1312,7 @@ const handleImageError = (event) => {
   font-size: 16px;
   font-weight: 500;
   color: #2c3e50;
-  font-family: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  font-family: 'STSong', 'SimSun', serif;
 }
 
 .share-app-brand {
@@ -1320,7 +1329,7 @@ const handleImageError = (event) => {
   font-weight: 600;
   color: #2c3e50;
   text-align: center;
-  font-family: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  font-family: 'STSong', 'SimSun', serif;
   letter-spacing: 1px;
 }
 
@@ -1352,7 +1361,7 @@ const handleImageError = (event) => {
   color: #7f8c8d;
   margin-top: 4px;
   text-align: center;
-  font-family: 'Helvetica Neue', Arial, sans-serif;
+  font-family: 'STSong', 'SimSun', serif;
 }
 
 .share-actions {
@@ -1368,7 +1377,7 @@ const handleImageError = (event) => {
   font-size: 14px;
   color: #7f8c8d;
   text-align: center;
-  font-family: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  font-family: 'STSong', 'SimSun', serif;
 }
 
 .share-buttons {

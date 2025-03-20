@@ -33,14 +33,31 @@ export const useAuthStore = defineStore("auth", {
     isAuthenticated: (state) => !!state.token,
     userAvatar: (state) => getAvatarUrl(state.user?.avatar),
     userCover: (state) => {
-      if (!state.user?.coverImage) return '';
-      // 处理封面图URL
-      const coverUrl = state.user.coverImage;
-      if (coverUrl && coverUrl.startsWith('http')) {
+      if (!state.user?.coverImage && !state.user?.cover_image) return '';
+      
+      // 使用cover_image或coverImage
+      const coverUrl = state.user.cover_image || state.user.coverImage;
+      if (!coverUrl) return '';
+      
+      console.log("处理封面图URL (getter):", coverUrl);
+      
+      // 处理缺少路径分隔符的情况
+      if (coverUrl.includes("localhost:3000cover-")) {
+        const fileName = coverUrl.split("localhost:3000")[1];
+        const fixedUrl = `${API_BASE_URL}/uploads/covers/${fileName}`;
+        console.log("修复后的封面图URL:", fixedUrl);
+        return fixedUrl;
+      }
+      
+      // 处理正常的URL
+      if (coverUrl.startsWith('http')) {
         return coverUrl;
       } else if (coverUrl) {
-        return `${API_BASE_URL}${coverUrl}`;
+        const url = `${API_BASE_URL}${coverUrl.startsWith('/') ? coverUrl : '/uploads/covers/' + coverUrl}`;
+        console.log("处理后的封面图URL:", url);
+        return url;
       }
+      
       return '';
     },
   },
@@ -291,6 +308,71 @@ export const useAuthStore = defineStore("auth", {
       }
     },
 
+    async fetchUserExperience() {
+      try {
+        const response = await axios.get(
+          `${API_BASE_URL}/api/users/experience`,
+          {
+            headers: { Authorization: `Bearer ${this.token}` },
+          }
+        );
+        
+        // 更新用户经验信息
+        if (this.user) {
+          this.user = {
+            ...this.user,
+            experience: response.data.experience,
+            level: response.data.level,
+            experienceProgress: {
+              progress: response.data.progress,
+              currentExp: response.data.experience - response.data.currentLevelExp,
+              expNeeded: response.data.nextLevelExp - response.data.currentLevelExp,
+              maxLevel: response.data.maxLevel
+            }
+          };
+          localStorage.setItem("user", JSON.stringify(this.user));
+        }
+        
+        return response.data;
+      } catch (error) {
+        console.error("获取用户经验数据失败:", error);
+        throw error.response?.data || error;
+      }
+    },
+    
+    async addExperience(amount) {
+      try {
+        const response = await axios.post(
+          `${API_BASE_URL}/api/users/experience`,
+          { amount },
+          {
+            headers: { Authorization: `Bearer ${this.token}` },
+          }
+        );
+        
+        // 更新用户经验信息
+        if (this.user) {
+          this.user = {
+            ...this.user,
+            experience: response.data.experience,
+            level: response.data.level,
+            experienceProgress: {
+              progress: response.data.progress,
+              currentExp: response.data.experience - response.data.currentLevelExp,
+              expNeeded: response.data.nextLevelExp - response.data.currentLevelExp,
+              maxLevel: response.data.maxLevel
+            }
+          };
+          localStorage.setItem("user", JSON.stringify(this.user));
+        }
+        
+        return response.data;
+      } catch (error) {
+        console.error("增加用户经验失败:", error);
+        throw error.response?.data || error;
+      }
+    },
+
     async fetchUserInfo() {
       try {
         console.log("开始获取用户信息...");
@@ -301,25 +383,69 @@ export const useAuthStore = defineStore("auth", {
         console.log("服务器返回的原始用户数据:", response.data);
         
         // 处理头像和封面图路径
-        let userData = { ...response.data };
+        let userData = { ...response.data.user };
         
         // 处理头像路径
         if (userData.avatar) {
-          // 如果已经是完整的URL，保留原样
-          if (!userData.avatar.includes("http")) {
+          console.log("处理头像URL:", userData.avatar);
+          
+          // 直接检测localhost域名下缺少路径分隔符的情况
+          if (userData.avatar.includes("localhost:3000avatar-")) {
+            // 提取文件名
+            const fileName = userData.avatar.split("localhost:3000")[1];
+            // 直接构建正确的URL
+            userData.avatar = `${API_BASE_URL}/uploads/avatars/${fileName}`;
+            console.log("修复后的头像URL:", userData.avatar);
+          }
+          // 其他处理保持不变
+          else if (userData.avatar.includes("http://") || userData.avatar.includes("https://")) {
+            const urlParts = userData.avatar.match(/(https?:\/\/[^\/]+)(.*)/);
+            if (urlParts && urlParts.length >= 3) {
+              const domain = urlParts[1]; 
+              const path = urlParts[2];   
+              
+              if (path && !path.startsWith('/')) {
+                userData.avatar = `${API_BASE_URL}/uploads/avatars/${path}`;
+                console.log("修复后的头像URL:", userData.avatar);
+              }
+            }
+          } else if (!userData.avatar.includes("http")) {
             userData.avatar = userData.avatar.startsWith("/")
               ? `${API_BASE_URL}${userData.avatar}`
               : `${API_BASE_URL}/uploads/avatars/${userData.avatar}`;
+            console.log("相对路径头像URL:", userData.avatar);
           }
         }
         
         // 处理封面图路径
-        if (userData.coverImage) {
-          // 如果已经是完整的URL，保留原样
-          if (!userData.coverImage.includes("http")) {
-            userData.coverImage = userData.coverImage.startsWith("/")
-              ? `${API_BASE_URL}${userData.coverImage}`
-              : `${API_BASE_URL}/uploads/covers/${userData.coverImage}`;
+        if (userData.cover_image) {
+          console.log("处理封面图URL:", userData.cover_image);
+          
+          // 直接检测localhost域名下缺少路径分隔符的情况
+          if (userData.cover_image.includes("localhost:3000cover-")) {
+            // 提取文件名
+            const fileName = userData.cover_image.split("localhost:3000")[1];
+            // 直接构建正确的URL
+            userData.cover_image = `${API_BASE_URL}/uploads/covers/${fileName}`;
+            console.log("修复后的封面URL:", userData.cover_image);
+          }
+          // 其他处理保持不变
+          else if (userData.cover_image.includes("http://") || userData.cover_image.includes("https://")) {
+            const urlParts = userData.cover_image.match(/(https?:\/\/[^\/]+)(.*)/);
+            if (urlParts && urlParts.length >= 3) {
+              const domain = urlParts[1];
+              const path = urlParts[2];
+              
+              if (path && !path.startsWith('/')) {
+                userData.cover_image = `${API_BASE_URL}/uploads/covers/${path}`;
+                console.log("修复后的封面URL:", userData.cover_image);
+              }
+            }
+          } else if (!userData.cover_image.includes("http")) {
+            userData.cover_image = userData.cover_image.startsWith("/")
+              ? `${API_BASE_URL}${userData.cover_image}`
+              : `${API_BASE_URL}/uploads/covers/${userData.cover_image}`;
+            console.log("相对路径封面URL:", userData.cover_image);
           }
         }
         
@@ -327,7 +453,7 @@ export const useAuthStore = defineStore("auth", {
         console.log("处理后的用户数据:", this.user);
         
         localStorage.setItem("user", JSON.stringify(this.user));
-        return this.user;
+        return response.data;
       } catch (error) {
         console.error("获取用户信息失败:", error);
         if (error.response?.status === 401 || error.response?.status === 404) {

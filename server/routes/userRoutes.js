@@ -195,4 +195,12 @@ router.post("/upload/cover", auth, coverUpload.single("file"), (req, res) => {
   }
 });
 
+// 获取用户经验和等级信息
+router.get("/experience", auth, userController.getUserExperience);
+
+// 增加用户经验
+router.post("/experience", auth, [
+  check("amount").isInt({ min: 1 }).withMessage("经验值必须是正数")
+], userController.addUserExperience);
+
 module.exports = router;

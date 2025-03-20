@@ -24,6 +24,10 @@ export default function useProfileLogic() {
   const userId = ref("");
   const loading = ref(false);
   const totalLikesCount = ref(0); // 总获赞数
+  const userLevel = ref(1); // 用户等级
+  const currentExp = ref(0); // 当前级别已获得经验
+  const expNeeded = ref(100); // 当前级别所需总经验
+  const expProgress = ref(0); // 经验进度百分比
 
   // 计算属性
   const username = computed(() => authStore.user?.username || "");
@@ -52,6 +56,17 @@ export default function useProfileLogic() {
       followingCount.value = response.user.followingCount || 0;
       followersCount.value = response.user.followersCount || 0;
       bio.value = response.user.bio || "";
+      
+      // 设置用户等级和经验信息
+      if (response.user.level !== undefined && response.user.experienceProgress) {
+        userLevel.value = response.user.level;
+        currentExp.value = response.user.experienceProgress.currentExp;
+        expNeeded.value = response.user.experienceProgress.expNeeded;
+        expProgress.value = response.user.experienceProgress.progress;
+      } else {
+        // 如果后端还未返回经验信息，尝试单独获取
+        await loadUserExperience();
+      }
 
       // 加载帖子和获赞数据
       await loadUserPosts();
@@ -61,6 +76,23 @@ export default function useProfileLogic() {
       calculateTotalLikes();
     } catch (error) {
       console.error("加载用户数据失败:", error);
+    }
+  };
+  
+  // 加载用户经验等级信息
+  const loadUserExperience = async () => {
+    try {
+      // 从经验接口获取数据
+      const response = await authStore.fetchUserExperience();
+      
+      userLevel.value = response.level;
+      currentExp.value = response.experience - response.currentLevelExp;
+      expNeeded.value = response.nextLevelExp - response.currentLevelExp;
+      expProgress.value = response.progress;
+      
+      console.log("加载经验等级信息成功:", response);
+    } catch (error) {
+      console.error("加载经验等级信息失败:", error);
     }
   };
 
@@ -79,10 +111,29 @@ export default function useProfileLogic() {
           // 确保图片路径是完整的URL
           if (post.images && post.images.length > 0) {
             post.images = post.images.map((img) => {
-              if (img && !img.startsWith("http")) {
-                return `${API_BASE_URL}${img}`;
+              if (!img) return null;
+              
+              console.log("处理帖子图片URL:", img);
+              
+              // 处理缺少路径分隔符的URL (http://localhost:3000post-xxx)
+              if (img.includes("localhost:3000post-")) {
+                const fileName = img.split("localhost:3000")[1];
+                const fixedUrl = `${API_BASE_URL}/uploads/posts/${fileName}`;
+                console.log("修复后的帖子图片URL:", fixedUrl);
+                return fixedUrl;
               }
-              return img;
+              
+              // 处理正常URLs
+              if (img.startsWith("http")) {
+                return img;
+              } 
+              
+              // 处理相对路径
+              const url = img.startsWith("/") ? 
+                `${API_BASE_URL}${img}` : 
+                `${API_BASE_URL}/uploads/posts/${img}`;
+              console.log("处理后的帖子图片URL:", url);
+              return url;
             });
           }
           // 确保同时有likes_count和likesCount属性
@@ -125,10 +176,29 @@ export default function useProfileLogic() {
           // 确保图片路径是完整的URL
           if (post.images && post.images.length > 0) {
             post.images = post.images.map((img) => {
-              if (img && !img.startsWith("http")) {
-                return `${API_BASE_URL}${img}`;
+              if (!img) return null;
+              
+              console.log("处理喜欢帖子图片URL:", img);
+              
+              // 处理缺少路径分隔符的URL (http://localhost:3000post-xxx)
+              if (img.includes("localhost:3000post-")) {
+                const fileName = img.split("localhost:3000")[1];
+                const fixedUrl = `${API_BASE_URL}/uploads/posts/${fileName}`;
+                console.log("修复后的喜欢帖子图片URL:", fixedUrl);
+                return fixedUrl;
               }
-              return img;
+              
+              // 处理正常URLs
+              if (img.startsWith("http")) {
+                return img;
+              } 
+              
+              // 处理相对路径
+              const url = img.startsWith("/") ? 
+                `${API_BASE_URL}${img}` : 
+                `${API_BASE_URL}/uploads/posts/${img}`;
+              console.log("处理后的喜欢帖子图片URL:", url);
+              return url;
             });
           }
           // 确保同时有likes_count和likesCount属性
@@ -225,6 +295,10 @@ export default function useProfileLogic() {
     userId,
     loading,
     totalLikesCount,
+    userLevel,
+    currentExp,
+    expNeeded,
+    expProgress,
 
     // 计算属性
     username,

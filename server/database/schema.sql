@@ -8,6 +8,8 @@ CREATE TABLE IF NOT EXISTS users (
   avatar VARCHAR(255) DEFAULT NULL,
   cover_image VARCHAR(255),
   bio TEXT,
+  experience INT DEFAULT 0,
+  level INT DEFAULT 1,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   status ENUM('online', 'offline') DEFAULT 'offline',
