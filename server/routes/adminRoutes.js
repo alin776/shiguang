@@ -4,6 +4,9 @@ const adminController = require('../controllers/adminController');
 const feedbackController = require('../controllers/feedbackController');
 const { adminAuth, requireSuperAdmin } = require('../middleware/adminAuth');
 const { body } = require("express-validator");
+const upload = require('../middleware/upload');
+const { verifyAdminToken } = require('../middleware/adminAuth');
+const { check } = require('express-validator');
 
 // 管理员登录（公开接口）
 router.post('/login', adminController.login);
@@ -28,6 +31,21 @@ router.get('/feedbacks/:id', feedbackController.getFeedbackById);
 router.post('/feedbacks/:id/reply', feedbackController.replyFeedback);
 router.put('/feedbacks/:id/status', feedbackController.updateFeedbackStatus);
 router.delete('/feedbacks/:id', feedbackController.deleteFeedback);
+
+// 公告管理路由
+router.get('/announcements', adminController.getAnnouncements);
+router.get('/announcements/:id', adminController.getAnnouncementById);
+router.post('/announcements', upload.array('images', 5), adminController.createAnnouncement);
+router.put('/announcements/:id', upload.array('images', 5), adminController.updateAnnouncement);
+router.delete('/announcements/:id', adminController.deleteAnnouncement);
+
+// 帖子管理路由
+router.post('/posts/:postId/toggle-pin', verifyAdminToken, adminController.togglePinPost);
+
+// 用户称号管理路由
+router.get('/users/:userId/title', adminController.getUserTitle);
+router.put('/users/:userId/title', adminController.updateUserTitle);
+router.post('/titles/recalculate', adminController.recalculateAllTitles);
 
 // 以下路由需要超级管理员权限
 router.use(requireSuperAdmin);
@@ -77,6 +95,31 @@ router.put("/pending/notes/:id/status", adminController.updateNoteStatus);
 router.get("/reports", adminController.getReports);
 router.put("/reports/:id/status", adminController.updateReportStatus);
 router.get("/reports/:id", adminController.getReportDetails);
+
+// 积分商品管理路由
+// 获取所有积分商品
+router.get('/points/products', adminController.getAllPointsProducts);
+
+// 添加积分商品
+router.post('/points/products', [
+  check('name').notEmpty().withMessage('商品名称不能为空'),
+  check('points_cost').isInt({ min: 1 }).withMessage('积分值必须是正整数'),
+  check('quantity').isInt({ min: 0 }).withMessage('库存数量必须是非负整数')
+], adminController.addPointsProduct);
+
+// 更新积分商品
+router.put('/points/products/:id', adminController.updatePointsProduct);
+
+// 删除积分商品
+router.delete('/points/products/:id', adminController.deletePointsProduct);
+
+// 获取所有积分兑换记录
+router.get('/points/exchanges', adminController.getAllPointsExchanges);
+
+// 更新兑换记录状态
+router.put('/points/exchanges/:id', [
+  check('status').isIn(['pending', 'completed', 'failed']).withMessage('状态值无效')
+], adminController.updatePointsExchangeStatus);
 
 // 管理员设置
 // router.put("/settings", adminController.updateAdminSettings);

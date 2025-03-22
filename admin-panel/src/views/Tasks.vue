@@ -19,6 +19,7 @@
           <el-option label="创建时间" value="created_at" />
           <el-option label="更新时间" value="updated_at" />
           <el-option label="经验值" value="exp_reward" />
+          <el-option label="积分" value="points_reward" />
         </el-select>
         <el-select v-model="orderDirection" placeholder="排序方向" @change="handleSearch">
           <el-option label="降序" value="DESC" />
@@ -49,6 +50,7 @@
           </template>
         </el-table-column>
         <el-table-column prop="exp_reward" label="经验奖励" width="100" />
+        <el-table-column prop="points_reward" label="积分奖励" width="100" />
         <el-table-column prop="daily_limit" label="每日上限" width="100" />
         <el-table-column prop="status" label="状态" width="100">
           <template #default="scope">
@@ -116,25 +118,35 @@
         <el-divider />
 
         <div class="task-info">
-          <div class="detail-item">
-            <span class="detail-label">任务描述:</span>
-            <span class="detail-value">{{ currentTask.description }}</span>
+          <div class="task-description">
+            {{ currentTask.description }}
           </div>
-          <div class="detail-item">
-            <span class="detail-label">经验奖励:</span>
-            <span class="detail-value">{{ currentTask.exp_reward }} 点</span>
-          </div>
-          <div class="detail-item">
-            <span class="detail-label">每日上限:</span>
-            <span class="detail-value">{{ currentTask.daily_limit }} 次</span>
-          </div>
-          <div class="detail-item">
-            <span class="detail-label">创建时间:</span>
-            <span class="detail-value">{{ formatDate(currentTask.created_at) }}</span>
-          </div>
-          <div class="detail-item">
-            <span class="detail-label">更新时间:</span>
-            <span class="detail-value">{{ formatDate(currentTask.updated_at) }}</span>
+
+          <div class="task-stats">
+            <div class="detail-item">
+              <span class="detail-label">任务ID:</span>
+              <span class="detail-value">{{ currentTask.id }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">经验奖励:</span>
+              <span class="detail-value">{{ currentTask.exp_reward }} 点</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">积分奖励:</span>
+              <span class="detail-value">{{ currentTask.points_reward || 0 }} 点</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">每日上限:</span>
+              <span class="detail-value">{{ currentTask.daily_limit }} 次</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">创建时间:</span>
+              <span class="detail-value">{{ formatDate(currentTask.created_at) }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">更新时间:</span>
+              <span class="detail-value">{{ formatDate(currentTask.updated_at) }}</span>
+            </div>
           </div>
         </div>
 
@@ -183,6 +195,9 @@
         </el-form-item>
         <el-form-item label="经验奖励" prop="expReward">
           <el-input-number v-model="taskForm.expReward" :min="0" :max="1000" />
+        </el-form-item>
+        <el-form-item label="积分奖励" prop="pointsReward">
+          <el-input-number v-model="taskForm.pointsReward" :min="0" :max="1000" />
         </el-form-item>
         <el-form-item label="每日上限" prop="dailyLimit">
           <el-input-number v-model="taskForm.dailyLimit" :min="1" :max="100" />
@@ -237,6 +252,7 @@ const taskForm = ref({
   description: '',
   type: 'post',
   expReward: 10,
+  pointsReward: 0,
   dailyLimit: 1,
   status: 'active'
 })
@@ -256,6 +272,9 @@ const taskRules = {
   ],
   expReward: [
     { required: true, message: '请设置经验奖励', trigger: 'blur' }
+  ],
+  pointsReward: [
+    { required: true, message: '请设置积分奖励', trigger: 'blur' }
   ],
   dailyLimit: [
     { required: true, message: '请设置每日上限', trigger: 'blur' }
@@ -278,7 +297,13 @@ const loadTasks = async () => {
     }
     
     const response = await getTaskList(params)
-    tasks.value = response.data.tasks
+    console.log('返回的任务数据:', response.data.tasks)
+    
+    // 确保积分奖励字段有默认值
+    tasks.value = response.data.tasks.map(task => ({
+      ...task,
+      points_reward: task.points_reward !== undefined ? task.points_reward : 0
+    }))
     total.value = response.data.total
   } catch (error) {
     console.error('获取任务列表失败:', error)
@@ -293,7 +318,13 @@ const viewTask = async (task) => {
   try {
     loading.value = true
     const response = await getTaskById(task.id)
-    currentTask.value = response.data
+    console.log('任务详情数据:', response.data)
+    
+    // 确保积分奖励字段有默认值
+    currentTask.value = {
+      ...response.data,
+      points_reward: response.data.points_reward !== undefined ? response.data.points_reward : 0
+    }
     taskDrawer.value = true
     
     // 在下一个 tick 后初始化图表
@@ -367,6 +398,7 @@ const openCreateDialog = () => {
     description: '',
     type: 'post',
     expReward: 10,
+    pointsReward: 0,
     dailyLimit: 1,
     status: 'active'
   }
@@ -382,6 +414,7 @@ const editTask = (task) => {
     description: task.description,
     type: task.type,
     expReward: task.exp_reward,
+    pointsReward: task.points_reward || 0,
     dailyLimit: task.daily_limit,
     status: task.status
   }
@@ -397,13 +430,25 @@ const submitTaskForm = async () => {
     
     loading.value = true
     
+    // 准备提交的数据
+    const taskData = {
+      ...taskForm.value,
+      exp_reward: taskForm.value.expReward,
+      points_reward: taskForm.value.pointsReward,
+      daily_limit: taskForm.value.dailyLimit
+    }
+    
+    console.log('提交的任务数据:', taskData)
+    
     if (isEdit.value) {
       // 更新任务
-      await updateTask(taskForm.value.id, taskForm.value)
+      const response = await updateTask(taskData.id, taskData)
+      console.log('更新任务响应:', response)
       ElMessage.success('任务更新成功')
     } else {
       // 创建任务
-      await createTask(taskForm.value)
+      const response = await createTask(taskData)
+      console.log('创建任务响应:', response)
       ElMessage.success('任务创建成功')
     }
     
@@ -415,7 +460,12 @@ const submitTaskForm = async () => {
     // 如果任务详情抽屉打开且是编辑的任务，更新任务详情
     if (taskDrawer.value && currentTask.value && currentTask.value.id === taskForm.value.id) {
       const response = await getTaskById(taskForm.value.id)
-      currentTask.value = response.data
+      
+      // 确保积分奖励字段有默认值
+      currentTask.value = {
+        ...response.data,
+        points_reward: response.data.points_reward !== undefined ? response.data.points_reward : taskForm.value.pointsReward
+      }
       
       // 更新图表
       nextTick(() => {
@@ -579,6 +629,20 @@ onMounted(() => {
   margin: 20px 0;
 }
 
+.task-description {
+  margin-bottom: 15px;
+}
+
+.task-stats {
+  margin: 20px 0;
+}
+
+.task-stats h3 {
+  margin: 0 0 15px 0;
+  font-size: 16px;
+  color: #303133;
+}
+
 .detail-item {
   margin-bottom: 15px;
   display: flex;
@@ -593,16 +657,6 @@ onMounted(() => {
   flex: 1;
   color: #303133;
   word-break: break-all;
-}
-
-.task-stats {
-  margin: 20px 0;
-}
-
-.task-stats h3 {
-  margin: 0 0 15px 0;
-  font-size: 16px;
-  color: #303133;
 }
 
 .drawer-actions {

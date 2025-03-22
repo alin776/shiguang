@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
+import { ref, computed, onUnmounted } from 'vue';
 import axios from 'axios';
 import { API_BASE_URL } from '../config';
 import { useAuthStore } from './auth';
@@ -12,40 +12,99 @@ export const useTaskStore = defineStore('task', () => {
   const dailyExpGained = ref(0);
   const dailyExpLimit = ref(50); // 每日经验值上限
   const lastUpdated = ref(null);
+  const isLoading = ref(false);
+  // 刷新定时器
+  let refreshTimer = null;
   
   // 获取任务完成状态
   const fetchDailyTasks = async () => {
     try {
-      // 检查用户是否已登录
-      if (!authStore.isAuthenticated) {
-        throw new Error('用户未登录');
-      }
-      
-      // 调用后端API获取任务状态
+      isLoading.value = true;
       const response = await axios.get(`${API_BASE_URL}/api/tasks/daily`, {
         headers: { Authorization: `Bearer ${authStore.token}` }
       });
       
-      // 更新任务数据
-      if (response.data && response.data.tasks) {
-        dailyTasks.value = response.data.tasks;
-        dailyExpGained.value = response.data.expGained || 0;
-        dailyExpLimit.value = response.data.expLimit || 50;
-        lastUpdated.value = new Date();
-      } else {
-        // 如果后端暂未实现，使用本地模拟数据
-        initMockTasks();
-      }
+      dailyTasks.value = response.data.tasks.map(task => ({
+        id: task.id,
+        type: task.taskType || task.type,
+        title: task.title,
+        description: task.description,
+        current: task.progress || task.current || 0,
+        target: task.target,
+        reward: task.reward,
+        pointsReward: task.pointsReward || 0,
+        // 确保任务完成状态正确，如果当前进度达到或超过目标，则标记为完成
+        isCompleted: task.isCompleted || (task.progress >= task.target) || (task.current >= task.target)
+      }));
+      
+      dailyExpGained.value = response.data.dailyExpGained || response.data.expGained || 0;
+      dailyExpLimit.value = response.data.dailyExpLimit || response.data.expLimit || 50;
+      
+      // 记录最后更新时间
+      lastUpdated.value = new Date();
+      
+      // 缓存到本地存储，用于离线访问
+      localStorage.setItem('dailyTasks', JSON.stringify(dailyTasks.value));
+      localStorage.setItem('dailyExpGained', String(dailyExpGained.value));
+      localStorage.setItem('dailyExpLimit', String(dailyExpLimit.value));
+      localStorage.setItem('taskLastUpdated', lastUpdated.value.toISOString());
       
       return dailyTasks.value;
     } catch (error) {
-      console.error('获取任务状态失败:', error);
+      console.error('获取每日任务失败:', error);
       
-      // 使用本地模拟数据
-      initMockTasks();
+      // 错误时尝试从本地存储获取缓存的任务数据
+      try {
+        const cachedTasks = localStorage.getItem('dailyTasks');
+        const cachedExpGained = localStorage.getItem('dailyExpGained');
+        const cachedExpLimit = localStorage.getItem('dailyExpLimit');
+        
+        if (cachedTasks) {
+          dailyTasks.value = JSON.parse(cachedTasks);
+          dailyExpGained.value = Number(cachedExpGained || '0');
+          dailyExpLimit.value = Number(cachedExpLimit || '50');
+          return dailyTasks.value;
+        }
+      } catch (cacheError) {
+        console.error('读取缓存任务数据失败:', cacheError);
+      }
       
-      // 向上传递错误
       throw error;
+    } finally {
+      isLoading.value = false;
+    }
+  };
+  
+  // 启动自动刷新任务
+  const startAutoRefresh = (interval = 60000) => {
+    // 清除现有定时器
+    stopAutoRefresh();
+    
+    // 设置新的定时器
+    refreshTimer = setInterval(() => {
+      if (authStore.isAuthenticated) {
+        fetchDailyTasks();
+      }
+    }, interval);
+  };
+  
+  // 停止自动刷新
+  const stopAutoRefresh = () => {
+    if (refreshTimer) {
+      clearInterval(refreshTimer);
+      refreshTimer = null;
+    }
+  };
+  
+  // 组件卸载时清除定时器
+  onUnmounted(() => {
+    stopAutoRefresh();
+  });
+  
+  // 执行立即刷新，用于用户操作后立即更新任务状态
+  const refreshNow = async () => {
+    if (authStore.isAuthenticated) {
+      return await fetchDailyTasks();
     }
   };
   
@@ -62,7 +121,7 @@ export const useTaskStore = defineStore('task', () => {
       if (!task) return;
       
       // 检查任务是否已完成
-      if (task.isCompleted) return;
+      if (task.isCompleted || task.current >= task.target) return;
       
       // 计算新进度
       const newProgress = Math.min(task.current + increment, task.target);
@@ -93,7 +152,15 @@ export const useTaskStore = defineStore('task', () => {
         // 同步更新用户经验值
         if (earnableExp > 0) {
           authStore.addExperience(earnableExp);
+          // 同步更新用户积分（如果有积分奖励）
+          if (task.pointsReward > 0) {
+            authStore.addPoints(task.pointsReward);
+          }
         }
+        
+        // 更新本地缓存
+        localStorage.setItem('dailyTasks', JSON.stringify(dailyTasks.value));
+        localStorage.setItem('dailyExpGained', String(dailyExpGained.value));
       } else {
         // 仅更新进度
         await axios.post(`${API_BASE_URL}/api/tasks/progress`, {
@@ -102,6 +169,9 @@ export const useTaskStore = defineStore('task', () => {
         }, {
           headers: { Authorization: `Bearer ${authStore.token}` }
         });
+        
+        // 更新本地缓存
+        localStorage.setItem('dailyTasks', JSON.stringify(dailyTasks.value));
       }
     } catch (error) {
       console.error('更新任务进度失败:', error);
@@ -214,9 +284,13 @@ export const useTaskStore = defineStore('task', () => {
     dailyExpGained,
     dailyExpLimit,
     lastUpdated,
+    isLoading,
     fetchDailyTasks,
     updateTaskProgress,
     resetDailyTasks,
-    checkDailyReset
+    checkDailyReset,
+    startAutoRefresh,
+    stopAutoRefresh,
+    refreshNow
   };
 }); 

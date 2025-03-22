@@ -19,6 +19,10 @@ import AboutView from "../views/AboutView.vue";
 import CreatePostView from "../views/CreatePostView.vue"; // 添加发布帖子页面组件导入
 import VersionHistory from "../views/VersionHistory.vue"; // 添加版本历史页面组件导入
 import TaskCenterView from "../views/TaskCenterView.vue"; // 添加任务中心页面组件导入
+import TitleGuideView from "../views/TitleGuideView.vue"; // 添加称号指南页面组件导入
+import ActivityListView from "../views/activities/ActivityListView.vue"; // 添加活动列表页面组件导入
+import ActivityDetailView from "../views/activities/ActivityDetailView.vue"; // 添加活动详情页面组件导入
+import PointsExchangeView from "../views/PointsExchangeView.vue"; // 添加积分兑换页面组件导入
 import { ref } from "vue";
 
 const routes = [
@@ -78,6 +82,30 @@ const routes = [
     path: "/feedback",
     name: "Feedback",
     component: () => import("@/views/FeedbackView.vue"),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: "/town",
+    name: "Town",
+    component: () => import("@/views/TownView.vue"),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: "/notifications",
+    name: "Notifications",
+    component: () => import("@/views/NotificationsView.vue"),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: "/announcements",
+    name: "Announcements",
+    component: () => import("@/views/AnnouncementsView.vue"),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: "/announcements/:id",
+    name: "AnnouncementDetail",
+    component: () => import("@/views/AnnouncementsView.vue"),
     meta: { requiresAuth: true },
   },
   {
@@ -201,6 +229,36 @@ const routes = [
     meta: { 
       requiresAuth: true,
       title: "任务中心"
+    },
+  },
+  {
+    path: "/title-guide",
+    name: "TitleGuide",
+    component: TitleGuideView,
+    meta: { 
+      requiresAuth: true,
+      title: "称号指南"
+    },
+  },
+  {
+    path: "/activities",
+    name: "activities",
+    component: ActivityListView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: "/activities/:id",
+    name: "activity-detail",
+    component: ActivityDetailView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: "/points/exchange",
+    name: "PointsExchange",
+    component: PointsExchangeView,
+    meta: { 
+      requiresAuth: true,
+      title: "积分兑换" 
     },
   },
   {

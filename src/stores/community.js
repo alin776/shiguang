@@ -1,8 +1,8 @@
 import { defineStore } from "pinia";
 import axios from "axios";
 import { useAuthStore } from "./auth";
-import { API_BASE_URL } from "@/config";
-import { getAvatarUrl, getImageUrl } from "@/utils/imageHelpers";
+import { API_BASE_URL, API_ENDPOINTS } from "@/config";
+import { getAvatarUrl, getImageUrl, getDefaultAvatarUrl } from "@/utils/imageHelpers";
 
 export const useCommunityStore = defineStore("community", {
   state: () => ({
@@ -65,8 +65,15 @@ export const useCommunityStore = defineStore("community", {
 
         // 处理帖子列表中的用户头像路径
         if (response.data.posts) {
+          // 找出浏览量最高的5篇帖子，标记为热门
+          const topViewPosts = [...response.data.posts]
+            .sort((a, b) => b.views - a.views)
+            .slice(0, 5)
+            .map(post => post.id);
+            
           response.data.posts = response.data.posts.map((post) => ({
             ...post,
+            isHot: topViewPosts.includes(post.id), // 标记热门帖子
             images: post.images
               ? post.images.map((img) => getImageUrl(img))
               : [],
@@ -99,26 +106,79 @@ export const useCommunityStore = defineStore("community", {
           }
         );
 
-        // 处理帖子图片和用户头像路径
-        if (response.data) {
-          response.data = {
-            ...response.data,
-            images: response.data.images
-              ? response.data.images.map((img) => getImageUrl(img))
-              : [],
-            user: {
-              ...response.data.user,
-              avatar: response.data.user?.avatar
-                ? getAvatarUrl(response.data.user.avatar)
-                : null,
-            },
+        // 添加调试信息输出
+        console.log("API返回的原始帖子数据:", response.data);
+        
+        // 检查API返回的数据格式
+        if (!response.data) {
+          console.error("API返回的数据为空");
+          return { title: "数据加载失败", content: "无法获取帖子内容" };
+        }
+        
+        // 特别检查标题字段
+        console.log("API返回的标题字段:", {
+          值: response.data.title,
+          类型: typeof response.data.title,
+          是否为空: response.data.title === "",
+          是否未定义: response.data.title === undefined,
+          是否为null: response.data.title === null
+        });
+        
+        // 处理数据 - 创建一个新对象而不是修改原始对象
+        let processedData = {
+          id: response.data.id || id,
+          title: "无标题", // 默认标题
+          content: response.data.content || "",
+          created_at: response.data.created_at || new Date().toISOString(),
+          updated_at: response.data.updated_at || new Date().toISOString(),
+          comments: Array.isArray(response.data.comments) ? response.data.comments : [],
+          likes: response.data.likes || 0,
+          views: response.data.views || 0,
+          is_liked: response.data.is_liked || false,
+          images: []
+        };
+        
+        // 确保正确设置帖子标题
+        if (response.data.title !== undefined && response.data.title !== null) {
+          processedData.title = response.data.title.trim() || "无标题";
+        }
+        
+        // 处理图片数据
+        if (Array.isArray(response.data.images)) {
+          processedData.images = response.data.images.map(img => getImageUrl(img));
+        }
+        
+        // 处理用户数据，确保用户称号和帖子标题不混淆
+        if (response.data.user) {
+          processedData.user = {
+            ...response.data.user,
+            // 确保用户称号不会被错误地覆盖
+            title: response.data.user.title || null,
+            avatar: response.data.user.avatar ? getAvatarUrl(response.data.user.avatar) : null
           };
         }
-        this.currentPost = response.data;
+        
+        // 合并其他剩余字段
+        processedData = { ...response.data, ...processedData };
+        
+        // 最终检查确保标题存在
+        if (!processedData.title) {
+          processedData.title = "无标题";
+        }
+        
+        console.log("处理后的帖子数据:", processedData);
+        console.log("最终处理后的标题:", processedData.title);
+        
+        this.currentPost = processedData;
         return this.currentPost;
       } catch (error) {
         console.error("获取帖子详情失败:", error);
-        throw error.response?.data || error;
+        // 返回错误状态的对象，而不是抛出错误
+        return { 
+          title: "加载失败", 
+          content: "无法获取帖子内容，请稍后再试", 
+          error: error.message || "未知错误" 
+        };
       } finally {
         this.loading = false;
       }
@@ -571,7 +631,7 @@ export const useCommunityStore = defineStore("community", {
     },
 
     // 回复评论
-    async replyToComment(postId, commentId, content, replyToId = null, audio = null) {
+    async replyToComment(postId, commentId, content, replyToId = null, audio = null, images = null) {
       try {
         const authStore = useAuthStore();
         const data = {
@@ -582,6 +642,11 @@ export const useCommunityStore = defineStore("community", {
         // 添加音频数据
         if (audio) {
           data.audio = audio;
+        }
+        
+        // 添加图片数据
+        if (images && images.length > 0) {
+          data.images = images;
         }
         
         const response = await axios.post(
@@ -745,5 +810,138 @@ export const useCommunityStore = defineStore("community", {
         throw error;
       }
     },
+
+    // 添加系统公告相关方法
+    async getAnnouncements() {
+      try {
+        const authStore = useAuthStore();
+        const response = await axios.get(`${API_BASE_URL}/api/announcements`, {
+          headers: { Authorization: `Bearer ${authStore.token}` },
+        });
+        
+        return response.data;
+      } catch (error) {
+        console.error("获取公告列表失败:", error);
+        throw error;
+      }
+    },
+
+    async getAnnouncementById(id) {
+      try {
+        const authStore = useAuthStore();
+        const response = await axios.get(`${API_BASE_URL}/api/announcements/${id}`, {
+          headers: { Authorization: `Bearer ${authStore.token}` },
+        });
+        
+        return response.data;
+      } catch (error) {
+        console.error("获取公告详情失败:", error);
+        throw error;
+      }
+    },
+
+    async createAnnouncement(data) {
+      try {
+        const authStore = useAuthStore();
+        const response = await axios.post(
+          `${API_BASE_URL}/api/announcements`,
+          data,
+          {
+            headers: { Authorization: `Bearer ${authStore.token}` },
+          }
+        );
+        
+        return response.data;
+      } catch (error) {
+        console.error("创建公告失败:", error);
+        throw error.response?.data || error;
+      }
+    },
+
+    async updateAnnouncement(id, data) {
+      try {
+        const authStore = useAuthStore();
+        const response = await axios.put(
+          `${API_BASE_URL}/api/announcements/${id}`,
+          data,
+          {
+            headers: { Authorization: `Bearer ${authStore.token}` },
+          }
+        );
+        
+        return response.data;
+      } catch (error) {
+        console.error("更新公告失败:", error);
+        throw error.response?.data || error;
+      }
+    },
+
+    async deleteAnnouncement(id) {
+      try {
+        const authStore = useAuthStore();
+        await axios.delete(`${API_BASE_URL}/api/announcements/${id}`, {
+          headers: { Authorization: `Bearer ${authStore.token}` },
+        });
+        
+        return { success: true };
+      } catch (error) {
+        console.error("删除公告失败:", error);
+        throw error.response?.data || error;
+      }
+    },
+
+    // 获取论坛统计数据
+    async getForumStats() {
+      try {
+        const authStore = useAuthStore();
+        const response = await axios.get(`${API_BASE_URL}/api/forum/stats`, {
+          headers: { Authorization: `Bearer ${authStore.token}` },
+        });
+        
+        return response.data;
+      } catch (error) {
+        console.error("获取论坛统计数据失败:", error);
+        // 返回默认值，避免页面出错
+        return {
+          topics: 0,
+          posts: 0,
+          daily: 0
+        };
+      }
+    },
+
+    // 获取活动列表
+    async getActivities() {
+      try {
+        console.log("开始请求活动列表数据");
+        const authStore = useAuthStore();
+        const activitiesEndpoint = API_ENDPOINTS.ACTIVITIES?.LIST || "/api/activities";
+        console.log("请求活动列表的端点:", `${API_BASE_URL}${activitiesEndpoint}`);
+        
+        const response = await axios.get(`${API_BASE_URL}${activitiesEndpoint}`, {
+          headers: { Authorization: `Bearer ${authStore.token}` },
+        });
+        
+        console.log("活动列表API响应:", response);
+        
+        // 检查响应结构
+        if (response.data) {
+          console.log("活动列表数据:", response.data);
+          return response.data;
+        } else {
+          console.log("API返回了空数据");
+          return { activities: [] };
+        }
+      } catch (error) {
+        console.error("获取活动列表失败:", error);
+        console.error("错误详情:", {
+          message: error.message,
+          response: error.response?.data,
+          status: error.response?.status
+        });
+        // 返回空数据而不是抛出错误，防止页面崩溃
+        return { activities: [] };
+      }
+    }
   },
 });

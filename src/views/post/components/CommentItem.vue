@@ -12,22 +12,32 @@
     </div>
     <div class="comment-content">
       <div class="comment-meta">
-        <div class="username">
-          {{ comment.user?.username || "匿名用户" }}
+        <div class="username-container">
+          <div class="username" @click="$emit('user-click', comment.user?.id)">
+            {{ comment.user?.username || "匿名用户" }}
+          </div>
+          <div class="user-badges smaller">
+            <span class="level-badge" v-if="comment.user?.level">Lv.{{ comment.user?.level }}</span>
+            <span 
+              v-if="comment.user?.title" 
+              class="user-title-inline"
+              :class="getTitleClass(comment.user?.title)"
+            >{{ comment.user?.title }}</span>
+          </div>
         </div>
         <div class="comment-actions-top">
           <span class="report-btn" @click="$emit('report-comment', comment.id)" v-if="comment.user?.id !== userId">
             <el-icon><Warning /></el-icon>
           </span>
-          <div class="comment-time">{{ formatTime(comment.created_at) }}</div>
+          <div class="comment-time">{{ formatTime(comment.created_at || new Date()) }}</div>
         </div>
       </div>
-      <div class="comment-text">{{ comment.content }}</div>
+      <div class="comment-text">{{ comment.content || "" }}</div>
       
       <!-- 评论图片 -->
-      <div v-if="comment.images && comment.images.length > 0" class="comment-images">
+      <div v-if="comment.images && Array.isArray(parseImages(comment.images)) && parseImages(comment.images).length > 0" class="comment-images">
         <div 
-          v-for="(image, index) in comment.images" 
+          v-for="(image, index) in parseImages(comment.images)" 
           :key="index" 
           class="comment-image-container"
           @contextmenu.prevent="showContextMenu($event, image)"
@@ -109,18 +119,42 @@
           class="reply-item"
         >
           <div class="reply-meta">
-            <span class="username" @click="$emit('user-click', reply.user?.id)">
-              {{ reply.user?.username || "匿名用户" }}
-            </span>
-            <span v-if="reply.reply_to_user" class="reply-to">
-              回复
-              <span @click="$emit('user-click', reply.reply_to_user?.id)">
-                {{ reply.reply_to_user?.username || "匿名用户" }}
+            <div class="meta-left">
+              <div class="username-container">
+                <div class="username reply-username" @click="$emit('user-click', reply.user?.id)">
+                  {{ reply.user?.username || "匿名用户" }}
+                </div>
+              </div>
+              <span v-if="reply.reply_to_user" class="reply-to">
+                回复
+                <span class="username" @click="$emit('user-click', reply.reply_to_user?.id)">
+                  {{ reply.reply_to_user?.username || "匿名用户" }}
+                </span>
               </span>
-            </span>
+            </div>
             <span class="reply-time">{{ formatTime(reply.created_at) }}</span>
           </div>
           <div class="reply-text">{{ reply.content }}</div>
+          
+          <!-- 回复图片 -->
+          <div v-if="reply.images && Array.isArray(parseImages(reply.images)) && parseImages(reply.images).length > 0" class="reply-images">
+            <div 
+              v-for="(image, index) in parseImages(reply.images)" 
+              :key="index" 
+              class="reply-image-container"
+              @contextmenu.prevent="showContextMenu($event, image)"
+              @touchstart="handleTouchStart($event, image)"
+              @touchend="handleTouchEnd"
+            >
+              <img :src="image" alt="回复图片" class="reply-image" @click="previewImage(image)" />
+            </div>
+          </div>
+          
+          <!-- 回复音频播放器 -->
+          <div v-if="reply.audio" class="reply-audio">
+            <!-- 音频播放功能待开发 -->
+          </div>
+          
           <div class="reply-actions" v-if="reply.user?.id === userId">
             <span
               class="delete-action"
@@ -166,7 +200,7 @@
 import { Star, VideoPlay, VideoPause, Warning } from "@element-plus/icons-vue";
 import { getAvatarUrl } from "../../../utils/imageHelpers";
 import { formatTime } from "../../../utils/timeHelpers";
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, onBeforeUnmount } from "vue";
 import { API_BASE_URL } from "@/config";
 import { ElMessage } from "element-plus";
 import { useAuthStore } from "@/stores/auth";
@@ -175,6 +209,16 @@ const props = defineProps({
   comment: {
     type: Object,
     required: true,
+    default: () => ({
+      id: 0,
+      content: "",
+      created_at: new Date(),
+      user: { username: "匿名用户" },
+      replies: [],
+      images: [],
+      likes: 0,
+      is_liked: false
+    })
   },
   userId: {
     type: [Number, String],
@@ -200,6 +244,21 @@ const audioDuration = ref(0);
 
 // 添加是否悬停的状态
 const isHovering = ref(false);
+
+// 解析图片数据
+const parseImages = (images) => {
+  if (!images) return [];
+  
+  if (typeof images === 'string') {
+    try {
+      return JSON.parse(images);
+    } catch (e) {
+      return [];
+    }
+  }
+  
+  return Array.isArray(images) ? images : [];
+};
 
 // 计算音频源URL
 const audioSrc = computed(() => {
@@ -388,18 +447,56 @@ const getWaveformOpacity = (index, currentTime, totalDuration) => {
   }
 };
 
-// 图片预览
+// 预览图片
 const previewImage = (url) => {
-  const images = [url];
-  // 使用element-plus的图片预览或自定义预览逻辑
-  if (window.$imageViewer) {
-    window.$imageViewer({
-      urlList: images,
-      zIndex: 3000
-    });
-  } else {
-    window.open(url, '_blank');
-  }
+  const previewDialog = document.createElement('div');
+  previewDialog.className = 'image-preview-dialog';
+  
+  const previewImg = document.createElement('img');
+  previewImg.src = url;
+  previewImg.className = 'preview-image';
+  
+  // 添加关闭按钮
+  const closeButton = document.createElement('div');
+  closeButton.className = 'preview-close-btn';
+  closeButton.innerHTML = '×';
+  closeButton.addEventListener('click', (e) => {
+    e.stopPropagation();
+    document.body.removeChild(previewDialog);
+  });
+  
+  previewDialog.appendChild(previewImg);
+  previewDialog.appendChild(closeButton);
+  document.body.appendChild(previewDialog);
+  
+  // 禁止页面滚动
+  document.body.style.overflow = 'hidden';
+  
+  previewDialog.addEventListener('click', () => {
+    document.body.removeChild(previewDialog);
+    // 恢复页面滚动
+    document.body.style.overflow = '';
+  });
+  
+  // 处理移动设备上的滑动手势
+  let startY = 0;
+  let startX = 0;
+  
+  previewDialog.addEventListener('touchstart', (e) => {
+    startY = e.touches[0].clientY;
+    startX = e.touches[0].clientX;
+  });
+  
+  previewDialog.addEventListener('touchmove', (e) => {
+    const currentY = e.touches[0].clientY;
+    const currentX = e.touches[0].clientX;
+    
+    // 垂直滑动超过50px或水平滑动超过100px时关闭预览
+    if (Math.abs(currentY - startY) > 50 || Math.abs(currentX - startX) > 100) {
+      document.body.removeChild(previewDialog);
+      document.body.style.overflow = '';
+    }
+  });
 };
 
 // 长按定时器
@@ -541,6 +638,21 @@ const addToEmojis = async (url) => {
     ElMessage.error('添加失败');
   }
 };
+
+// 根据称号名称返回对应的样式类
+const getTitleClass = (title) => {
+  if (!title) return '';
+  
+  if (title === '云步官方') {
+    return 'title-official';
+  } else if (title === '持之以恒') {
+    return 'title-persistent';
+  } else if (title === '巅峰大神') {
+    return 'title-master';
+  }
+  
+  return '';
+};
 </script>
 
 <style scoped>
@@ -563,15 +675,135 @@ const addToEmojis = async (url) => {
 .comment-meta {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   margin-bottom: 8px;
+}
+
+.username-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  max-width: 100%;
 }
 
 .username {
   font-weight: 500;
-  margin-right: 8px;
+  color: #333;
   cursor: pointer;
-  text-align: left;
+}
+
+.user-badges {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.user-badges.smaller .level-badge {
+  font-size: 10px;
+  padding: 1px 8px;
+}
+
+.user-badges.smaller .user-title-inline {
+  font-size: 0.75rem;
+  padding: 1px 6px;
+}
+
+.level-badge {
+  background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+  padding: 2px 10px;
+  border-radius: 15px;
+  font-size: 12px;
+  font-weight: 700;
+  font-style: italic;
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.user-title-inline {
+  font-size: 0.85rem;
+  color: #333;
+  background-color: rgba(255, 255, 255, 0.8);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  font-family: "PingFang SC", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, sans-serif;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.2);
+  white-space: nowrap;
+  max-width: 100%;
+  overflow: visible;
+}
+
+/* 官方称号 - 金色 */
+.title-official {
+  color: #6d4b2f !important;
+  background-color: #f8d66d !important;
+  border: 1px solid #e3b748 !important;
+  font-weight: 600 !important;
+  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.5) !important;
+  letter-spacing: 0.5px !important;
+}
+
+/* 持之以恒称号 - 绿色 */
+.title-persistent {
+  color: #2c5e2e !important;
+  background-color: #a8e2aa !important;
+  border: 1px solid #56c158 !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.4px !important;
+}
+
+/* 巅峰大神称号 - 红色 */
+.title-master {
+  color: #ffffff !important;
+  background-color: #e74c3c !important;
+  border: 1px solid #c0392b !important;
+  font-weight: 700 !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+  letter-spacing: 0.6px !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  .level-badge {
+    background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%);
+    color: white;
+    box-shadow: 0 2px 6px rgba(59, 130, 246, 0.4);
+  }
+  
+  .user-title-inline {
+    color: #ccc;
+    background-color: #333;
+  }
+  
+  /* 暗黑模式下的官方称号 - 金色 */
+  .title-official {
+    color: #f8d66d !important;
+    background-color: #4a3206 !important;
+    border: 1px solid #816d37 !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5) !important;
+  }
+  
+  /* 暗黑模式下的持之以恒称号 - 绿色 */
+  .title-persistent {
+    color: #a8e2aa !important;
+    background-color: #1e3e1f !important;
+    border: 1px solid #2c5e2e !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+  }
+  
+  /* 暗黑模式下的巅峰大神称号 - 红色 */
+  .title-master {
+    color: #ffffff !important;
+    background-color: #7d2620 !important;
+    border: 1px solid #b74138 !important;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5) !important;
+  }
 }
 
 .comment-time {
@@ -627,23 +859,27 @@ const addToEmojis = async (url) => {
 
 .reply-meta {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   margin-bottom: 4px;
   font-size: 12px;
-  justify-content: flex-start;
+  justify-content: space-between;
+  width: 100%;
 }
 
-.reply-to {
-  color: #909399;
+.meta-left {
+  display: flex;
+  align-items: center;
+}
+
+.reply-username {
   margin-right: 8px;
-  text-align: left;
 }
 
 .reply-time {
   font-size: 11px;
   color: #909399;
-  text-align: left;
+  text-align: right;
+  margin-left: auto;
 }
 
 .reply-text {
@@ -907,5 +1143,108 @@ const addToEmojis = async (url) => {
 .report-btn:hover {
   color: #ff4d4f;
   background-color: rgba(255, 77, 79, 0.1);
+}
+
+/* 回复图片样式优化 */
+.reply-images {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+  margin-bottom: 8px;
+}
+
+.reply-image-container {
+  width: 80px;
+  height: 80px;
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.reply-image-container:hover {
+  transform: scale(1.03);
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.15);
+}
+
+.reply-image-container:active {
+  transform: scale(0.98);
+}
+
+.reply-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.reply-image:hover {
+  transform: scale(1.05);
+}
+
+/* 适应高分辨率屏幕 */
+@media screen and (min-width: 768px) {
+  .reply-image-container {
+    width: 100px;
+    height: 100px;
+  }
+}
+
+.image-preview-dialog {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  flex-direction: column;
+  touch-action: none;
+}
+
+.preview-image {
+  max-width: 90%;
+  max-height: 90%;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.preview-close-btn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 40px;
+  height: 40px;
+  background-color: rgba(0, 0, 0, 0.6);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  font-size: 24px;
+  line-height: 1;
+  z-index: 10000;
+}
+
+@media screen and (max-width: 480px) {
+  .preview-image {
+    max-width: 95%;
+    max-height: 80%;
+  }
+  
+  .preview-close-btn {
+    top: 15px;
+    right: 15px;
+    width: 36px;
+    height: 36px;
+  }
 }
 </style>

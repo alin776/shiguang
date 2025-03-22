@@ -60,6 +60,9 @@ const adminAuth = async (req, res, next) => {
   }
 };
 
+// 验证管理员令牌的中间件 (别名用于路由)
+const verifyAdminToken = adminAuth;
+
 // 超级管理员权限检查中间件
 const requireSuperAdmin = (req, res, next) => {
   if (req.admin && req.admin.role === 'super_admin') {
@@ -74,5 +77,6 @@ const requireSuperAdmin = (req, res, next) => {
 
 module.exports = {
   adminAuth,
-  requireSuperAdmin
+  requireSuperAdmin,
+  verifyAdminToken
 }; 

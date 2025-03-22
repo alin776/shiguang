@@ -373,6 +373,57 @@ export const useAuthStore = defineStore("auth", {
       }
     },
 
+    async addPoints(amount) {
+      try {
+        const response = await axios.post(
+          `${API_BASE_URL}/api/users/points`,
+          { amount },
+          {
+            headers: { Authorization: `Bearer ${this.token}` },
+          }
+        );
+        
+        // 更新用户积分信息
+        if (this.user) {
+          this.user = {
+            ...this.user,
+            points: response.data.points || 0
+          };
+          localStorage.setItem("user", JSON.stringify(this.user));
+        }
+        
+        return response.data;
+      } catch (error) {
+        console.error("增加用户积分失败:", error);
+        throw error.response?.data || error;
+      }
+    },
+
+    async fetchUserPoints() {
+      try {
+        const response = await axios.get(
+          `${API_BASE_URL}/api/users/points`,
+          {
+            headers: { Authorization: `Bearer ${this.token}` },
+          }
+        );
+        
+        // 更新用户积分信息
+        if (this.user) {
+          this.user = {
+            ...this.user,
+            points: response.data.points || 0
+          };
+          localStorage.setItem("user", JSON.stringify(this.user));
+        }
+        
+        return response.data;
+      } catch (error) {
+        console.error("获取用户积分数据失败:", error);
+        throw error.response?.data || error;
+      }
+    },
+
     async fetchUserInfo() {
       try {
         console.log("开始获取用户信息...");
@@ -541,6 +592,32 @@ export const useAuthStore = defineStore("auth", {
         return true;
       }
       return false;
+    },
+
+    async addUserPoints(amount) {
+      try {
+        const response = await axios.post(
+          `${API_BASE_URL}/api/users/points`,
+          { amount },
+          {
+            headers: { Authorization: `Bearer ${this.token}` },
+          }
+        );
+        
+        // 更新用户积分信息
+        if (this.user) {
+          this.user = {
+            ...this.user,
+            points: response.data.points || 0
+          };
+          localStorage.setItem("user", JSON.stringify(this.user));
+        }
+        
+        return response.data;
+      } catch (error) {
+        console.error("增加用户积分失败:", error);
+        throw error.response?.data || error;
+      }
     },
   },
 });

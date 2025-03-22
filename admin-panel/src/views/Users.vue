@@ -3,6 +3,14 @@
     <div class="page-header">
       <h1 class="page-title">用户管理</h1>
       <div class="page-actions">
+        <el-button 
+          type="primary" 
+          @click="recalculateAllTitles" 
+          :loading="recalculateLoading" 
+          class="recalculate-btn"
+        >
+          重新计算称号
+        </el-button>
         <el-input
           v-model="searchQuery"
           placeholder="搜索用户名/邮箱/手机"
@@ -51,6 +59,17 @@
         <el-table-column prop="level" label="等级" width="100">
           <template #default="scope">
             <el-tag type="info">Lv.{{ scope.row.level || 1 }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="points" label="积分" width="100">
+          <template #default="scope">
+            <span>{{ scope.row.points || 0 }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="title" label="称号" width="120">
+          <template #default="scope">
+            <el-tag v-if="scope.row.title" type="success">{{ scope.row.title }}</el-tag>
+            <span v-else>-</span>
           </template>
         </el-table-column>
         <el-table-column prop="createdAt" label="注册时间" width="180">
@@ -115,6 +134,8 @@
               <el-tag v-if="currentUser.status === '已启用'" type="success">在线</el-tag>
               <el-tag v-else-if="currentUser.status === 'suspended'" type="warning">已冻结</el-tag>
               <el-tag v-else type="danger">离线</el-tag>
+              
+              <el-tag v-if="currentUser.title" type="success">{{ currentUser.title }}</el-tag>
             </div>
           </div>
         </div>
@@ -138,6 +159,10 @@
             <div class="stat-value">{{ currentUser.experience || 0 }}</div>
             <div class="stat-label">经验值</div>
           </div>
+          <div class="stat-item">
+            <div class="stat-value">{{ currentUser.points || 0 }}</div>
+            <div class="stat-label">积分</div>
+          </div>
         </div>
 
         <el-divider />
@@ -158,6 +183,17 @@
           <div class="detail-item">
             <span class="detail-label">最后登录:</span>
             <span class="detail-value">{{ currentUser.lastLoginAt ? formatDate(currentUser.lastLoginAt) : '从未登录' }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">用户称号:</span>
+            <span class="detail-value">
+              <el-tag v-if="currentUser.title" type="success">{{ currentUser.title }}</el-tag>
+              <span v-else>未获得称号</span>
+            </span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">连续发帖:</span>
+            <span class="detail-value">{{ currentUser.post_streak || 0 }}天</span>
           </div>
           <div class="detail-item">
             <span class="detail-label">个人简介:</span>
@@ -209,6 +245,18 @@
         <el-form-item label="经验值">
           <el-input-number v-model="editForm.experience" :min="0" :max="99999" />
         </el-form-item>
+        <el-form-item label="积分">
+          <el-input-number v-model="editForm.points" :min="0" :max="99999" />
+        </el-form-item>
+        <el-form-item label="用户称号">
+          <el-input v-model="editForm.title" placeholder="如: 持之以恒, 巅峰大神" maxlength="50">
+            <template #append>
+              <el-tooltip content="连续发帖5天获得'持之以恒'称号,每日发帖最多的用户获得'巅峰大神'称号">
+                <el-icon><QuestionFilled /></el-icon>
+              </el-tooltip>
+            </template>
+          </el-input>
+        </el-form-item>
         <el-form-item label="个人简介">
           <el-input v-model="editForm.bio" type="textarea" rows="3" />
         </el-form-item>
@@ -226,8 +274,8 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Search } from '@element-plus/icons-vue'
-import { getUserList, getUserById, updateUser, deleteUser as apiDeleteUser } from '@/api/user'
+import { Search, QuestionFilled } from '@element-plus/icons-vue'
+import { getUserList, getUserById, updateUser, deleteUser as apiDeleteUser, recalculateAllTitles as apiRecalculateAllTitles } from '@/api/user'
 
 // 表格数据和分页
 const users = ref([])
@@ -257,6 +305,38 @@ const editForm = ref({
   status: '已启用',
   experience: 0
 })
+
+// 重新计算称号相关
+const recalculateLoading = ref(false)
+
+// 重新计算所有用户称号
+const recalculateAllTitles = async () => {
+  try {
+    recalculateLoading.value = true
+    await ElMessageBox.confirm(
+      '确定要重新计算所有用户称号吗？此操作将使用系统规则为所有用户重新分配称号。',
+      '提示',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    )
+    
+    const response = await apiRecalculateAllTitles()
+    ElMessage.success('用户称号计算成功')
+    
+    // 刷新用户列表
+    loadUsers()
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('重新计算用户称号失败:', error)
+      ElMessage.error('重新计算用户称号失败')
+    }
+  } finally {
+    recalculateLoading.value = false
+  }
+}
 
 // 加载用户列表
 const loadUsers = async () => {
@@ -306,7 +386,10 @@ const editUser = (user) => {
     bio: user.bio || '',
     role: user.role || 'user',
     status: user.status || '已启用',
-    experience: user.experience || 0
+    experience: user.experience || 0,
+    points: user.points || 0,
+    title: user.title || '',
+    post_streak: user.post_streak || 0
   }
   editDialog.value = true
 }
@@ -323,7 +406,8 @@ const submitEditForm = async () => {
     const userData = {
       ...editForm.value,
       // 确保只使用正确的经验值字段名
-      experience: editForm.value.experience
+      experience: editForm.value.experience,
+      points: editForm.value.points
     }
     
     console.log('提交的用户数据:', userData)
@@ -434,6 +518,10 @@ onMounted(() => {
 
 .search-input {
   width: 250px;
+}
+
+.recalculate-btn {
+  margin-right: 10px;
 }
 
 .search-icon {

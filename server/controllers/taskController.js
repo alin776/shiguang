@@ -184,6 +184,12 @@ const completeTask = async (req, res) => {
          WHERE id = ?`,
         [earnedExp, earnedExp, earnedExp, earnedExp, earnedExp, earnedExp, userId]
       );
+      
+      // 如果任务有积分奖励，也添加积分
+      const pointsReward = taskDefinitions[0].points_reward || 0;
+      if (pointsReward > 0) {
+        await addUserPoints(userId, pointsReward, `完成任务: ${taskDefinitions[0].title}`);
+      }
     }
     
     res.json({ 
@@ -234,7 +240,44 @@ const getUserDailyExp = async (userId) => {
   }
 };
 
-// 增加用户经验值（考虑每日上限）
+// 增加用户积分
+const addUserPoints = async (userId, amount, source) => {
+  try {
+    console.log(`开始为用户${userId}增加${amount}点积分，来源: ${source}`);
+    
+    if (amount <= 0) {
+      console.log('积分值必须大于0，放弃增加');
+      return 0;
+    }
+    
+    try {
+      // 记录获得的积分值
+      await db.execute(
+        `INSERT INTO user_points_history (user_id, points_gained, source, created_at)
+         VALUES (?, ?, ?, CURRENT_TIMESTAMP)`,
+        [userId, amount, source]
+      );
+      console.log('积分记录已插入历史表');
+      
+      // 更新用户积分值
+      await db.execute(
+        `UPDATE users SET points = points + ? WHERE id = ?`,
+        [amount, userId]
+      );
+      console.log('用户积分已更新');
+      
+      return amount;
+    } catch (dbError) {
+      console.error('数据库操作失败:', dbError);
+      throw dbError;
+    }
+  } catch (error) {
+    console.error("增加用户积分失败:", error);
+    return 0;
+  }
+};
+
+// 修改addUserExperience函数，让它同时增加积分
 const addUserExperience = async (userId, amount, source) => {
   try {
     console.log(`开始为用户${userId}增加${amount}点经验，来源: ${source}`);
@@ -286,6 +329,12 @@ const addUserExperience = async (userId, amount, source) => {
       );
       console.log('用户经验和等级已更新');
       
+      // 同时添加一些积分 (经验值的一半作为积分)
+      const pointsToAdd = Math.ceil(earnableExp / 2);
+      if (pointsToAdd > 0) {
+        await addUserPoints(userId, pointsToAdd, source);
+      }
+      
       return earnableExp;
     } catch (dbError) {
       console.error('数据库操作失败:', dbError);
@@ -303,5 +352,6 @@ module.exports = {
   completeTask,
   getDailyExpLimit,
   getUserDailyExp,
-  addUserExperience
+  addUserExperience,
+  addUserPoints
 }; 

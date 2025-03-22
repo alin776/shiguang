@@ -17,7 +17,17 @@
         {{ post.user?.username?.charAt(0).toUpperCase() || "?" }}
       </el-avatar>
       <div class="user-meta">
-        <div class="username">{{ post.user?.username || "匿名用户" }}</div>
+        <div class="username-container">
+          <div class="username">{{ post.user?.username || "匿名用户" }}</div>
+          <div class="user-badges smaller">
+            <span class="level-badge" v-if="post.user?.level">Lv.{{ post.user?.level }}</span>
+            <span 
+              v-if="post.user?.title" 
+              class="user-title-inline"
+              :class="getTitleClass(post.user?.title)"
+            >{{ post.user?.title }}</span>
+          </div>
+        </div>
         <div class="post-time">{{ formatTime(post.created_at) }}</div>
       </div>
       <div class="post-actions" v-if="isOwnPost">
@@ -62,6 +72,21 @@ defineProps({
 });
 
 defineEmits(["user-click", "post-command"]);
+
+// 根据称号名称返回对应的样式类
+const getTitleClass = (title) => {
+  if (!title) return '';
+  
+  if (title === '云步官方') {
+    return 'title-official';
+  } else if (title === '持之以恒') {
+    return 'title-persistent';
+  } else if (title === '巅峰大神') {
+    return 'title-master';
+  }
+  
+  return '';
+};
 </script>
 
 <style scoped>
@@ -134,6 +159,15 @@ defineEmits(["user-click", "post-command"]);
   text-align: left;
 }
 
+.username-container {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  margin-bottom: 2px;
+}
+
 .username {
   font-size: 16px;
   font-weight: 500;
@@ -141,6 +175,82 @@ defineEmits(["user-click", "post-command"]);
   line-height: 1.4;
   text-align: left;
   width: 100%;
+}
+
+.user-badges {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.user-badges.smaller .level-badge {
+  font-size: 10px;
+  padding: 1px 8px;
+}
+
+.user-badges.smaller .user-title-inline {
+  font-size: 0.75rem;
+  padding: 1px 6px;
+}
+
+.level-badge {
+  background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+  padding: 2px 10px;
+  border-radius: 15px;
+  font-size: 12px;
+  font-weight: 700;
+  font-style: italic;
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.user-title-inline {
+  font-size: 0.85rem;
+  color: #333;
+  background-color: rgba(255, 255, 255, 0.8);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  font-family: "PingFang SC", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, sans-serif;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.2);
+  white-space: nowrap;
+  max-width: 100%;
+  overflow: visible;
+}
+
+/* 官方称号 - 金色 */
+.title-official {
+  color: #6d4b2f !important;
+  background-color: #f8d66d !important;
+  border: 1px solid #e3b748 !important;
+  font-weight: 600 !important;
+  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.5) !important;
+  letter-spacing: 0.5px !important;
+}
+
+/* 持之以恒称号 - 绿色 */
+.title-persistent {
+  color: #2c5e2e !important;
+  background-color: #a8e2aa !important;
+  border: 1px solid #56c158 !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.4px !important;
+}
+
+/* 巅峰大神称号 - 红色 */
+.title-master {
+  color: #ffffff !important;
+  background-color: #e74c3c !important;
+  border: 1px solid #c0392b !important;
+  font-weight: 700 !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+  letter-spacing: 0.6px !important;
 }
 
 .post-time {
@@ -164,5 +274,42 @@ defineEmits(["user-click", "post-command"]);
 
 .loading-placeholder {
   width: 100%;
+}
+
+@media (prefers-color-scheme: dark) {
+  .level-badge {
+    background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%);
+    color: white;
+    box-shadow: 0 2px 6px rgba(59, 130, 246, 0.4);
+  }
+  
+  .user-title-inline {
+    color: #ccc;
+    background-color: #333;
+  }
+  
+  /* 暗黑模式下的官方称号 - 金色 */
+  .title-official {
+    color: #f8d66d !important;
+    background-color: #4a3206 !important;
+    border: 1px solid #816d37 !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5) !important;
+  }
+  
+  /* 暗黑模式下的持之以恒称号 - 绿色 */
+  .title-persistent {
+    color: #a8e2aa !important;
+    background-color: #1e3e1f !important;
+    border: 1px solid #2c5e2e !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+  }
+  
+  /* 暗黑模式下的巅峰大神称号 - 红色 */
+  .title-master {
+    color: #ffffff !important;
+    background-color: #7d2620 !important;
+    border: 1px solid #b74138 !important;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5) !important;
+  }
 }
 </style>

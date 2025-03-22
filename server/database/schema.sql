@@ -10,6 +10,10 @@ CREATE TABLE IF NOT EXISTS users (
   bio TEXT,
   experience INT DEFAULT 0,
   level INT DEFAULT 1,
+  points INT DEFAULT 0,
+  title VARCHAR(50) DEFAULT NULL,
+  post_streak INT DEFAULT 0,
+  last_post_date DATE DEFAULT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   status ENUM('online', 'offline') DEFAULT 'offline',
@@ -47,19 +51,22 @@ CREATE TABLE IF NOT EXISTS events (
 
 -- 帖子表
 CREATE TABLE IF NOT EXISTS posts (
-  id INT PRIMARY KEY AUTO_INCREMENT,
-  user_id INT NOT NULL,
-  title VARCHAR(100) NOT NULL,
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  user_id INT UNSIGNED NOT NULL,
+  title VARCHAR(255) NOT NULL,
   content TEXT NOT NULL,
-  images JSON,
+  images TEXT,
+  views INT UNSIGNED DEFAULT 0,
+  likes INT UNSIGNED DEFAULT 0,
   audio VARCHAR(255) DEFAULT NULL,
-  views INT DEFAULT 0,
-  likes INT DEFAULT 0,
-  status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
+  category_id INT UNSIGNED,
+  status ENUM('pending', 'approved', 'rejected') DEFAULT 'approved',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
+  is_pinned BOOLEAN DEFAULT FALSE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- 评论表
 CREATE TABLE IF NOT EXISTS comments (
@@ -146,7 +153,41 @@ CREATE TABLE IF NOT EXISTS feedback (
   reply_by INT,
   FOREIGN KEY (reply_by) REFERENCES users(id)
 );
+-- 创建活动表
+CREATE TABLE IF NOT EXISTS `activities` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `title` VARCHAR(100) NOT NULL COMMENT '活动标题',
+  `description` TEXT NOT NULL COMMENT '活动描述',
+  `cover_image` VARCHAR(255) NULL COMMENT '封面图片URL',
+  `start_time` DATETIME NOT NULL COMMENT '活动开始时间',
+  `end_time` DATETIME NOT NULL COMMENT '活动结束时间',
+  `location` VARCHAR(100) NOT NULL COMMENT '活动地点',
+  `max_participants` INT NOT NULL DEFAULT 100 COMMENT '最大参与人数',
+  `current_participants` INT NOT NULL DEFAULT 0 COMMENT '当前参与人数',
+  `status` ENUM('active', 'cancelled', 'completed') NOT NULL DEFAULT 'active' COMMENT '活动状态',
+  `created_by` INT NULL COMMENT '创建者ID',
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at` DATETIME NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  INDEX `idx_activity_status` (`status`),
+  INDEX `idx_activity_start_time` (`start_time`),
+  INDEX `idx_activity_end_time` (`end_time`),
+  INDEX `idx_activity_created_by` (`created_by`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='活动表';
 
+-- 创建活动参与表
+CREATE TABLE IF NOT EXISTS `activity_participants` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `activity_id` INT NOT NULL COMMENT '活动ID',
+  `user_id` INT NOT NULL COMMENT '用户ID',
+  `joined_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '参加时间',
+  `status` ENUM('joined', 'cancelled') NOT NULL DEFAULT 'joined' COMMENT '参与状态',
+  PRIMARY KEY (`id`),
+  UNIQUE INDEX `idx_activity_user` (`activity_id`, `user_id`),
+  INDEX `idx_user_activities` (`user_id`),
+  CONSTRAINT `fk_activity_participants_activity` FOREIGN KEY (`activity_id`) REFERENCES `activities` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_activity_participants_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='活动参与表'; 
 -- 评论点赞表
 CREATE TABLE IF NOT EXISTS comment_likes (
   id INT PRIMARY KEY AUTO_INCREMENT,
@@ -254,6 +295,16 @@ CREATE TABLE IF NOT EXISTS `user_exp_history` (
   FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- 积分历史记录表
+CREATE TABLE IF NOT EXISTS `user_points_history` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `user_id` INT NOT NULL,
+  `points_gained` INT NOT NULL,
+  `source` VARCHAR(100) NOT NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- 用户表情包表
 CREATE TABLE IF NOT EXISTS `user_emojis` (
   `id` INT PRIMARY KEY AUTO_INCREMENT,
@@ -272,16 +323,17 @@ CREATE TABLE IF NOT EXISTS `tasks` (
   `description` VARCHAR(200) NOT NULL,
   `target` INT NOT NULL,
   `reward` INT NOT NULL,
+  `points_reward` INT NOT NULL DEFAULT 0,
   `is_active` TINYINT(1) NOT NULL DEFAULT 1,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- 插入默认任务
-INSERT INTO `tasks` (`task_type`, `title`, `description`, `target`, `reward`, `is_active`) VALUES
-('post', '发布帖子', '在社区发布1篇帖子(额外奖励,每次发帖直接获得10经验)', 1, 10, 1),
-('comment', '评论互动', '在社区评论3次(额外奖励,每次评论直接获得5经验)', 3, 5, 1),
-('like', '点赞支持', '给帖子点赞5次(额外奖励,每次点赞直接获得2经验)', 5, 10, 1);
+INSERT INTO `tasks` (`task_type`, `title`, `description`, `target`, `reward`, `points_reward`, `is_active`) VALUES
+('post', '发布帖子', '在社区发布1篇帖子(额外奖励,每次发帖直接获得10经验)', 1, 10, 5, 1),
+('comment', '评论互动', '在社区评论3次(额外奖励,每次评论直接获得5经验)', 3, 5, 2, 1),
+('like', '点赞支持', '给帖子点赞5次(额外奖励,每次点赞直接获得2经验)', 5, 10, 3, 1);
 
 -- 每日经验上限配置表
 CREATE TABLE IF NOT EXISTS `system_settings` (
@@ -312,3 +364,94 @@ CREATE TABLE IF NOT EXISTS `reports` (
   FOREIGN KEY (`reporter_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
   FOREIGN KEY (`processed_by`) REFERENCES `admins` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 公告表
+CREATE TABLE IF NOT EXISTS `announcements` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `title` VARCHAR(255) NOT NULL,
+  `content` TEXT NOT NULL,
+  `author_id` INT UNSIGNED NOT NULL,
+  `images` JSON NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_author_id` (`author_id`),
+  CONSTRAINT `fk_announcements_author` FOREIGN KEY (`author_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 修改通知表，添加类型字段和来源关联
+ALTER TABLE `notifications` 
+ADD COLUMN `type` ENUM('like', 'comment', 'system') NOT NULL DEFAULT 'comment' AFTER `is_read`,
+ADD COLUMN `source_type` VARCHAR(50) NULL AFTER `type`,
+ADD COLUMN `source_id` INT UNSIGNED NULL AFTER `source_type`;
+-- 先删除从表（有外键约束的表）
+DROP TABLE IF EXISTS `chat_likes`;
+-- 然后删除主表
+DROP TABLE IF EXISTS `chat_messages`;
+-- 删除评论表
+DROP TABLE IF EXISTS `chat_comments`;
+-- 删除评论点赞表
+DROP TABLE IF EXISTS `chat_comment_likes`;
+-- 创建应用版本管理表
+CREATE TABLE IF NOT EXISTS `app_versions` (
+  `id` INT PRIMARY KEY AUTO_INCREMENT,
+  `version` VARCHAR(20) NOT NULL,
+  `build_number` VARCHAR(20) NOT NULL,
+  `platform` ENUM('android', 'ios', 'web') NOT NULL,
+  `release_date` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `force_update` BOOLEAN DEFAULT FALSE,
+  `release_notes` TEXT NOT NULL,
+  `download_url` VARCHAR(255) DEFAULT NULL,
+  `app_store_url` VARCHAR(255) DEFAULT NULL,
+  `min_os_version` VARCHAR(20) DEFAULT NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX `idx_platform_version` (`platform`, `version`),
+  UNIQUE KEY `unique_platform_version` (`platform`, `version`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+ALTER TABLE posts ADD COLUMN IF NOT EXISTS is_pinned BOOLEAN DEFAULT FALSE;
+
+-- 添加用户称号相关字段
+ALTER TABLE users ADD COLUMN IF NOT EXISTS title VARCHAR(50) DEFAULT NULL;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS post_streak INT DEFAULT 0;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS last_post_date DATE DEFAULT NULL; 
+-- 初始化版本数据
+INSERT INTO `app_versions` 
+  (`version`, `build_number`, `platform`, `release_date`, `force_update`, `release_notes`, `download_url`, `min_os_version`) 
+VALUES 
+  ('1.0.0', '1', 'android', '2024-03-17', FALSE, '当前版本', 'https://你的下载服务器地址/shiguang-1.0.0.apk', '8.0.0');
+
+INSERT INTO `app_versions` 
+  (`version`, `build_number`, `platform`, `release_date`, `force_update`, `release_notes`, `app_store_url`, `min_os_version`) 
+VALUES 
+  ('1.0.0', '1', 'ios', '2024-03-17', FALSE, '当前版本', 'https://apps.apple.com/app/id你的APPID', '13.0.0');
+
+INSERT INTO `app_versions` 
+  (`version`, `build_number`, `platform`, `release_date`, `force_update`, `release_notes`) 
+VALUES 
+  ('1.0.0', '1', 'web', '2024-03-17', FALSE, '当前版本');
+
+-- 积分商品表
+CREATE TABLE IF NOT EXISTS `points_products` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `name` VARCHAR(255) NOT NULL COMMENT '商品名称',
+  `description` TEXT COMMENT '商品描述',
+  `image_url` VARCHAR(255) COMMENT '商品图片',
+  `points_cost` INT NOT NULL COMMENT '所需积分',
+  `quantity` INT NOT NULL DEFAULT 0 COMMENT '库存数量',
+  `is_active` BOOLEAN NOT NULL DEFAULT TRUE COMMENT '是否上架',
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 积分兑换记录表
+CREATE TABLE IF NOT EXISTS `points_exchanges` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `user_id` INT NOT NULL,
+  `product_id` INT NOT NULL,
+  `points_cost` INT NOT NULL COMMENT '兑换时的积分花费',
+  `status` ENUM('pending', 'completed', 'failed') NOT NULL DEFAULT 'pending' COMMENT '兑换状态',
+  `exchange_time` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '兑换时间',
+  `completion_time` TIMESTAMP NULL COMMENT '完成时间',
+  FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`product_id`) REFERENCES `points_products`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci; 

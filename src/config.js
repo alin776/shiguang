@@ -4,7 +4,7 @@
  */
 
 // API基础URL
-export const API_BASE_URL = "http://47.98.210.7:3000";
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://47.98.210.7:3000";
 
 // 应用版本信息
 export const APP_VERSION = {
@@ -21,7 +21,7 @@ export const UPLOAD_PATHS = {
 };
 
 // WebSocket配置
-export const WS_URL = "ws://47.98.210.7:3000";
+export const WEBSOCKET_BASE_URL = "ws://47.98.210.7:3000";
 
 // 上传端点
 export const UPLOAD_ENDPOINTS = {
@@ -84,6 +84,12 @@ export const API_ENDPOINTS = {
   FEEDBACK: {
     SUBMIT: "/api/feedback",
     LIST: "/api/feedback"
+  },
+  
+  // 活动相关
+  ACTIVITIES: {
+    LIST: "/api/activities",
+    DETAIL: (id) => `/api/activities/${id}`
   }
 };
 

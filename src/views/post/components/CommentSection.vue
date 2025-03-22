@@ -3,7 +3,7 @@
     <h3 class="comments-title">评论 ({{ totalComments }})</h3>
 
     <div class="comments-list">
-      <div v-if="comments.length === 0" class="no-comments">
+      <div v-if="!comments || comments.length === 0" class="no-comments">
         暂无评论，快来发表第一条评论吧！
       </div>
 
@@ -307,6 +307,11 @@ const removeImage = (index) => {
 };
 
 const totalComments = computed(() => {
+  if (!props.comments || !Array.isArray(props.comments)) {
+    console.warn('CommentSection收到的comments不是数组:', props.comments);
+    return 0;
+  }
+  
   let total = props.comments.length;
 
   // 计算所有回复评论

@@ -86,18 +86,31 @@
         <el-table-column prop="views" label="浏览量" width="100" sortable />
         <el-table-column prop="likes_count" label="点赞数" width="100" sortable />
         <el-table-column prop="comments_count" label="评论数" width="100" sortable />
+        <el-table-column prop="is_pinned" label="置顶" width="80">
+          <template #default="scope">
+            <el-tag v-if="scope.row.is_pinned" type="success">已置顶</el-tag>
+            <el-tag v-else type="info">未置顶</el-tag>
+          </template>
+        </el-table-column>
         <el-table-column prop="created_at" label="发布时间" width="180" sortable>
           <template #default="scope">
             {{ formatDate(scope.row.created_at) }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="180" fixed="right">
+        <el-table-column label="操作" width="250" fixed="right">
           <template #default="scope">
             <el-button 
               size="small"
               @click="handleRowClick(scope.row)"
             >
               查看
+            </el-button>
+            <el-button 
+              size="small" 
+              :type="scope.row.is_pinned ? 'warning' : 'success'" 
+              @click="handleTogglePin(scope.row)"
+            >
+              {{ scope.row.is_pinned ? '取消置顶' : '置顶' }}
             </el-button>
             <el-button 
               size="small" 
@@ -223,6 +236,30 @@ const viewPostDetail = (postId) => {
 // 表格行点击事件
 const handleRowClick = (row) => {
   viewPostDetail(row.id)
+}
+
+// 置顶/取消置顶帖子
+const handleTogglePin = async (row) => {
+  const newPinStatus = !row.is_pinned
+  const action = newPinStatus ? '置顶' : '取消置顶'
+  
+  try {
+    const confirmed = await ElMessageBox.confirm(
+      `确定要${action}这篇帖子吗？`, 
+      '提示', 
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    )
+    
+    if (confirmed) {
+      await postStore.togglePin(row.id, newPinStatus)
+    }
+  } catch (error) {
+    // 用户取消操作
+  }
 }
 
 // 删除帖子

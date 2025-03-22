@@ -164,18 +164,100 @@ const commentReportForm = ref({ reason: "", detail: "", commentId: null });
 const currentUserId = computed(() => authStore.user?.id);
 const isOwnPost = computed(() => post.value?.user?.id === currentUserId.value);
 
+// 计算评论总数
+const commentCount = computed(() => {
+  if (!comments.value) return 0;
+  
+  // 计算评论和回复的总数
+  let count = comments.value.length;
+  
+  // 加上所有评论的回复数
+  comments.value.forEach(comment => {
+    if (comment.replies && Array.isArray(comment.replies)) {
+      count += comment.replies.length;
+    }
+  });
+  
+  return count;
+});
+
 // 获取帖子详情
 const fetchPostDetails = async () => {
   try {
     loading.value = true;
     const postId = route.params.id;
+    console.log("正在获取帖子详情, ID:", postId);
+    
     const data = await communityStore.getPost(postId);
     if (!checkMounted()) return;
-    post.value = data;
-    comments.value = data.comments || [];
+    
+    // 添加调试信息
+    console.log("从API获取到的帖子数据:", data);
+    console.log("帖子标题数据:", {
+      值: data.title,
+      类型: typeof data.title,
+      长度: data.title ? data.title.length : 0
+    });
+    
+    // 处理评论数据
+    const postComments = data.comments || [];
+    
+    // 确保comments是数组
+    if (!Array.isArray(postComments)) {
+      console.error('API返回的comments不是数组:', postComments);
+      comments.value = [];
+    } else {
+      comments.value = postComments;
+      console.log('获取到的评论数据:', comments.value);
+    }
+    
+    let totalComments = comments.value.length;
+    
+    // 计算回复的总数
+    comments.value.forEach(comment => {
+      if (comment.replies && Array.isArray(comment.replies)) {
+        totalComments += comment.replies.length;
+      }
+    });
+    
+    // 更新帖子对象中的评论数
+    data.comment_count = totalComments;
+    data.reply_count = totalComments;
+    
+    // 创建最终的帖子对象，确保保留所有字段
+    const processedPost = {
+      ...data,
+      // 确保标题一定存在
+      title: data.title || "无标题"
+    };
+    
+    // 设置最终的帖子数据
+    post.value = processedPost;
+    
+    // 验证标题
+    if (!post.value.title || post.value.title === "undefined" || post.value.title === "null") {
+      console.warn('帖子标题无效，强制设置为默认值');
+      post.value.title = '无标题';
+    } else {
+      console.log('帖子标题最终设置为:', post.value.title);
+    }
+    
+    console.log('最终的帖子数据:', post.value);
+    
+    // 检查是否需要更新API中的评论数
+    if (totalComments > 0 && (!data.comment_count || data.comment_count === 0)) {
+      console.log(`帖子评论数已更新: 实际评论数=${totalComments}, API返回评论数=${data.comment_count}`);
+    }
   } catch (error) {
     if (!checkMounted()) return;
+    console.error("加载帖子详情失败:", error);
     ElMessage.error("加载失败: " + (error.message || "未知错误"));
+    // 设置错误状态的帖子对象
+    post.value = { 
+      title: "加载失败", 
+      content: "无法获取帖子内容，请稍后再试", 
+      error: error.message || "未知错误" 
+    };
   } finally {
     if (checkMounted()) {
       loading.value = false;
@@ -284,7 +366,8 @@ const submitComment = async (commentData) => {
         replyToCommentId.value,
         commentData.content || '', // 确保空内容传递为空字符串而不是null或undefined
         replyToUserId.value,
-        audioPath
+        audioPath,
+        images // 传递图片/表情包数据
       );
       ElMessage.success("回复成功");
     } else {
@@ -298,9 +381,8 @@ const submitComment = async (commentData) => {
       ElMessage.success("评论成功");
     }
 
-    // 重新加载评论
-    const data = await communityStore.getPost(post.value.id);
-    comments.value = data.comments || [];
+    // 重新加载帖子详情及评论
+    await fetchPostDetails();
 
     // 重置回复状态
     cancelReply();
@@ -424,6 +506,12 @@ const submitCommentReport = async () => {
 
 // 生命周期钩子
 onMounted(() => {
+  // 初始化空数组，确保渲染前有默认值
+  post.value = null;
+  comments.value = [];
+  loading.value = true;
+  
+  // 获取帖子数据
   fetchPostDetails();
 });
 </script>

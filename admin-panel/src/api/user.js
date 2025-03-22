@@ -71,4 +71,12 @@ export function getUserInfo() {
       Authorization: `Bearer ${localStorage.getItem('admin_token')}`
     }
   })
+}
+
+// 重新计算所有用户称号
+export function recalculateAllTitles() {
+  return api({
+    url: '/admin/titles/recalculate',
+    method: 'post'
+  })
 } 

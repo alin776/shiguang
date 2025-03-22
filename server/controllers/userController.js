@@ -256,6 +256,32 @@ const getUserExperience = async (req, res) => {
   }
 };
 
+// 获取用户积分信息
+const getUserPoints = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // 查询用户积分
+    const [users] = await db.execute(
+      "SELECT id, points FROM users WHERE id = ?",
+      [userId]
+    );
+
+    if (users.length === 0) {
+      return res.status(404).json({ message: "用户不存在" });
+    }
+
+    const user = users[0];
+
+    res.json({
+      points: user.points || 0
+    });
+  } catch (error) {
+    console.error("获取用户积分失败:", error);
+    res.status(500).json({ message: "获取用户积分失败" });
+  }
+};
+
 // 增加用户经验
 const addUserExperience = async (req, res) => {
   try {
@@ -318,6 +344,54 @@ const addUserExperience = async (req, res) => {
   } catch (error) {
     console.error("增加用户经验失败:", error);
     res.status(500).json({ message: "增加用户经验失败" });
+  }
+};
+
+// 增加用户积分
+const addUserPoints = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { amount } = req.body;
+
+    if (!amount || isNaN(amount) || amount <= 0) {
+      return res.status(400).json({ message: "积分值必须是正数" });
+    }
+
+    // 获取当前用户信息
+    const [users] = await db.execute(
+      "SELECT id, points FROM users WHERE id = ?",
+      [userId]
+    );
+
+    if (users.length === 0) {
+      return res.status(404).json({ message: "用户不存在" });
+    }
+
+    const user = users[0];
+    
+    // 计算新的积分值
+    const currentPoints = user.points || 0;
+    const newPoints = currentPoints + parseInt(amount);
+    
+    // 记录积分历史
+    await db.execute(
+      `INSERT INTO user_points_history (user_id, points_gained, source, created_at)
+       VALUES (?, ?, ?, CURRENT_TIMESTAMP)`,
+      [userId, amount, '积分奖励']
+    );
+
+    // 更新用户积分
+    await db.execute(
+      "UPDATE users SET points = ? WHERE id = ?",
+      [newPoints, userId]
+    );
+
+    res.json({
+      points: newPoints
+    });
+  } catch (error) {
+    console.error("增加用户积分失败:", error);
+    res.status(500).json({ message: "增加用户积分失败" });
   }
 };
 
@@ -734,15 +808,15 @@ const getUserProfile = async (req, res) => {
     // 获取用户的帖子
     const [posts] = await db.execute(
       `SELECT 
-        p.*, 
-        u.username,
-        u.avatar,
-        COALESCE((SELECT COUNT(*) FROM comments WHERE post_id = p.id), 0) as comments_count,
+        p.id, p.title, p.content, p.created_at, p.updated_at, p.images, 
+        p.user_id, u.username, u.avatar,
+        COALESCE((SELECT COUNT(*) FROM comments WHERE post_id = p.id AND status = 'approved'), 0) as comments_count,
         COALESCE((SELECT COUNT(*) FROM likes WHERE post_id = p.id), 0) as likes_count
       FROM posts p
-      LEFT JOIN users u ON p.user_id = u.id
-      WHERE p.user_id = ?
-      ORDER BY p.created_at DESC`,
+      JOIN users u ON p.user_id = u.id
+      WHERE p.user_id = ? AND p.status = 'approved'
+      ORDER BY p.created_at DESC
+      LIMIT 5`,
       [userId]
     );
 
@@ -920,6 +994,87 @@ const unfollowUser = async (req, res) => {
   }
 };
 
+// 获取用户统计数据
+const getUserStats = async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    const currentUserId = req.user.id;
+
+    // 检查用户ID是否有效
+    if (!userId) {
+      return res.status(400).json({ 
+        success: false,
+        message: "用户ID不能为空" 
+      });
+    }
+
+    // 获取用户基本信息和统计数据
+    const [userResult] = await db.execute(
+      `SELECT 
+        u.id, u.username, u.avatar, u.bio, u.cover_image, u.title, u.experience, u.level,
+        (SELECT COUNT(DISTINCT follower_id) FROM follows WHERE followed_id = ?) as followers_count,
+        (SELECT COUNT(DISTINCT followed_id) FROM follows WHERE follower_id = ?) as following_count,
+        (SELECT COUNT(*) FROM posts WHERE user_id = ? AND status = 'approved') as posts_count
+      FROM users u
+      WHERE u.id = ?`,
+      [userId, userId, userId, userId]
+    );
+
+    if (!userResult.length) {
+      return res.status(404).json({ 
+        success: false,
+        message: "用户不存在" 
+      });
+    }
+
+    const user = userResult[0];
+
+    // 计算下一级所需经验
+    const nextLevel = user.level < 6 ? user.level + 1 : 6;
+    const currentLevelExp = LEVEL_EXPERIENCE[user.level] || 0;
+    const nextLevelExp = LEVEL_EXPERIENCE[nextLevel] || LEVEL_EXPERIENCE[6];
+    
+    // 当前级别的经验进度
+    const currentExp = user.experience - currentLevelExp;
+    const expNeeded = nextLevelExp - currentLevelExp;
+    const progress = Math.min(Math.floor((currentExp / expNeeded) * 100), 100);
+
+    // 获取用户获赞数
+    const [likesReceivedResult] = await db.execute(
+      `SELECT COUNT(*) as count FROM likes
+       WHERE post_id IN (SELECT id FROM posts WHERE user_id = ?)`,
+      [userId]
+    );
+
+    res.json({
+      success: true,
+      data: {
+        id: user.id,
+        username: user.username,
+        avatar: user.avatar,
+        bio: user.bio || "",
+        title: user.title || "",
+        followersCount: user.followers_count || 0,
+        followingCount: user.following_count || 0,
+        postsCount: user.posts_count || 0,
+        likesCount: likesReceivedResult[0].count || 0,
+        level: user.level || 1,
+        experienceProgress: {
+          currentExp: currentExp,
+          expNeeded: expNeeded,
+          progress: progress
+        }
+      }
+    });
+  } catch (error) {
+    console.error("获取用户统计数据失败:", error);
+    res.status(500).json({ 
+      success: false,
+      message: "获取用户统计数据失败" 
+    });
+  }
+};
+
 // 统一导出所有方法
 module.exports = {
   register,
@@ -939,5 +1094,8 @@ module.exports = {
   followUser,
   unfollowUser,
   getUserExperience,
-  addUserExperience
+  addUserExperience,
+  getUserPoints,
+  addUserPoints,
+  getUserStats
 };

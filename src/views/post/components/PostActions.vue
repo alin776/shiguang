@@ -14,7 +14,7 @@
     </div>
     <div class="action-item">
       <el-icon><ChatDotRound /></el-icon>
-      <span>{{ post.comments_count || 0 }}</span>
+      <span>{{ post.comment_count || post.comments_count || 0 }}</span>
     </div>
     <div
       class="action-item follow-action"

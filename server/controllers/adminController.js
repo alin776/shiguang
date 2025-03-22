@@ -2,6 +2,7 @@ const Admin = require('../models/admin');
 const jwt = require('jsonwebtoken');
 const config = require('../config/config');
 const db = require('../config/database');
+const { validationResult } = require('express-validator');
 
 // 管理员登录
 exports.login = async (req, res) => {
@@ -545,7 +546,7 @@ exports.getTaskById = async (req, res) => {
     const [tasks] = await db.execute(
       `SELECT 
         id, title, description, reward, target, 
-        task_type, is_active, created_at, updated_at
+        task_type, is_active, created_at, updated_at, points_reward
       FROM tasks 
       WHERE id = ?`,
       [taskId]
@@ -577,6 +578,7 @@ exports.getTaskById = async (req, res) => {
       description: task.description,
       type: task.task_type,
       exp_reward: task.reward,
+      points_reward: task.points_reward || 0,
       daily_limit: task.target,
       status: task.is_active ? 'active' : 'inactive',
       created_at: task.created_at,
@@ -622,7 +624,7 @@ exports.getTasks = async (req, res) => {
     const [tasks] = await db.execute(
       `SELECT 
         id, title, description, reward, target, 
-        created_at, updated_at, is_active, task_type
+        created_at, updated_at, is_active, task_type, points_reward
       FROM tasks 
       ${whereClause}
       ORDER BY ${orderBy} ${orderDirection}
@@ -637,6 +639,7 @@ exports.getTasks = async (req, res) => {
       description: task.description,
       type: task.task_type,
       exp_reward: task.reward,
+      points_reward: task.points_reward || 0,
       daily_limit: task.target,
       status: task.is_active ? 'active' : 'inactive',
       created_at: task.created_at,
@@ -659,7 +662,7 @@ exports.getTasks = async (req, res) => {
 // 创建任务
 exports.createTask = async (req, res) => {
   try {
-    const { title, description, type, expReward, dailyLimit, status } = req.body;
+    const { title, description, type, expReward, pointsReward, dailyLimit, status } = req.body;
     
     // 验证必填字段
     if (!title || !description || !type) {
@@ -669,12 +672,13 @@ exports.createTask = async (req, res) => {
     // 插入任务
     const [result] = await db.execute(
       `INSERT INTO tasks (
-        title, description, reward, target, is_active, task_type
-      ) VALUES (?, ?, ?, ?, ?, ?)`,
+        title, description, reward, points_reward, target, is_active, task_type
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [
         title,
         description,
         expReward || 0,
+        pointsReward || 0,
         dailyLimit || 1,
         status === 'active' ? 1 : 0,
         type
@@ -695,7 +699,7 @@ exports.createTask = async (req, res) => {
 exports.updateTask = async (req, res) => {
   try {
     const taskId = req.params.id;
-    const { title, description, type, expReward, dailyLimit, status } = req.body;
+    const { title, description, type, expReward, pointsReward, dailyLimit, status } = req.body;
     
     // 检查任务是否存在
     const [tasks] = await db.execute(
@@ -724,6 +728,11 @@ exports.updateTask = async (req, res) => {
     if (expReward !== undefined) {
       updateFields.push('reward = ?');
       queryParams.push(expReward);
+    }
+    
+    if (pointsReward !== undefined) {
+      updateFields.push('points_reward = ?');
+      queryParams.push(pointsReward);
     }
     
     if (dailyLimit !== undefined) {
@@ -885,7 +894,7 @@ exports.getUserList = async (req, res) => {
     const [users] = await db.execute(
       `SELECT 
         id, username, email, phone, avatar, bio, created_at, last_active,
-        status, experience, level
+        status, experience, level, title, post_streak, points
       FROM users 
       ${whereClause}
       ORDER BY ${dbOrderBy} ${orderDirection}
@@ -910,7 +919,10 @@ exports.getUserList = async (req, res) => {
         lastLoginAt: user.last_active,
         status: statusStr.includes('online') ? '已启用' : '已禁用',
         experience: user.experience || 0,
-        level: user.level || 1
+        level: user.level || 1,
+        points: user.points || 0,
+        title: user.title || '',
+        post_streak: user.post_streak || 0
       };
     });
     
@@ -936,7 +948,7 @@ exports.getUserById = async (req, res) => {
     const [users] = await db.execute(
       `SELECT 
         id, username, email, phone, avatar, bio, created_at, last_active,
-        status, experience, level
+        status, experience, level, title, post_streak, points
       FROM users 
       WHERE id = ?`,
       [userId]
@@ -983,6 +995,9 @@ exports.getUserById = async (req, res) => {
       status: statusStr.includes('online') ? '已启用' : '已禁用',
       experience: user.experience || 0,
       level: user.level || 1,
+      points: user.points || 0,
+      title: user.title || '',
+      post_streak: user.post_streak || 0,
       stats: {
         posts: postCountResult[0].count,
         comments: commentCountResult[0].count,
@@ -999,7 +1014,7 @@ exports.getUserById = async (req, res) => {
 exports.updateUser = async (req, res) => {
   try {
     const userId = req.params.id;
-    const { username, email, phone, bio, status, experience } = req.body;
+    const { username, email, phone, bio, role, status, experience, title, post_streak, points } = req.body;
     
     // 检查用户是否存在
     const [users] = await db.execute(
@@ -1011,40 +1026,16 @@ exports.updateUser = async (req, res) => {
       return res.status(404).json({ message: '用户不存在' });
     }
     
-    // 如果要更新用户名，检查是否已存在
-    if (username) {
-      const [existingUsers] = await db.execute(
-        'SELECT id FROM users WHERE username = ? AND id != ?',
-        [username, userId]
-      );
-      
-      if (existingUsers.length > 0) {
-        return res.status(400).json({ message: '用户名已存在' });
-      }
-    }
-    
-    // 如果要更新邮箱，检查是否已存在
-    if (email) {
-      const [existingEmails] = await db.execute(
-        'SELECT id FROM users WHERE email = ? AND id != ?',
-        [email, userId]
-      );
-      
-      if (existingEmails.length > 0) {
-        return res.status(400).json({ message: '邮箱已存在' });
-      }
-    }
-    
     // 构建更新字段
     const updateFields = [];
     const queryParams = [];
     
-    if (username) {
+    if (username !== undefined) {
       updateFields.push('username = ?');
       queryParams.push(username);
     }
     
-    if (email) {
+    if (email !== undefined) {
       updateFields.push('email = ?');
       queryParams.push(email);
     }
@@ -1059,7 +1050,7 @@ exports.updateUser = async (req, res) => {
       queryParams.push(bio || null);
     }
     
-    if (status) {
+    if (status !== undefined) {
       updateFields.push('status = ?');
       // 转换前端状态值为数据库值
       const dbStatus = status === '已启用' ? 'online' : 'offline';
@@ -1074,20 +1065,43 @@ exports.updateUser = async (req, res) => {
       console.log('更新用户经验值:', experience);
     }
     
+    // 添加积分更新逻辑
+    if (points !== undefined) {
+      updateFields.push('points = ?');
+      queryParams.push(parseInt(points) || 0);
+      console.log('更新用户积分:', points);
+    }
+    
+    // 添加新的称号字段
+    if ('title' in req.body) {  // 使用 'in' 操作符检查属性是否存在
+      updateFields.push('title = ?');
+      queryParams.push(title);
+      console.log('更新用户称号:', title);
+    }
+    
+    // 添加新的连续发帖字段
+    if (post_streak !== undefined) {
+      updateFields.push('post_streak = ?');
+      queryParams.push(post_streak);
+      console.log('更新用户连续发帖天数:', post_streak);
+    }
+    
     if (updateFields.length === 0) {
       return res.status(400).json({ message: '没有提供需要更新的字段' });
     }
     
     // 执行更新
-    await db.execute(
-      `UPDATE users SET ${updateFields.join(', ')} WHERE id = ?`,
-      [...queryParams, userId]
-    );
+    if (updateFields.length > 0) {
+      await db.execute(
+        `UPDATE users SET ${updateFields.join(', ')} WHERE id = ?`,
+        [...queryParams, userId]
+      );
+    }
     
-    res.json({ message: '用户信息更新成功' });
+    res.json({ message: '用户更新成功' });
   } catch (error) {
-    console.error('更新用户信息失败:', error);
-    res.status(500).json({ message: '更新用户信息失败' });
+    console.error('更新用户失败:', error);
+    res.status(500).json({ message: '更新用户失败' });
   }
 };
 
@@ -1355,9 +1369,12 @@ exports.updateCommentStatus = async (req, res) => {
       });
     }
     
-    // 检查评论是否存在
+    // 检查评论是否存在和获取相关信息
     const [comments] = await db.execute(
-      "SELECT id FROM comments WHERE id = ?",
+      `SELECT c.id, c.user_id, p.id AS post_id, p.user_id AS post_author_id, p.title 
+       FROM comments c
+       JOIN posts p ON c.post_id = p.id
+       WHERE c.id = ?`,
       [id]
     );
     
@@ -1373,6 +1390,20 @@ exports.updateCommentStatus = async (req, res) => {
       "UPDATE comments SET status = ? WHERE id = ?",
       [status, id]
     );
+    
+    // 如果评论被批准，且不是作者评论自己的帖子，则发送通知
+    if (status === 'approved' && comments[0].user_id !== comments[0].post_author_id) {
+      const { createNotification } = require('./notificationController');
+      await createNotification({
+        userId: comments[0].post_author_id,
+        type: "comment",
+        content: `评论了你的帖子: ${comments[0].title || ''}`,
+        sourceId: comments[0].post_id || null,
+        sourceType: "post",
+        actorId: comments[0].user_id || null,
+        relatedId: comments[0].id || null
+      });
+    }
     
     return res.status(200).json({
       success: true,
@@ -1666,6 +1697,786 @@ exports.updateReportStatus = async (req, res) => {
   }
 };
 
+// 获取所有公告
+exports.getAnnouncements = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+    
+    // 获取公告总数
+    const [countResult] = await db.execute('SELECT COUNT(*) as total FROM announcements');
+    const total = countResult[0].total;
+    
+    // 获取分页后的公告列表
+    const [announcements] = await db.execute(`
+      SELECT a.*, u.username as author_name, u.avatar as author_avatar 
+      FROM announcements a 
+      LEFT JOIN users u ON a.author_id = u.id 
+      ORDER BY a.created_at DESC
+      LIMIT ? OFFSET ?
+    `, [limit, offset]);
+    
+    // 处理图片JSON
+    const processedAnnouncements = announcements.map(announcement => {
+      const processed = { ...announcement };
+      
+      if (processed.images) {
+        try {
+          // 如果是字符串，尝试解析为JSON
+          if (typeof processed.images === 'string') {
+            try {
+              processed.images = JSON.parse(processed.images);
+              
+              // 确保是数组
+              if (!Array.isArray(processed.images)) {
+                // 如果解析后不是数组，但包含http，可能是单个URL
+                if (typeof processed.images === 'string' && processed.images.includes('http')) {
+                  processed.images = [processed.images];
+                } else {
+                  processed.images = [];
+                }
+              }
+            } catch (e) {
+              console.error(`解析公告ID:${processed.id}的图片数据失败:`, e);
+              // 如果解析失败但是包含http，可能是单个URL
+              if (processed.images.includes('http')) {
+                processed.images = [processed.images];
+              } else {
+                processed.images = [];
+              }
+            }
+          } else if (Array.isArray(processed.images)) {
+            // 如果已经是数组，不需要处理
+          } else {
+            processed.images = [];
+          }
+        } catch (e) {
+          console.error(`处理公告ID:${processed.id}的图片数据失败:`, e);
+          processed.images = [];
+        }
+      } else {
+        processed.images = [];
+      }
+      
+      return processed;
+    });
+    
+    return res.json({
+      announcements: processedAnnouncements,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+      }
+    });
+  } catch (error) {
+    console.error('管理员获取公告列表失败:', error);
+    return res.status(500).json({ message: '服务器错误' });
+  }
+};
+
+// 获取单个公告详情
+exports.getAnnouncementById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const [announcements] = await db.execute(`
+      SELECT a.*, u.username, u.avatar 
+      FROM announcements a 
+      LEFT JOIN users u ON a.author_id = u.id 
+      WHERE a.id = ?
+    `, [id]);
+    
+    if (announcements.length === 0) {
+      return res.status(404).json({ message: '找不到该公告' });
+    }
+    
+    const announcement = { ...announcements[0] };
+    
+    // 解析图片JSON
+    if (announcement.images) {
+      try {
+        // 如果是字符串，尝试解析为JSON
+        if (typeof announcement.images === 'string') {
+          try {
+            announcement.images = JSON.parse(announcement.images);
+            
+            // 确保是数组
+            if (!Array.isArray(announcement.images)) {
+              // 如果解析后不是数组，但包含http，可能是单个URL
+              if (typeof announcement.images === 'string' && announcement.images.includes('http')) {
+                announcement.images = [announcement.images];
+              } else {
+                announcement.images = [];
+              }
+            }
+          } catch (e) {
+            console.error(`解析公告ID:${announcement.id}的图片数据失败:`, e);
+            // 如果解析失败但是包含http，可能是单个URL
+            if (announcement.images.includes('http')) {
+              announcement.images = [announcement.images];
+            } else {
+              announcement.images = [];
+            }
+          }
+        } else if (Array.isArray(announcement.images)) {
+          // 如果已经是数组，不需要处理
+        } else {
+          announcement.images = [];
+        }
+      } catch (e) {
+        console.error(`处理公告ID:${announcement.id}的图片数据失败:`, e);
+        announcement.images = [];
+      }
+    } else {
+      announcement.images = [];
+    }
+    
+    // 构造作者信息
+    announcement.author = {
+      id: announcement.author_id,
+      username: announcement.username,
+      avatar: announcement.avatar
+    };
+    
+    // 删除多余字段
+    delete announcement.username;
+    delete announcement.avatar;
+    
+    return res.json({ announcement });
+  } catch (error) {
+    console.error('管理员获取公告详情失败:', error);
+    return res.status(500).json({ message: '服务器错误' });
+  }
+};
+
+// 创建新公告
+exports.createAnnouncement = async (req, res) => {
+  try {
+    console.log('接收到的创建公告请求:', req.body);
+    console.log('上传的文件:', req.files);
+    
+    const { title, content } = req.body;
+    // 从认证中间件获取admin.id，如果不存在则尝试从用户表中获取一个有效的ID
+    let author_id = req.admin?.id;
+    
+    if (!author_id) {
+      console.log('找不到admin.id，尝试从用户表中获取一个管理员ID');
+      // 尝试从admins表中获取一个管理员ID
+      const [admins] = await db.execute('SELECT id FROM admins LIMIT 1');
+      if (admins && admins.length > 0) {
+        author_id = admins[0].id;
+      } else {
+        // 如果admins表中没有记录，则尝试从users表中获取一个用户ID
+        const [users] = await db.execute('SELECT id FROM users LIMIT 1');
+        if (users && users.length > 0) {
+          author_id = users[0].id;
+        } else {
+          // 最后的备选方案，使用ID 1
+          author_id = 1;
+        }
+      }
+    }
+    
+    // 确保author_id是个有效的正整数
+    author_id = Math.abs(parseInt(author_id) || 1);
+    
+    console.log('创建公告，作者ID:', author_id);
+    
+    let images = [];
+    
+    // 处理图片上传
+    if (req.files && req.files.length > 0) {
+      // 修改图片路径前缀，确保路径正确
+      images = req.files.map(file => {
+        // 从文件路径中提取文件名
+        const filename = file.filename;
+        // 返回完整的访问URL
+        return `http://47.98.210.7:3000/uploads/announcements/${filename}`;
+      });
+      console.log('上传的图片完整路径:', images);
+    }
+
+    // 确保图片列表是有效的JSON字符串
+    const imagesJson = JSON.stringify(images);
+    console.log('最终图片JSON:', imagesJson);
+
+    // 插入公告记录
+    const [result] = await db.execute(
+      'INSERT INTO announcements (title, content, author_id, images) VALUES (?, ?, ?, ?)',
+      [title, content, author_id, imagesJson]
+    );
+    
+    // 获取创建的公告
+    const [announcements] = await db.execute(
+      'SELECT * FROM announcements WHERE id = ?',
+      [result.insertId]
+    );
+    
+    // 解析返回的公告对象中的images字段
+    let announcement = { ...announcements[0] };
+    if (announcement && announcement.images) {
+      try {
+        // 确保返回的图片数据是数组
+        if (typeof announcement.images === 'string') {
+          try {
+            announcement.images = JSON.parse(announcement.images);
+          } catch (e) {
+            console.error('解析公告图片失败:', e);
+            // 如果解析失败但是包含http链接，作为单个URL处理
+            if (announcement.images.includes('http')) {
+              announcement.images = [announcement.images];
+            } else {
+              announcement.images = [];
+            }
+          }
+        } else if (!Array.isArray(announcement.images)) {
+          announcement.images = [];
+        }
+      } catch (e) {
+        console.error('处理公告图片失败:', e);
+        announcement.images = [];
+      }
+    } else {
+      announcement.images = [];
+    }
+    
+    try {
+      // 发送系统通知给所有用户 - 但如果失败不中断流程
+      await db.execute(
+        'INSERT INTO notifications (user_id, actor_id, content, type, source_type, source_id) SELECT id, ?, ?, ?, ?, ? FROM users',
+        [author_id, `发布了新公告: ${title}`, 'system', 'announcement', result.insertId]
+      );
+    } catch (notificationError) {
+      console.error('发送公告通知失败:', notificationError);
+      // 继续执行，不中断创建公告的流程
+    }
+    
+    return res.status(201).json({ 
+      message: '公告创建成功',
+      announcement: announcement
+    });
+  } catch (error) {
+    console.error('管理员创建公告失败:', error);
+    return res.status(500).json({ message: `服务器错误: ${error.message}` });
+  }
+};
+
+// 更新公告
+exports.updateAnnouncement = async (req, res) => {
+  try {
+    console.log('接收到的更新公告请求:', { params: req.params, body: req.body, files: req.files });
+    
+    const { id } = req.params;
+    const { title, content, existingImages } = req.body;
+    
+    // 检查公告是否存在
+    const [announcements] = await db.execute(
+      'SELECT * FROM announcements WHERE id = ?',
+      [id]
+    );
+    
+    if (announcements.length === 0) {
+      return res.status(404).json({ message: '找不到该公告' });
+    }
+    
+    // 处理现有图片
+    let images = [];
+    
+    if (existingImages) {
+      try {
+        // 尝试解析existingImages字段
+        if (typeof existingImages === 'string') {
+          try {
+            // 尝试作为JSON解析
+            images = JSON.parse(existingImages);
+            console.log('从JSON成功解析现有图片:', images);
+          } catch (e) {
+            // 如果不是有效的JSON，但是以 [ 开头，可能是数组形式的字符串
+            if (existingImages.trim().startsWith('[')) {
+              console.log('尝试作为数组处理现有图片');
+              // 移除非法字符，尝试再次解析
+              const cleanedJson = existingImages.replace(/(\r\n|\n|\r)/gm, "").trim();
+              try {
+                images = JSON.parse(cleanedJson);
+              } catch (e2) {
+                console.error('第二次尝试解析现有图片失败:', e2);
+                // 如果还是失败，则当作单个URL处理
+                if (existingImages.includes('http')) {
+                  images = [existingImages];
+                }
+              }
+            } else if (existingImages.includes('http')) {
+              // 如果包含http，可能是单个URL
+              console.log('作为单个URL处理现有图片');
+              images = [existingImages];
+            }
+          }
+        } else if (Array.isArray(existingImages)) {
+          // 如果已经是数组，直接使用
+          images = existingImages;
+          console.log('现有图片已经是数组:', images);
+        }
+      } catch (e) {
+        console.error('处理现有图片失败:', e);
+        // 默认为空数组
+        images = [];
+      }
+    } else if (announcements[0].images) {
+      // 从数据库获取现有图片
+      try {
+        if (typeof announcements[0].images === 'string') {
+          // 检查是否是JSON字符串
+          if (announcements[0].images.trim().startsWith('[') || 
+              announcements[0].images.trim().startsWith('{')) {
+            try {
+              images = JSON.parse(announcements[0].images);
+            } catch (e) {
+              console.error('解析数据库中的图片JSON失败:', e);
+              // 检查是否包含http链接
+              if (announcements[0].images.includes('http')) {
+                console.log('数据库图片作为单个URL处理');
+                images = [announcements[0].images];
+              } else {
+                images = [];
+              }
+            }
+          } else if (announcements[0].images.includes('http')) {
+            // 单个URL
+            console.log('数据库图片作为单个URL处理');
+            images = [announcements[0].images];
+          } else {
+            images = [];
+          }
+        } else if (Array.isArray(announcements[0].images)) {
+          // 如果已经是数组
+          images = announcements[0].images;
+        } else {
+          images = [];
+        }
+      } catch (e) {
+        console.error('解析数据库中的图片失败:', e);
+        images = [];
+      }
+    }
+    
+    console.log('处理后的现有图片:', images);
+    
+    // 处理新上传的图片
+    if (req.files && req.files.length > 0) {
+      // 修改图片路径前缀，确保路径正确
+      const newImages = req.files.map(file => {
+        // 从文件路径中提取文件名
+        const filename = file.filename;
+        // 返回完整的访问URL
+        return `http://47.98.210.7:3000/uploads/announcements/${filename}`;
+      });
+      console.log('新上传的图片:', newImages);
+      
+      // 确保images是数组
+      if (!Array.isArray(images)) {
+        images = [];
+      }
+      
+      images = [...images, ...newImages];
+    }
+    
+    console.log('最终图片列表:', images);
+    
+    // 确保图片列表是有效的JSON字符串
+    const imagesJson = JSON.stringify(images);
+    console.log('最终图片JSON:', imagesJson);
+    
+    // 更新公告
+    await db.execute(
+      'UPDATE announcements SET title = ?, content = ?, images = ? WHERE id = ?',
+      [title, content, imagesJson, id]
+    );
+    
+    // 获取更新后的公告
+    const [updatedAnnouncements] = await db.execute(
+      'SELECT * FROM announcements WHERE id = ?',
+      [id]
+    );
+    
+    // 处理返回的图片数据
+    let processedAnnouncement = { ...updatedAnnouncements[0] };
+    
+    if (processedAnnouncement && processedAnnouncement.images) {
+      try {
+        // 确保返回的图片数据是数组
+        if (typeof processedAnnouncement.images === 'string') {
+          try {
+            processedAnnouncement.images = JSON.parse(processedAnnouncement.images);
+          } catch (e) {
+            console.error('解析更新后的图片数据失败:', e);
+            // 如果解析失败但是包含http链接，作为单个URL处理
+            if (processedAnnouncement.images.includes('http')) {
+              processedAnnouncement.images = [processedAnnouncement.images];
+            } else {
+              processedAnnouncement.images = [];
+            }
+          }
+        } else if (!Array.isArray(processedAnnouncement.images)) {
+          processedAnnouncement.images = [];
+        }
+      } catch (e) {
+        console.error('处理更新后的图片数据失败:', e);
+        processedAnnouncement.images = [];
+      }
+    } else {
+      processedAnnouncement.images = [];
+    }
+    
+    return res.json({ 
+      message: '公告更新成功',
+      announcement: processedAnnouncement
+    });
+  } catch (error) {
+    console.error('管理员更新公告失败:', error);
+    return res.status(500).json({ message: `服务器错误: ${error.message}` });
+  }
+};
+
+// 删除公告
+exports.deleteAnnouncement = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // 检查公告是否存在
+    const [announcements] = await db.execute(
+      'SELECT * FROM announcements WHERE id = ?',
+      [id]
+    );
+    
+    if (announcements.length === 0) {
+      return res.status(404).json({ message: '找不到该公告' });
+    }
+    
+    // 删除相关通知
+    await db.execute(
+      'DELETE FROM notifications WHERE source_type = "announcement" AND source_id = ?',
+      [id]
+    );
+    
+    // 删除公告
+    await db.execute('DELETE FROM announcements WHERE id = ?', [id]);
+    
+    return res.json({ message: '公告删除成功' });
+  } catch (error) {
+    console.error('管理员删除公告失败:', error);
+    return res.status(500).json({ message: '服务器错误' });
+  }
+};
+
+// 添加或取消置顶帖子
+exports.togglePinPost = async (req, res) => {
+  try {
+    const { postId } = req.params;
+    const { is_pinned } = req.body;
+    
+    // 检查帖子是否存在
+    const [existingPost] = await db.execute(
+      `SELECT * FROM posts WHERE id = ?`,
+      [postId]
+    );
+    
+    if (existingPost.length === 0) {
+      return res.status(404).json({ message: "帖子不存在" });
+    }
+    
+    // 更新帖子的置顶状态
+    await db.execute(
+      `UPDATE posts SET is_pinned = ? WHERE id = ?`,
+      [is_pinned, postId]
+    );
+    
+    return res.status(200).json({ 
+      message: is_pinned ? "帖子已置顶" : "帖子已取消置顶",
+      is_pinned
+    });
+  } catch (error) {
+    console.error("操作帖子置顶状态错误:", error);
+    return res.status(500).json({ message: "操作失败，请稍后再试" });
+  }
+};
+
+// 获取用户称号
+exports.getUserTitle = async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    
+    const [users] = await db.execute(
+      `SELECT id, username, title, post_streak, last_post_date FROM users WHERE id = ?`,
+      [userId]
+    );
+    
+    if (users.length === 0) {
+      return res.status(404).json({ 
+        success: false, 
+        message: '用户不存在' 
+      });
+    }
+    
+    // 查询用户发帖数
+    const [postStats] = await db.execute(
+      `SELECT COUNT(*) as total_posts 
+       FROM posts 
+       WHERE user_id = ? AND status = 'approved'`,
+      [userId]
+    );
+    
+    const user = users[0];
+    const userData = {
+      id: user.id,
+      username: user.username,
+      title: user.title,
+      post_streak: user.post_streak || 0,
+      last_post_date: user.last_post_date,
+      total_posts: postStats[0].total_posts || 0
+    };
+    
+    res.json({
+      success: true,
+      data: userData
+    });
+    
+  } catch (error) {
+    console.error('获取用户称号失败:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: '获取用户称号失败' 
+    });
+  }
+};
+
+// 更新用户称号
+exports.updateUserTitle = async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    const { title } = req.body;
+    
+    // 验证用户是否存在
+    const [users] = await db.execute(
+      `SELECT id FROM users WHERE id = ?`,
+      [userId]
+    );
+    
+    if (users.length === 0) {
+      return res.status(404).json({ 
+        success: false, 
+        message: '用户不存在' 
+      });
+    }
+    
+    // 更新用户称号
+    await db.execute(
+      `UPDATE users SET title = ? WHERE id = ?`,
+      [title, userId]
+    );
+    
+    res.json({
+      success: true,
+      message: '用户称号已更新'
+    });
+    
+  } catch (error) {
+    console.error('更新用户称号失败:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: '更新用户称号失败' 
+    });
+  }
+};
+
+// 强制重新计算所有用户称号
+exports.recalculateAllTitles = async (req, res) => {
+  try {
+    const titleService = require('../services/titleService');
+    const result = await titleService.forceUpdateAllTitles();
+    
+    res.json({
+      success: true,
+      message: '所有用户称号已重新计算'
+    });
+  } catch (error) {
+    console.error('重新计算所有用户称号失败:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: '重新计算所有用户称号失败' 
+    });
+  }
+};
+
+// 获取所有积分商品（管理员）
+exports.getAllPointsProducts = async (req, res) => {
+  try {
+    const [products] = await db.execute(
+      `SELECT id, name, description, image_url, points_cost, quantity, is_active, created_at, updated_at
+       FROM points_products
+       ORDER BY created_at DESC`
+    );
+
+    res.status(200).json(products);
+  } catch (error) {
+    console.error("获取积分商品列表失败:", error);
+    res.status(500).json({ message: "获取积分商品列表失败" });
+  }
+};
+
+// 添加积分商品
+exports.addPointsProduct = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
+  try {
+    const { name, description, image_url, points_cost, quantity, is_active } = req.body;
+
+    const [result] = await db.execute(
+      `INSERT INTO points_products 
+       (name, description, image_url, points_cost, quantity, is_active)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [name, description, image_url, points_cost, quantity, is_active || true]
+    );
+
+    res.status(201).json({
+      message: "积分商品添加成功",
+      productId: result.insertId
+    });
+  } catch (error) {
+    console.error("添加积分商品失败:", error);
+    res.status(500).json({ message: "添加积分商品失败" });
+  }
+};
+
+// 更新积分商品
+exports.updatePointsProduct = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
+  try {
+    const productId = req.params.id;
+    const { name, description, image_url, points_cost, quantity, is_active } = req.body;
+
+    const updateFields = [];
+    const queryParams = [];
+
+    if (name !== undefined) {
+      updateFields.push("name = ?");
+      queryParams.push(name);
+    }
+
+    if (description !== undefined) {
+      updateFields.push("description = ?");
+      queryParams.push(description);
+    }
+
+    if (image_url !== undefined) {
+      updateFields.push("image_url = ?");
+      queryParams.push(image_url);
+    }
+
+    if (points_cost !== undefined) {
+      updateFields.push("points_cost = ?");
+      queryParams.push(points_cost);
+    }
+
+    if (quantity !== undefined) {
+      updateFields.push("quantity = ?");
+      queryParams.push(quantity);
+    }
+
+    if (is_active !== undefined) {
+      updateFields.push("is_active = ?");
+      queryParams.push(is_active);
+    }
+
+    if (updateFields.length === 0) {
+      return res.status(400).json({ message: "没有提供要更新的字段" });
+    }
+
+    queryParams.push(productId);
+
+    await db.execute(
+      `UPDATE points_products 
+       SET ${updateFields.join(", ")} 
+       WHERE id = ?`,
+      queryParams
+    );
+
+    res.status(200).json({ message: "积分商品更新成功" });
+  } catch (error) {
+    console.error("更新积分商品失败:", error);
+    res.status(500).json({ message: "更新积分商品失败" });
+  }
+};
+
+// 删除积分商品
+exports.deletePointsProduct = async (req, res) => {
+  try {
+    const productId = req.params.id;
+
+    await db.execute("DELETE FROM points_products WHERE id = ?", [productId]);
+
+    res.status(200).json({ message: "积分商品删除成功" });
+  } catch (error) {
+    console.error("删除积分商品失败:", error);
+    res.status(500).json({ message: "删除积分商品失败" });
+  }
+};
+
+// 获取所有积分兑换记录（管理员）
+exports.getAllPointsExchanges = async (req, res) => {
+  try {
+    const [exchanges] = await db.execute(
+      `SELECT e.id, e.user_id, e.product_id, e.points_cost, e.status, 
+              e.exchange_time, e.completion_time,
+              u.username, p.name as product_name
+       FROM points_exchanges e
+       JOIN users u ON e.user_id = u.id
+       JOIN points_products p ON e.product_id = p.id
+       ORDER BY e.exchange_time DESC`
+    );
+
+    res.status(200).json(exchanges);
+  } catch (error) {
+    console.error("获取积分兑换记录失败:", error);
+    res.status(500).json({ message: "获取积分兑换记录失败" });
+  }
+};
+
+// 更新兑换记录状态
+exports.updatePointsExchangeStatus = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
+  try {
+    const exchangeId = req.params.id;
+    const { status } = req.body;
+
+    await db.execute(
+      `UPDATE points_exchanges 
+       SET status = ?, 
+           completion_time = ${status === 'completed' ? 'NOW()' : 'NULL'}
+       WHERE id = ?`,
+      [status, exchangeId]
+    );
+
+    res.status(200).json({ message: "兑换记录状态更新成功" });
+  } catch (error) {
+    console.error("更新兑换记录状态失败:", error);
+    res.status(500).json({ message: "更新兑换记录状态失败" });
+  }
+};
+
 module.exports = {
   login: exports.login,
   getProfile: exports.getProfile,
@@ -1710,5 +2521,20 @@ module.exports = {
   updateNoteStatus: exports.updateNoteStatus,
   getReports: exports.getReports,
   getReportDetails: exports.getReportDetails,
-  updateReportStatus: exports.updateReportStatus
+  updateReportStatus: exports.updateReportStatus,
+  getAnnouncements: exports.getAnnouncements,
+  getAnnouncementById: exports.getAnnouncementById,
+  createAnnouncement: exports.createAnnouncement,
+  updateAnnouncement: exports.updateAnnouncement,
+  deleteAnnouncement: exports.deleteAnnouncement,
+  togglePinPost: exports.togglePinPost,
+  getUserTitle: exports.getUserTitle,
+  updateUserTitle: exports.updateUserTitle,
+  recalculateAllTitles: exports.recalculateAllTitles,
+  getAllPointsProducts: exports.getAllPointsProducts,
+  addPointsProduct: exports.addPointsProduct,
+  updatePointsProduct: exports.updatePointsProduct,
+  deletePointsProduct: exports.deletePointsProduct,
+  getAllPointsExchanges: exports.getAllPointsExchanges,
+  updatePointsExchangeStatus: exports.updatePointsExchangeStatus
 }; 

@@ -24,7 +24,12 @@ const categoryRoutes = require("./routes/categoryRoutes");
 const updateRoutes = require("./routes/updateRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const taskRoutes = require("./routes/taskRoutes");
+const announcementRoutes = require("./routes/announcementRoutes");
+const townRoutes = require("./routes/townRoutes");
+const forumRoutes = require("./routes/forumRoutes");
+const activityRoutes = require("./routes/activityRoutes");
 const emailService = require("./services/emailService");
+const titleService = require("./services/titleService");
 
 const app = express();
 
@@ -66,6 +71,10 @@ app.use("/uploads/covers", (req, res, next) => {
   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
   next();
 }, express.static("uploads/covers"));
+
+// 添加静态文件服务配置，确保uploads目录可以被访问
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+console.log('已配置静态文件服务: /uploads -> ', path.join(__dirname, 'uploads'));
 
 // 自定义CORS中间件，确保OPTIONS预检请求能被正确处理
 app.use((req, res, next) => {
@@ -126,9 +135,16 @@ app.use("/api/categories", categoryRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/updates", updateRoutes);
 app.use("/api/tasks", taskRoutes);
+app.use("/api/announcements", announcementRoutes);
+app.use("/api/town", townRoutes);
+app.use("/api/forum", forumRoutes);
+app.use("/api/activities", activityRoutes);
 
 // 初始化邮件服务
 emailService.initMailer();
+
+// 初始化称号服务
+titleService.init();
 
 // 错误处理中间件
 app.use((err, req, res, next) => {

@@ -7,20 +7,6 @@
       <h1>任务中心</h1>
     </div>
 
-    <div class="daily-exp-summary">
-      <div class="exp-info">
-        <div class="exp-title">今日可获取经验</div>
-        <div class="exp-progress">
-          <span class="exp-current">{{ dailyExpGained }}</span>
-          <span class="exp-separator">/</span>
-          <span class="exp-total">{{ dailyExpLimit }}</span>
-        </div>
-      </div>
-      <div class="progress-bar-container">
-        <div class="progress-bar" :style="{ width: `${dailyExpPercentage}%` }"></div>
-      </div>
-    </div>
-
     <div class="exp-tips">
       <div class="tip-title">
         <el-icon><InfoFilled /></el-icon>
@@ -30,7 +16,7 @@
         <p>• 每次点赞可直接获得<strong>2点经验</strong></p>
         <p>• 每次评论可直接获得<strong>5点经验</strong></p>
         <p>• 每次发帖可直接获得<strong>10点经验</strong></p>
-        <p>• 完成下方任务可获得<strong>额外奖励</strong></p>
+        <p>• 完成下方任务可额外获得<strong>积分奖励</strong>：点赞(3积分)、评论(2积分)、发帖(5积分)</p>
         <p>• 每日经验获取上限为<strong>{{ dailyExpLimit }}点</strong></p>
       </div>
     </div>
@@ -43,7 +29,7 @@
           v-for="task in dailyTasks" 
           :key="task.id" 
           class="task-item"
-          :class="{ 'completed': task.isCompleted }"
+          :class="{ 'completed': isTaskCompleted(task) }"
         >
           <div class="task-content">
             <div class="task-icon">
@@ -58,7 +44,7 @@
           </div>
           
           <div class="task-status">
-            <template v-if="task.isCompleted">
+            <template v-if="isTaskCompleted(task)">
               <el-icon class="completed-icon"><CircleCheckFilled /></el-icon>
               <span class="completed-text">已完成</span>
             </template>
@@ -68,7 +54,10 @@
                 <span class="separator">/</span>
                 <span class="total">{{ task.target }}</span>
               </div>
-              <div class="reward">+{{ task.reward }}经验</div>
+              <div class="reward-container">
+                <div class="reward" :class="task.type === 'like' ? 'like-reward' : task.type === 'post' ? 'post-reward' : 'comment-reward'">+{{ task.reward }}经验</div>
+                <div class="points-reward" v-if="task.pointsReward > 0">+{{ task.pointsReward }}积分</div>
+              </div>
             </template>
           </div>
         </div>
@@ -88,7 +77,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { 
   ArrowLeft, 
@@ -140,9 +129,23 @@ const dailyExpPercentage = computed(() => {
   return Math.min(percentage, 100);
 });
 
+const isTaskCompleted = (task) => {
+  return task.isCompleted || task.current >= task.target;
+};
+
 onMounted(() => {
   // 加载任务信息
   loadTasks();
+  
+  // 设置定时刷新
+  const refreshInterval = setInterval(() => {
+    loadTasks();
+  }, 30000); // 每30秒刷新一次任务状态
+  
+  // 组件卸载时清除定时器
+  onUnmounted(() => {
+    clearInterval(refreshInterval);
+  });
 });
 </script>
 
@@ -180,52 +183,37 @@ onMounted(() => {
   color: #303133;
 }
 
-.daily-exp-summary {
-  background: linear-gradient(90deg, #3b82f6, #2563eb);
+.exp-tips {
+  background-color: white;
   border-radius: 12px;
   padding: 16px;
-  color: white;
   margin-bottom: 20px;
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
-.exp-info {
+.tip-title {
   display: flex;
-  justify-content: space-between;
-  margin-bottom: 8px;
-}
-
-.exp-title {
+  align-items: center;
+  gap: 8px;
   font-size: 16px;
-  font-weight: 500;
+  font-weight: 600;
+  color: #3b82f6;
+  margin-bottom: 12px;
 }
 
-.exp-progress {
-  font-size: 16px;
-  font-weight: 700;
+.tip-content {
+  font-size: 14px;
+  line-height: 1.5;
+  color: #4b5563;
 }
 
-.exp-current {
-  font-size: 18px;
+.tip-content p {
+  margin: 6px 0;
 }
 
-.exp-total {
-  opacity: 0.9;
-}
-
-.progress-bar-container {
-  height: 8px;
-  background-color: rgba(255, 255, 255, 0.3);
-  border-radius: 4px;
-  overflow: hidden;
-  margin-top: 12px;
-}
-
-.progress-bar {
-  height: 100%;
-  background-color: rgba(255, 255, 255, 0.8);
-  border-radius: 4px;
-  transition: width 0.5s ease;
+.tip-content strong {
+  color: #f56c6c;
+  font-weight: 600;
 }
 
 .section-title {
@@ -312,10 +300,36 @@ onMounted(() => {
   color: #3b82f6;
 }
 
-.reward {
+.reward-container {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  align-items: center;
+  margin-top: 4px;
+}
+
+.reward, .points-reward {
   font-size: 14px;
   color: #f56c6c;
   font-weight: 500;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background-color: #fff3f3;
+}
+
+.like-reward {
+  color: #e67e22;
+  background-color: #fff8e1;
+}
+
+.post-reward {
+  color: #3498db;
+  background-color: #e3f2fd;
+}
+
+.comment-reward {
+  color: #9c27b0;
+  background-color: #f3e5f5;
 }
 
 .completed-icon {
@@ -342,38 +356,5 @@ onMounted(() => {
   font-size: 16px;
   font-weight: 500;
   border-radius: 30px;
-}
-
-.exp-tips {
-  background-color: white;
-  border-radius: 12px;
-  padding: 16px;
-  margin-bottom: 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-}
-
-.tip-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 16px;
-  font-weight: 600;
-  color: #3b82f6;
-  margin-bottom: 12px;
-}
-
-.tip-content {
-  font-size: 14px;
-  line-height: 1.5;
-  color: #4b5563;
-}
-
-.tip-content p {
-  margin: 6px 0;
-}
-
-.tip-content strong {
-  color: #f56c6c;
-  font-weight: 600;
 }
 </style> 

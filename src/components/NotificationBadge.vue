@@ -1,6 +1,6 @@
 <template>
   <div class="notification-badge" @click="showNotifications">
-    <el-badge :value="unreadCount" :hidden="!unreadCount">
+    <el-badge :value="unreadCount" :hidden="!unreadCount" :max="99" type="danger">
       <el-icon :size="24" class="notification-icon"><Bell /></el-icon>
     </el-badge>
   </div>
@@ -198,13 +198,20 @@ defineExpose({
 
 .notification-icon {
   color: #2c3e50;
-  filter: drop-shadow(0 0 4px rgba(147, 51, 234, 0.3));
   transition: all 0.3s ease;
 }
 
 .notification-icon:hover {
   transform: scale(1.1);
-  filter: drop-shadow(0 0 8px rgba(147, 51, 234, 0.5));
+}
+
+/* 使el-badge红点样式更明显 */
+:deep(.el-badge__content) {
+  background-color: #ff4d4f !important;
+  color: white !important;
+  font-weight: bold !important;
+  border: none !important;
+  box-shadow: 0 0 0 1px #fff !important;
 }
 
 /* 抽屉样式 - 更强的选择器以确保优先级 */

@@ -104,4 +104,13 @@ export function deleteCategory(id) {
     url: `/categories/${id}`,
     method: 'delete'
   })
+}
+
+// 置顶或取消置顶帖子
+export function togglePinPost(postId, isPinned) {
+  return api({
+    url: `/admin/posts/${postId}/toggle-pin`,
+    method: 'post',
+    data: { is_pinned: isPinned }
+  })
 } 

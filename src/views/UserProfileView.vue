@@ -43,6 +43,11 @@
                   <div class="level-tag">Lv.{{ userProfile.level || 1 }}</div>
                 </div>
                 
+                <!-- 显示用户称号 -->
+                <div class="user-title" v-if="userProfile.title">
+                  <el-tag size="small" class="title-tag">{{ userProfile.title }}</el-tag>
+                </div>
+
                 <div class="action-btn-container" v-if="!isOwnProfile">
                   <el-button
                     class="follow-btn"
@@ -403,15 +408,27 @@ onMounted(() => {
   margin-bottom: 8px;
 }
 
+/* 用户称号样式 */
+.user-title {
+  margin-bottom: 8px;
+}
+
+.title-tag {
+  background-color: #f2f6fc;
+  border-color: #d9ecff;
+  color: #409eff;
+  font-weight: bold;
+}
+
+/* 用户名样式 */
 .username {
-  font-size: 22px;
+  font-size: 1.4rem;
   font-weight: 600;
-  margin: 0 12px 0 0;
-  color: #000;
-  text-shadow: 0px 1px 2px rgba(255, 255, 255, 0.8);
-  max-width: 100%;
-  word-break: break-word;
-  line-height: 1.3;
+  margin: 0;
+  margin-right: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .level-tag {

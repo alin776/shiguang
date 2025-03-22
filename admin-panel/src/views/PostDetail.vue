@@ -4,6 +4,12 @@
       <h1 class="page-title">帖子详情</h1>
       <div class="page-actions">
         <el-button @click="goBack">返回列表</el-button>
+        <el-button 
+          :type="post?.is_pinned ? 'warning' : 'success'"
+          @click="handleTogglePin"
+        >
+          {{ post?.is_pinned ? '取消置顶' : '置顶' }}
+        </el-button>
         <el-button type="danger" @click="handleDeletePost">删除帖子</el-button>
       </div>
     </div>
@@ -190,23 +196,55 @@ const goBack = () => {
 }
 
 // 删除帖子
-const handleDeletePost = () => {
+const handleDeletePost = async () => {
+  try {
+    const result = await ElMessageBox.confirm(
+      '确认删除该帖子吗？此操作不可恢复！', 
+      '警告', 
+      {
+        confirmButtonText: '确认',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    )
+    
+    if (result) {
+      const success = await postStore.removePost(postId)
+      if (success) {
+        router.push('/posts')
+      }
+    }
+  } catch (error) {
+    // 用户取消操作
+  }
+}
+
+// 置顶/取消置顶帖子
+const handleTogglePin = async () => {
   if (!post.value) return
   
-  ElMessageBox.confirm('确定要删除这个帖子吗？此操作不可恢复！', '警告', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
-    type: 'warning'
-  }).then(async () => {
-    try {
-      const success = await postStore.removePost(post.value.id)
-      if (success) {
-        goBack()
+  const newPinStatus = !post.value.is_pinned
+  const action = newPinStatus ? '置顶' : '取消置顶'
+  
+  try {
+    const confirmed = await ElMessageBox.confirm(
+      `确定要${action}这篇帖子吗？`, 
+      '提示', 
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
       }
-    } catch (error) {
-      ElMessage.error('删除帖子失败')
+    )
+    
+    if (confirmed) {
+      await postStore.togglePin(postId, newPinStatus)
+      // 更新当前帖子的置顶状态
+      await fetchPostDetail()
     }
-  }).catch(() => {})
+  } catch (error) {
+    // 用户取消操作
+  }
 }
 
 // 删除评论

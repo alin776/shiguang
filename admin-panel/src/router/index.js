@@ -28,6 +28,11 @@ const routes = [
         component: () => import('../views/Categories.vue')
       },
       {
+        path: 'activities',
+        name: 'activities',
+        component: () => import('../views/Activities.vue')
+      },
+      {
         path: 'users',
         name: 'users',
         component: () => import('../views/Users.vue')
@@ -80,6 +85,33 @@ const routes = [
         meta: { 
           requiresAuth: true,
           title: '举报管理'
+        }
+      },
+      {
+        path: 'announcements',
+        name: 'announcements',
+        component: () => import('../views/Announcements.vue'),
+        meta: { 
+          requiresAuth: true,
+          title: '公告管理'
+        }
+      },
+      {
+        path: 'points-products',
+        name: 'points-products',
+        component: () => import('../views/PointsProducts.vue'),
+        meta: { 
+          requiresAuth: true,
+          title: '积分商品管理'
+        }
+      },
+      {
+        path: 'points-exchanges',
+        name: 'points-exchanges',
+        component: () => import('../views/PointsExchanges.vue'),
+        meta: { 
+          requiresAuth: true,
+          title: '积分兑换记录'
         }
       }
     ]

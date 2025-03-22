@@ -32,7 +32,8 @@
 
     <!-- 帖子内容 -->
     <div class="post-content">
-      <h3 class="post-title">{{ post.title }}</h3>
+      <h3 class="post-title" v-if="post.title">{{ post.title }}</h3>
+      <h3 class="post-title" v-else>无标题</h3>
       <p class="post-text">{{ post.content }}</p>
       
       <!-- 音频播放器 - 改进设计 -->
@@ -99,7 +100,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, onUpdated, watch } from "vue";
 import { ArrowLeft, ArrowRight, VideoPlay, VideoPause } from "@element-plus/icons-vue";
 import { API_BASE_URL } from "@/config";
 
@@ -108,6 +109,37 @@ const props = defineProps({
     type: Object,
     required: true,
   },
+});
+
+// 添加调试日志，在组件挂载时和props更新时输出
+onMounted(() => {
+  console.log("PostContent 组件挂载 - 帖子标题:", props.post.title);
+  console.log("PostContent 组件挂载 - 帖子数据:", props.post);
+  if (props.post?.audio) {
+    // 立即强制设置持续时间，不等待元数据加载
+    forceSetDuration();
+    
+    // 仍然尝试加载元数据，但不依赖它来设置持续时间
+    if (audioPlayer.value) {
+      audioPlayer.value.preload = "none"; // 防止立即加载元数据
+      
+      // 延迟100ms后设置为metadata，确保前面的强制设置逻辑先执行
+      setTimeout(() => {
+        if (audioPlayer.value) {
+          audioPlayer.value.preload = "metadata";
+        }
+      }, 100);
+    }
+  }
+});
+
+// 监听props.post的变化
+watch(() => props.post, (newPost) => {
+  console.log("PostContent props.post更新 - 新帖子标题:", newPost.title);
+}, { deep: true });
+
+onUpdated(() => {
+  console.log("PostContent 组件更新 - 帖子标题:", props.post.title);
 });
 
 const currentImageIndex = ref(0);
@@ -179,26 +211,6 @@ const getDurationFromFilename = (audioUrl) => {
   // 默认返回5秒
   return 5;
 };
-
-// 修改组件挂载时的初始化逻辑
-onMounted(() => {
-  if (props.post?.audio) {
-    // 立即强制设置持续时间，不等待元数据加载
-    forceSetDuration();
-    
-    // 仍然尝试加载元数据，但不依赖它来设置持续时间
-    if (audioPlayer.value) {
-      audioPlayer.value.preload = "none"; // 防止立即加载元数据
-      
-      // 延迟100ms后设置为metadata，确保前面的强制设置逻辑先执行
-      setTimeout(() => {
-        if (audioPlayer.value) {
-          audioPlayer.value.preload = "metadata";
-        }
-      }, 100);
-    }
-  }
-});
 
 // 图片轮播相关方法
 const prevImage = () => {
@@ -388,11 +400,18 @@ const getWaveformOpacity = (index, currentTime, totalDuration) => {
 }
 
 .post-title {
-  margin-top: 0;
-  margin-bottom: 12px;
-  font-size: 18px;
-  color: #333333;
+  font-size: 20px;
+  font-weight: 600;
+  color: #333;
+  margin: 10px 0 15px;
+  line-height: 1.4;
   text-align: left;
+  /* 增强标题的视觉效果 */
+  border-left: 4px solid #1677ff;
+  padding-left: 12px;
+  background-color: #f8f9fa;
+  padding: 10px 12px;
+  border-radius: 4px;
 }
 
 .post-text {

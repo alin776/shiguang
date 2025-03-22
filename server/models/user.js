@@ -132,6 +132,18 @@ class User {
       throw error;
     }
   }
+
+  static async updatePoints(id, points) {
+    try {
+      await db.execute("UPDATE users SET points = points + ? WHERE id = ?", [
+        points,
+        id,
+      ]);
+      return true;
+    } catch (error) {
+      throw error;
+    }
+  }
 }
 
 module.exports = User;

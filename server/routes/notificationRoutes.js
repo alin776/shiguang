@@ -9,6 +9,9 @@ router.use(auth);
 // 获取通知列表
 router.get("/", notificationController.getNotifications);
 
+// 根据类型获取通知
+router.get("/by-type/:type", notificationController.getNotificationsByType);
+
 // 标记通知为已读
 router.put("/read", notificationController.markAsRead);
 

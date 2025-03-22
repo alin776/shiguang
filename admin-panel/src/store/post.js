@@ -9,7 +9,8 @@ import {
   getCategories,
   createCategory,
   updateCategory,
-  deleteCategory
+  deleteCategory,
+  togglePinPost
 } from '@/api/post'
 import { ElMessage } from 'element-plus'
 
@@ -170,6 +171,19 @@ export const usePostStore = defineStore('post', {
       } catch (error) {
         console.error('获取所有帖子失败', error)
         return []
+      }
+    },
+
+    // 置顶或取消置顶帖子
+    async togglePin(postId, isPinned) {
+      try {
+        await togglePinPost(postId, isPinned)
+        ElMessage.success(isPinned ? '帖子已置顶' : '帖子已取消置顶')
+        await this.fetchPosts()
+        return true
+      } catch (error) {
+        ElMessage.error('操作失败')
+        return false
       }
     }
   }

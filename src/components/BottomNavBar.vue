@@ -10,12 +10,24 @@
         @click="navigate(item.path)"
       >
         <div class="icon-container" :class="{ active: currentRoute === item.path }">
-          <img
-            :src="currentRoute === item.path ? item.activeIcon : item.icon"
-            class="nav-icon"
-            :class="{'community-icon': item.path === '/community' && currentRoute !== '/community'}"
-            :alt="item.label"
-          />
+          <!-- 为通知菜单项添加红点徽章 -->
+          <template v-if="item.path === '/notifications'">
+            <el-badge :value="unreadNotificationCount" :hidden="!unreadNotificationCount" :max="99" type="danger">
+              <img
+                :src="currentRoute === item.path ? item.activeIcon : item.icon"
+                class="nav-icon"
+                :alt="item.label"
+              />
+            </el-badge>
+          </template>
+          <template v-else>
+            <img
+              :src="currentRoute === item.path ? item.activeIcon : item.icon"
+              class="nav-icon"
+              :class="{'community-icon': item.path === '/town' && currentRoute !== '/town'}"
+              :alt="item.label"
+            />
+          </template>
         </div>
         <span>{{ item.label }}</span>
       </div>
@@ -27,11 +39,14 @@
 </template>
 
 <script setup>
-import { computed } from "vue";
+import { computed, ref, onMounted, onBeforeUnmount } from "vue";
 import { useRouter, useRoute } from "vue-router";
+import { useNotificationStore } from "@/stores/notification";
 
 const router = useRouter();
 const route = useRoute();
+const notificationStore = useNotificationStore();
+const unreadNotificationCount = ref(0);
 
 const navItems = [
   {
@@ -41,10 +56,16 @@ const navItems = [
     activeIcon: "/icons/note-active.svg",
   },
   {
-    path: "/community",
+    path: "/town",
     label: "小镇",
     icon: "/icons/community.svg",
     activeIcon: "/icons/community-active.svg",
+  },
+  {
+    path: "/notifications",
+    label: "通知",
+    icon: "/icons/notification.svg",
+    activeIcon: "/icons/notification-active.svg",
   },
   {
     path: "/profile",
@@ -59,10 +80,14 @@ const currentRoute = computed(() => {
   const path = route.path;
   if (path.startsWith('/community/')) {
     return '/community';
+  } else if (path.startsWith('/town/')) {
+    return '/town';
   } else if (path.startsWith('/profile/')) {
     return '/profile';
   } else if (path.startsWith('/note/')) {
     return '/note';
+  } else if (path.startsWith('/notifications/')) {
+    return '/notifications';
   }
   return path;
 });
@@ -71,6 +96,31 @@ const navigate = (path) => {
   if (route.path === path) return;
   router.push(path);
 };
+
+// 获取未读通知数量
+const loadUnreadNotificationCount = async () => {
+  try {
+    const response = await notificationStore.getNotifications();
+    unreadNotificationCount.value = response.unreadCount || 0;
+  } catch (error) {
+    console.error("获取未读通知数量失败:", error);
+  }
+};
+
+// 组件挂载时加载未读通知数量
+onMounted(() => {
+  loadUnreadNotificationCount();
+  
+  // 定时刷新未读通知数量
+  const refreshInterval = setInterval(() => {
+    loadUnreadNotificationCount();
+  }, 60000); // 每分钟刷新一次
+  
+  // 在组件卸载时清除定时器
+  onBeforeUnmount(() => {
+    clearInterval(refreshInterval);
+  });
+});
 </script>
 
 <style scoped>
@@ -139,6 +189,16 @@ const navigate = (path) => {
   width: 24px;
   height: 24px;
   transition: all 0.3s ease;
+}
+
+/* 通知红点样式 */
+:deep(.el-badge__content) {
+  background-color: #ff4d4f !important;
+  border: none !important;
+  color: white !important;
+  font-weight: bold !important;
+  z-index: 10 !important;
+  box-shadow: 0 0 0 1px white !important;
 }
 
 /* 小镇图标特殊样式 - 非激活状态为黑色 */

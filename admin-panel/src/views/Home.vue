@@ -5,7 +5,7 @@
     </div>
     
     <el-row :gutter="20" v-loading="loading">
-      <el-col :span="8">
+      <el-col :span="6">
         <div class="stat-card">
           <div class="stat-icon">
             <el-icon><Document /></el-icon>
@@ -16,7 +16,7 @@
           </div>
         </div>
       </el-col>
-      <el-col :span="8">
+      <el-col :span="6">
         <div class="stat-card">
           <div class="stat-icon">
             <el-icon><User /></el-icon>
@@ -27,7 +27,7 @@
           </div>
         </div>
       </el-col>
-      <el-col :span="8">
+      <el-col :span="6">
         <div class="stat-card">
           <div class="stat-icon">
             <el-icon><ChatDotRound /></el-icon>
@@ -35,6 +35,27 @@
           <div class="stat-content">
             <div class="stat-number">{{ data.commentCount || '0' }}</div>
             <div class="stat-label">评论数量</div>
+          </div>
+        </div>
+      </el-col>
+      <el-col :span="6">
+        <div class="stat-card pending-card">
+          <div class="stat-content">
+            <div class="pending-title">待处理事项</div>
+            <div class="pending-items">
+              <router-link to="/feedbacks" class="pending-item">
+                <span class="pending-label">待处理反馈:</span>
+                <span class="pending-number">{{ pendingData.feedbacks || 0 }}</span>
+              </router-link>
+              <router-link to="/content-review" class="pending-item">
+                <span class="pending-label">待审核内容:</span>
+                <span class="pending-number">{{ pendingData.contentReviews || 0 }}</span>
+              </router-link>
+              <router-link to="/reports" class="pending-item">
+                <span class="pending-label">待处理举报:</span>
+                <span class="pending-number">{{ pendingData.reports || 0 }}</span>
+              </router-link>
+            </div>
           </div>
         </div>
       </el-col>
@@ -109,6 +130,7 @@ import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Document, User, ChatDotRound } from '@element-plus/icons-vue'
 import { getDashboardData } from '@/api/dashboard'
+import { getPendingCounts } from '@/api/dashboard'
 import * as echarts from 'echarts'
 
 const data = ref({
@@ -120,6 +142,13 @@ const data = ref({
   commentGrowth: [],
   userActivity: [],
   recentActivities: []
+})
+
+// 待处理数据
+const pendingData = ref({
+  feedbacks: 0,
+  contentReviews: 0,
+  reports: 0
 })
 
 // 图表实例
@@ -134,39 +163,32 @@ const loading = ref(false)
 onMounted(async () => {
   try {
     loading.value = true
-    const response = await getDashboardData()
-    data.value = response.data
+    
+    // 同时加载仪表盘数据和待处理数据
+    const [dashboardResponse, pendingResponse] = await Promise.all([
+      getDashboardData().catch(error => {
+        console.error('获取仪表盘数据失败:', error)
+        return { data: getMockDashboardData() }
+      }),
+      getPendingCounts().catch(error => {
+        console.error('获取待处理数据失败:', error)
+        return { data: { feedbacks: 0, contentReviews: 0, reports: 0 } }
+      })
+    ])
+    
+    // 处理仪表盘数据
+    data.value = dashboardResponse.data
+    
+    // 处理待处理数据
+    pendingData.value = pendingResponse.data
     
     // 初始化图表
     initCharts()
   } catch (error) {
-    console.error('获取仪表盘数据失败:', error)
+    console.error('初始化仪表盘失败:', error)
     ElMessage.error('获取仪表盘数据失败')
     // 加载失败时使用模拟数据
-    const mockGrowthData = [
-      { date: getDateString(6), count: 5 },
-      { date: getDateString(5), count: 8 },
-      { date: getDateString(4), count: 3 },
-      { date: getDateString(3), count: 10 },
-      { date: getDateString(2), count: 7 },
-      { date: getDateString(1), count: 12 },
-      { date: getDateString(0), count: 9 }
-    ]
-    
-    data.value = {
-      postCount: 123,
-      userCount: 456,
-      commentCount: 789,
-      userGrowth: mockGrowthData,
-      postGrowth: mockGrowthData.map(item => ({ ...item, count: item.count + 3 })),
-      commentGrowth: mockGrowthData.map(item => ({ ...item, count: item.count + 5 })),
-      userActivity: mockGrowthData.map(item => ({ ...item, count: Math.floor(item.count * 1.5) })),
-      recentActivities: [
-        { id: 1, time: new Date(), content: '用户小明发布了新帖子' },
-        { id: 2, time: new Date(Date.now() - 3600000), content: '管理员更新了系统设置' },
-        { id: 3, time: new Date(Date.now() - 7200000), content: '新用户小红注册了账号' }
-      ]
-    }
+    data.value = getMockDashboardData()
     
     // 初始化图表
     initCharts()
@@ -317,6 +339,34 @@ const formatTime = (time) => {
     minute: '2-digit'
   })
 }
+
+// 获取模拟的仪表盘数据
+const getMockDashboardData = () => {
+  const mockGrowthData = [
+    { date: getDateString(6), count: 5 },
+    { date: getDateString(5), count: 8 },
+    { date: getDateString(4), count: 3 },
+    { date: getDateString(3), count: 10 },
+    { date: getDateString(2), count: 7 },
+    { date: getDateString(1), count: 12 },
+    { date: getDateString(0), count: 9 }
+  ]
+  
+  return {
+    postCount: 123,
+    userCount: 456,
+    commentCount: 789,
+    userGrowth: mockGrowthData,
+    postGrowth: mockGrowthData.map(item => ({ ...item, count: item.count + 3 })),
+    commentGrowth: mockGrowthData.map(item => ({ ...item, count: item.count + 5 })),
+    userActivity: mockGrowthData.map(item => ({ ...item, count: Math.floor(item.count * 1.5) })),
+    recentActivities: [
+      { id: 1, time: new Date(), content: '用户小明发布了新帖子' },
+      { id: 2, time: new Date(Date.now() - 3600000), content: '管理员更新了系统设置' },
+      { id: 3, time: new Date(Date.now() - 7200000), content: '新用户小红注册了账号' }
+    ]
+  }
+}
 </script>
 
 <style scoped>
@@ -441,5 +491,50 @@ const formatTime = (time) => {
   flex: 1;
   color: #303133;
   font-size: 14px;
+}
+
+/* 待处理事项卡片 */
+.pending-card {
+  background-color: #fff8f0;
+  border-left: 3px solid #e6a23c;
+  padding: 15px 20px;
+}
+
+.pending-title {
+  font-size: 16px;
+  font-weight: bold;
+  color: #e6a23c;
+  margin-bottom: 10px;
+}
+
+.pending-items {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pending-item {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  text-decoration: none;
+  color: #606266;
+  padding: 5px 0;
+  transition: all 0.3s;
+}
+
+.pending-item:hover {
+  color: #409EFF;
+  transform: translateX(5px);
+}
+
+.pending-number {
+  background-color: #f56c6c;
+  color: white;
+  border-radius: 10px;
+  padding: 1px 8px;
+  font-size: 12px;
+  min-width: 20px;
+  text-align: center;
 }
 </style> 

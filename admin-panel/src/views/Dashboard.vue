@@ -34,6 +34,10 @@
           <el-icon><FolderOpened /></el-icon>
           <span>分类管理</span>
         </el-menu-item>
+        <el-menu-item index="/activities">
+          <el-icon><Calendar /></el-icon>
+          <span>活动管理</span>
+        </el-menu-item>
         <el-menu-item index="/feedbacks">
           <el-icon><ChatDotRound /></el-icon>
           <span>反馈管理</span>
@@ -53,6 +57,18 @@
         <el-menu-item index="/reports">
           <el-icon><Warning /></el-icon>
           <span>举报管理</span>
+        </el-menu-item>
+        <el-menu-item index="/announcements">
+          <el-icon><Bell /></el-icon>
+          <span>公告管理</span>
+        </el-menu-item>
+        <el-menu-item index="/points-products">
+          <el-icon><GoodsFilled /></el-icon>
+          <span>积分商品管理</span>
+        </el-menu-item>
+        <el-menu-item index="/points-exchanges">
+          <el-icon><Tickets /></el-icon>
+          <span>积分兑换记录</span>
         </el-menu-item>
       </el-menu>
     </div>
@@ -74,6 +90,9 @@
             <el-breadcrumb-item v-if="$route.name === 'versions'">版本管理</el-breadcrumb-item>
             <el-breadcrumb-item v-if="$route.name === 'content-review'">内容审核</el-breadcrumb-item>
             <el-breadcrumb-item v-if="$route.name === 'reports'">举报管理</el-breadcrumb-item>
+            <el-breadcrumb-item v-if="$route.name === 'announcements'">公告管理</el-breadcrumb-item>
+            <el-breadcrumb-item v-if="$route.name === 'points-products'">积分商品管理</el-breadcrumb-item>
+            <el-breadcrumb-item v-if="$route.name === 'points-exchanges'">积分兑换记录</el-breadcrumb-item>
           </el-breadcrumb>
         </div>
         <div class="user-actions">
@@ -104,7 +123,11 @@ import { ref, computed } from 'vue'
 import { useUserStore } from '@/store/user'
 import { useRouter } from 'vue-router'
 import { ElMessageBox } from 'element-plus'
-import { Menu, Document, FolderOpened, ArrowDown, ChatDotRound, Notebook, Connection, User, List, Check, Warning } from '@element-plus/icons-vue'
+import { 
+  Menu, Document, FolderOpened, ArrowDown, ChatDotRound, 
+  Notebook, Connection, User, List, Check, Warning, Bell, 
+  Calendar, GoodsFilled, Tickets 
+} from '@element-plus/icons-vue'
 
 const userStore = useUserStore()
 const router = useRouter()

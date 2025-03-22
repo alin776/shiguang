@@ -6,6 +6,7 @@ const auth = require("../middleware/auth");
 const { check } = require("express-validator");
 const multer = require("multer");
 const path = require("path");
+const pointsProductController = require("../controllers/pointsProductController");
 
 // 配置头像存储
 const avatarStorage = multer.diskStorage({
@@ -130,6 +131,7 @@ router.get("/:userId/followers", auth, userController.getFollowers);
 router.get("/:userId/following", auth, userController.getFollowing);
 router.post("/:userId/follow", auth, userController.followUser);
 router.delete("/:userId/follow", auth, userController.unfollowUser);
+router.get("/:userId/stats", auth, userController.getUserStats);
 
 // 获取用户设置
 router.get("/me/settings", auth, userController.getSettings);
@@ -202,5 +204,28 @@ router.get("/experience", auth, userController.getUserExperience);
 router.post("/experience", auth, [
   check("amount").isInt({ min: 1 }).withMessage("经验值必须是正数")
 ], userController.addUserExperience);
+
+// 获取用户积分信息
+router.get("/points", auth, userController.getUserPoints);
+
+// 增加用户积分
+router.post("/points", auth, [
+  check("amount").isInt({ min: 1 }).withMessage("积分必须是正数")
+], userController.addUserPoints);
+
+// 积分商品相关路由
+// 获取所有可兑换商品
+router.get("/points/products", auth, pointsProductController.getProducts);
+
+// 获取单个商品详情
+router.get("/points/products/:id", auth, pointsProductController.getProductById);
+
+// 兑换商品
+router.post("/points/exchange", auth, [
+  check("productId").isInt().withMessage("商品ID必须是整数")
+], pointsProductController.exchangeProduct);
+
+// 获取用户兑换记录
+router.get("/points/exchanges", auth, pointsProductController.getUserExchanges);
 
 module.exports = router;

@@ -28,6 +28,8 @@ export default function useProfileLogic() {
   const currentExp = ref(0); // 当前级别已获得经验
   const expNeeded = ref(100); // 当前级别所需总经验
   const expProgress = ref(0); // 经验进度百分比
+  const userTitle = ref(""); // 用户称号
+  const userPoints = ref(0); // 用户积分
 
   // 计算属性
   const username = computed(() => authStore.user?.username || "");
@@ -48,34 +50,55 @@ export default function useProfileLogic() {
   // 加载用户数据
   const loadUserStats = async () => {
     try {
-      const userIdValue = authStore.user?.id;
-      if (!userIdValue) return;
-      userId.value = userIdValue;
+      if (!checkMounted()) return;
+      if (!authStore.user?.id) return;
 
-      const response = await communityStore.getUserProfile(userIdValue);
-      followingCount.value = response.user.followingCount || 0;
-      followersCount.value = response.user.followersCount || 0;
-      bio.value = response.user.bio || "";
-      
-      // 设置用户等级和经验信息
-      if (response.user.level !== undefined && response.user.experienceProgress) {
-        userLevel.value = response.user.level;
-        currentExp.value = response.user.experienceProgress.currentExp;
-        expNeeded.value = response.user.experienceProgress.expNeeded;
-        expProgress.value = response.user.experienceProgress.progress;
-      } else {
-        // 如果后端还未返回经验信息，尝试单独获取
-        await loadUserExperience();
+      loading.value = true;
+      userId.value = authStore.user.id;
+
+      const response = await axios.get(
+        `${API_BASE_URL}/api/users/${userId.value}/stats`,
+        {
+          headers: { Authorization: `Bearer ${authStore.token}` },
+        }
+      );
+
+      console.log("用户统计API返回数据:", response.data);
+
+      if (response.data.success) {
+        const stats = response.data.data;
+        followingCount.value = stats.followingCount || 0;
+        followersCount.value = stats.followersCount || 0;
+        postsCount.value = stats.postsCount || 0;
+        bio.value = authStore.user.bio || "";
+        userTitle.value = stats.title || ""; // 从API响应中获取用户称号
+        console.log("用户称号:", userTitle.value);
+        
+        // 设置用户等级和经验信息
+        if (stats.level !== undefined && stats.experienceProgress) {
+          userLevel.value = stats.level;
+          currentExp.value = stats.experienceProgress.currentExp;
+          expNeeded.value = stats.experienceProgress.expNeeded;
+          expProgress.value = stats.experienceProgress.progress;
+        } else {
+          // 如果后端还未返回经验信息，尝试单独获取
+          await loadUserExperience();
+        }
+        
+        // 加载用户积分信息
+        await loadUserPoints();
+
+        // 加载帖子和获赞数据
+        await loadUserPosts();
+        await loadLikedPosts();
+
+        // 计算总获赞数
+        calculateTotalLikes();
       }
-
-      // 加载帖子和获赞数据
-      await loadUserPosts();
-      await loadLikedPosts();
-
-      // 计算总获赞数
-      calculateTotalLikes();
     } catch (error) {
-      console.error("加载用户数据失败:", error);
+      console.error("获取用户统计数据失败:", error);
+    } finally {
+      loading.value = false;
     }
   };
   
@@ -232,6 +255,24 @@ export default function useProfileLogic() {
     totalLikesCount.value = postLikes;
   };
 
+  // 加载用户积分信息
+  const loadUserPoints = async () => {
+    try {
+      if (!authStore.token) return;
+
+      // 从积分接口获取数据
+      const response = await authStore.fetchUserPoints();
+      
+      userPoints.value = response.points || 0;
+      
+      console.log("加载用户积分成功:", response);
+    } catch (error) {
+      console.error("加载用户积分失败:", error);
+      // 如果API未就绪，尝试从本地用户数据获取积分
+      userPoints.value = authStore.user?.points || 0;
+    }
+  };
+
   // 前往设置页面
   const goToSettings = () => {
     router.push("/settings");
@@ -299,6 +340,8 @@ export default function useProfileLogic() {
     currentExp,
     expNeeded,
     expProgress,
+    userTitle,
+    userPoints,
 
     // 计算属性
     username,

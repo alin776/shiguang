@@ -75,7 +75,7 @@ exports.getPosts = async (req, res) => {
     // 构建基础查询
     let query = `
       SELECT 
-        p.id, p.user_id, p.title, p.content, p.views, p.likes, 
+        p.id, p.user_id, p.title, p.content, p.views, p.likes, p.is_pinned,
         p.created_at, p.images, p.category_id, u.username,
         CASE 
           WHEN u.avatar IS NOT NULL AND u.avatar != '' 
@@ -108,8 +108,8 @@ exports.getPosts = async (req, res) => {
       queryParams.push(category_id);
     }
 
-    // 添加排序条件
-    query += ` ORDER BY `;
+    // 添加排序条件，先按是否置顶降序，再按其他条件排序
+    query += ` ORDER BY p.is_pinned DESC, `;
     switch (sort) {
       case "hot":
         query += `p.likes DESC`;
@@ -152,6 +152,14 @@ exports.getPosts = async (req, res) => {
       countParams
     );
 
+    // 获取热门帖子（前5个浏览量最高的）
+    const [hotPosts] = await db.query(
+      `SELECT id FROM posts WHERE status = 'approved' ORDER BY views DESC LIMIT 5`
+    );
+    
+    // 创建热门帖子ID集合
+    const hotPostIds = new Set(hotPosts.map(post => post.id));
+
     const [posts] = await db.query(query, queryParams);
 
     // 处理每个帖子的图片数据
@@ -177,6 +185,8 @@ exports.getPosts = async (req, res) => {
         },
         images: parsedImages,
         is_liked: Boolean(post.is_liked),
+        is_pinned: Boolean(post.is_pinned),
+        is_hot: hotPostIds.has(post.id)
       };
     });
 
@@ -206,6 +216,8 @@ exports.getPost = async (req, res) => {
         p.*,
         u.username,
         u.avatar,
+        u.level,
+        u.title as user_title,
         u.id as author_id,
         c.id as category_id,
         c.name as category_name,
@@ -228,8 +240,11 @@ exports.getPost = async (req, res) => {
         id: posts[0].author_id,
         username: posts[0].username || "匿名用户",
         avatar: posts[0].avatar,
+        level: posts[0].level || 1,
+        title: posts[0].user_title || null,
         is_following: Boolean(posts[0].is_following),
       },
+      title: posts[0].title || "",
       category: posts[0].category_id ? {
         id: posts[0].category_id,
         name: posts[0].category_name
@@ -257,6 +272,8 @@ exports.getPost = async (req, res) => {
         c.*,
         u.username,
         u.avatar,
+        u.level,
+        u.title,
         u.id as author_id,
         EXISTS(SELECT 1 FROM comment_likes WHERE comment_id = c.id AND user_id = ?) as is_liked,
         (SELECT COUNT(*) FROM comment_likes WHERE comment_id = c.id) as likes_count
@@ -274,7 +291,11 @@ exports.getPost = async (req, res) => {
           r.*,
           u.username as user_username,
           u.avatar as user_avatar,
-          ru.username as reply_to_username
+          u.level as user_level,
+          u.title as user_title,
+          ru.username as reply_to_username,
+          ru.level as reply_to_level,
+          ru.title as reply_to_title
         FROM comment_replies r
         LEFT JOIN users u ON r.user_id = u.id
         LEFT JOIN users ru ON r.reply_to_id = ru.id
@@ -289,13 +310,18 @@ exports.getPost = async (req, res) => {
           id: reply.user_id,
           username: reply.user_username,
           avatar: reply.user_avatar,
+          level: reply.user_level || 1,
+          title: reply.user_title || null,
         },
-        replyTo: reply.reply_to_id
+        reply_to_user: reply.reply_to_id
           ? {
               id: reply.reply_to_id,
               username: reply.reply_to_username,
+              level: reply.reply_to_level || 1,
+              title: reply.reply_to_title || null,
             }
           : null,
+        images: reply.images || null
       }));
     }
 
@@ -305,6 +331,8 @@ exports.getPost = async (req, res) => {
         id: comment.author_id,
         username: comment.username,
         avatar: comment.avatar,
+        level: comment.level || 1,
+        title: comment.title || null,
       },
       isLiked: Boolean(comment.is_liked),
       likes: comment.likes_count,
@@ -381,7 +409,66 @@ exports.createPost = async (req, res) => {
       "INSERT INTO posts (user_id, title, content, images, audio, category_id, status) VALUES (?, ?, ?, ?, ?, ?, 'pending')",
       params
     );
-
+    
+    // 更新用户连续发帖天数和称号
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      
+      // 查询用户信息
+      const [userResults] = await db.execute(
+        `SELECT last_post_date, post_streak, title FROM users WHERE id = ?`,
+        [userId]
+      );
+      
+      if (userResults.length > 0) {
+        const user = userResults[0];
+        let newStreak = 1; // 默认为1
+        
+        if (user.last_post_date) {
+          const lastPostDate = new Date(user.last_post_date);
+          const yesterday = new Date(today);
+          yesterday.setDate(yesterday.getDate() - 1);
+          
+          // 格式化为YYYY-MM-DD进行比较
+          const formattedLastPostDate = lastPostDate.toISOString().split('T')[0];
+          const formattedYesterday = yesterday.toISOString().split('T')[0];
+          
+          console.log(`lastPostDate: ${formattedLastPostDate}, yesterday: ${formattedYesterday}, today: ${today}`);
+          
+          if (formattedLastPostDate === today) {
+            // 今天已经发过帖子，保持连续天数不变
+            newStreak = user.post_streak;
+          } else if (formattedLastPostDate === formattedYesterday) {
+            // 昨天发过帖子，连续天数+1
+            newStreak = user.post_streak + 1;
+          } else {
+            // 超过一天没发帖，重置为1
+            newStreak = 1;
+          }
+        }
+        
+        // 给达到5天连续发帖的用户添加称号
+        let newTitle = user.title;
+        if (newStreak >= 5 && !user.title) {
+          newTitle = '持之以恒';
+        }
+        
+        // 更新用户连续发帖信息
+        await db.execute(
+          `UPDATE users SET last_post_date = ?, post_streak = ?, title = ? WHERE id = ?`,
+          [today, newStreak, newTitle, userId]
+        );
+        
+        console.log(`用户${userId}连续发帖${newStreak}天`);
+        if (newTitle !== user.title) {
+          console.log(`用户${userId}获得新称号: ${newTitle}`);
+        }
+      }
+    } catch (streakError) {
+      console.error('更新用户连续发帖记录失败:', streakError);
+      // 不影响主流程，继续返回创建帖子成功
+    }
+    
     // 帖子创建成功后，更新任务进度
     try {
       // 查询用户今日任务记录
@@ -490,19 +577,8 @@ exports.createComment = async (req, res) => {
     
     const commentId = result.insertId;
 
-    // 如果不是评论自己的帖子，才发送通知
-    if (postResult[0].user_id !== userId) {
-      // 创建评论通知，添加评论ID作为relatedId
-      await createNotification({
-        userId: postResult[0].user_id,
-        type: "comment",
-        content: `评论了你的帖子: ${postResult[0].title || ''}`,
-        sourceId: postId || null,
-        sourceType: "post",
-        actorId: userId || null,
-        relatedId: commentId || null
-      });
-    }
+    // 不要在评论创建时发送通知，而是等待审核通过后再发送
+    // 通知代码将被移动到updateCommentStatus函数中
     
     // 评论创建成功后，更新任务进度
     try {
@@ -713,7 +789,7 @@ exports.getComments = async (req, res) => {
 
     // 获取评论总数
     const [countResult] = await db.execute(
-      "SELECT COUNT(*) as total FROM comments WHERE post_id = ?",
+      "SELECT COUNT(*) as total FROM comments WHERE post_id = ? AND status = 'approved'",
       [postId]
     );
     const total = countResult[0].total;
@@ -723,7 +799,7 @@ exports.getComments = async (req, res) => {
       `SELECT c.*, u.username 
        FROM comments c 
        JOIN users u ON c.user_id = u.id 
-       WHERE c.post_id = ? 
+       WHERE c.post_id = ? AND c.status = 'approved' 
        ORDER BY c.created_at DESC 
        LIMIT ? OFFSET ?`,
       [postId, Number(limit), offset]
@@ -925,6 +1001,7 @@ exports.getMyPosts = async (req, res) => {
         p.likes,
         p.created_at,
         p.images,
+        p.status,
         u.username,
         CASE 
           WHEN u.avatar IS NOT NULL AND u.avatar != '' 
@@ -932,7 +1009,7 @@ exports.getMyPosts = async (req, res) => {
           ELSE NULL 
         END as avatar,
         u.id as author_id,
-        COALESCE((SELECT COUNT(*) FROM comments WHERE post_id = p.id), 0) as comments_count,
+        COALESCE((SELECT COUNT(*) FROM comments WHERE post_id = p.id AND status = 'approved'), 0) as comments_count,
         COALESCE((SELECT COUNT(*) FROM likes WHERE post_id = p.id), 0) as likes_count,
         IF(EXISTS(SELECT 1 FROM likes WHERE post_id = p.id AND user_id = ?), 1, 0) as is_liked
       FROM posts p
@@ -990,6 +1067,7 @@ exports.getMyLikedPosts = async (req, res) => {
         p.likes,
         p.created_at,
         p.images,
+        p.status,
         u.username,
         CASE 
           WHEN u.avatar IS NOT NULL AND u.avatar != '' 
@@ -997,13 +1075,13 @@ exports.getMyLikedPosts = async (req, res) => {
           ELSE NULL 
         END as avatar,
         u.id as author_id,
-        COALESCE((SELECT COUNT(*) FROM comments WHERE post_id = p.id), 0) as comments_count,
+        COALESCE((SELECT COUNT(*) FROM comments WHERE post_id = p.id AND status = 'approved'), 0) as comments_count,
         COALESCE((SELECT COUNT(*) FROM likes WHERE post_id = p.id), 0) as likes_count,
         1 as is_liked
       FROM posts p
       LEFT JOIN users u ON p.user_id = u.id
       INNER JOIN likes l ON p.id = l.post_id
-      WHERE l.user_id = ?
+      WHERE l.user_id = ? AND p.status = 'approved'
       ORDER BY p.created_at DESC`,
       [req.user.id]
     );
@@ -1116,11 +1194,11 @@ exports.getUserProfile = async (req, res) => {
         p.*, 
         u.username,
         u.avatar,
-        COALESCE((SELECT COUNT(*) FROM comments WHERE post_id = p.id), 0) as comments_count,
+        COALESCE((SELECT COUNT(*) FROM comments WHERE post_id = p.id AND status = 'approved'), 0) as comments_count,
         COALESCE((SELECT COUNT(*) FROM likes WHERE post_id = p.id), 0) as likes_count
       FROM posts p
       LEFT JOIN users u ON p.user_id = u.id
-      WHERE p.user_id = ?
+      WHERE p.user_id = ? AND p.status = 'approved'
       ORDER BY p.created_at DESC`,
       [userId]
     );
@@ -1331,9 +1409,12 @@ exports.replyToComment = async (req, res) => {
     const { content, replyToId, audio } = req.body;
     const userId = req.user.id;
     
-    // 确保回复至少有文字内容或音频内容
-    if (!content && !audio) {
-      return res.status(400).json({ message: "回复必须包含文字或音频内容" });
+    // 获取图片数据
+    const images = req.body.images;
+    
+    // 确保回复至少有文字内容、音频内容或图片内容
+    if (!content && !audio && (!images || !Array.isArray(images) || images.length === 0)) {
+      return res.status(400).json({ message: "回复必须包含文字、音频或图片内容" });
     }
 
     // 获取评论作者ID和帖子信息
@@ -1372,10 +1453,16 @@ exports.replyToComment = async (req, res) => {
       });
     }
 
+    // 处理图片数据
+    let imagesJson = null;
+    if (images && Array.isArray(images) && images.length > 0) {
+      imagesJson = JSON.stringify(images);
+    }
+    
     // 创建回复
     const [result] = await db.execute(
-      "INSERT INTO comment_replies (comment_id, user_id, reply_to_id, content, audio) VALUES (?, ?, ?, ?, ?)",
-      [commentId, userId, replyToId || null, content || '', audio || null]
+      "INSERT INTO comment_replies (comment_id, user_id, reply_to_id, content, audio, images) VALUES (?, ?, ?, ?, ?, ?)",
+      [commentId, userId, replyToId || null, content || '', audio || null, imagesJson]
     );
 
     res.status(201).json({
@@ -1426,9 +1513,12 @@ exports.createCommentReply = async (req, res) => {
     const { content, replyToId, audio } = req.body;
     const userId = req.user.id;
     
-    // 确保回复至少有文字内容或音频内容
-    if (!content && !audio) {
-      return res.status(400).json({ message: "回复必须包含文字或音频内容" });
+    // 获取图片数据
+    const images = req.body.images;
+    
+    // 确保回复至少有文字内容、音频内容或图片内容
+    if (!content && !audio && (!images || !Array.isArray(images) || images.length === 0)) {
+      return res.status(400).json({ message: "回复必须包含文字、音频或图片内容" });
     }
 
     // 检查帖子是否存在
@@ -1452,10 +1542,16 @@ exports.createCommentReply = async (req, res) => {
       return res.status(404).json({ message: "评论不存在" });
     }
 
+    // 处理图片数据
+    let imagesJson = null;
+    if (images && Array.isArray(images) && images.length > 0) {
+      imagesJson = JSON.stringify(images);
+    }
+    
     // 创建回复
     const [result] = await db.execute(
-      "INSERT INTO comment_replies (comment_id, user_id, reply_to_id, content, audio) VALUES (?, ?, ?, ?, ?)",
-      [commentId, userId, replyToId || null, content || '', audio || null]
+      "INSERT INTO comment_replies (comment_id, user_id, reply_to_id, content, audio, images) VALUES (?, ?, ?, ?, ?, ?)",
+      [commentId, userId, replyToId || null, content || '', audio || null, imagesJson]
     );
     
     const replyId = result.insertId;

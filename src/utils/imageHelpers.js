@@ -1,13 +1,14 @@
 // 图片URL处理工具函数
 import { API_BASE_URL, UPLOAD_PATHS } from "@/config";
+import defaultAvatarUrl from '@/assets/images/default-avatar.png';
 
 /**
- * 处理头像URL，确保正确的格式和路径
- * @param {string} avatar - 头像URL或路径
- * @returns {string} - 格式化后的头像URL
+ * 获取头像完整URL
+ * @param {string} avatar 头像相对路径
+ * @returns {string} 完整的头像URL
  */
 export const getAvatarUrl = (avatar) => {
-  if (!avatar) return "";
+  if (!avatar) return defaultAvatarUrl;
 
   console.log("原始头像URL:", avatar);
 
@@ -133,4 +134,12 @@ export const cleanupAvatarPath = (avatarPath) => {
   }
   
   return avatarPath;
+};
+
+/**
+ * 获取默认头像URL
+ * @returns {string} 默认头像URL
+ */
+export const getDefaultAvatarUrl = () => {
+  return defaultAvatarUrl;
 };
