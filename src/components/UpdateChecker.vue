@@ -2,13 +2,18 @@
   <div v-if="updateStore.updateAvailable" class="update-container">
     <div class="update-dialog">
       <div class="update-header">
-        <div class="update-title">发现新版本</div>
-        <div class="update-close" @click="closeDialog">×</div>
+        <div class="update-title">
+          {{ updateStore.updateInfo?.forceUpdate ? '强制更新提示' : '发现新版本' }}
+        </div>
+        <div v-if="!updateStore.updateInfo?.forceUpdate" class="update-close" @click="closeDialog">×</div>
       </div>
       <div class="update-content">
         <div class="version-info">
           <div>当前版本: {{ updateStore.currentVersion }}</div>
           <div>最新版本: {{ updateStore.latestVersion }}</div>
+        </div>
+        <div v-if="updateStore.updateInfo?.forceUpdate" class="force-update-notice">
+          <el-tag type="danger">必须更新才能继续使用</el-tag>
         </div>
         <div class="update-description">
           <div class="update-subtitle">更新内容:</div>
@@ -16,7 +21,10 @@
         </div>
       </div>
       <div class="update-footer">
-        <button class="update-later" @click="closeDialog">稍后更新</button>
+        <button 
+          v-if="!updateStore.updateInfo?.forceUpdate" 
+          class="update-later" 
+          @click="closeDialog">稍后更新</button>
         <button 
           class="update-now" 
           @click="downloadUpdate" 
@@ -189,5 +197,10 @@ const closeDialog = () => {
 .update-now:disabled {
   background-color: #a0cfff;
   cursor: not-allowed;
+}
+
+.force-update-notice {
+  margin: 12px 0;
+  text-align: center;
 }
 </style> 

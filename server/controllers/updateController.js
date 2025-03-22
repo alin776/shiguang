@@ -30,7 +30,9 @@ function compareVersions(v1, v2) {
  */
 exports.checkForUpdates = async (req, res) => {
   try {
-    const { version, platform = 'web', buildNumber = '0' } = req.query;
+    const { version, buildNumber = '0' } = req.query;
+    // 始终将平台设置为android
+    const platform = 'android';
     
     // 验证必要参数
     if (!version) {
@@ -40,10 +42,10 @@ exports.checkForUpdates = async (req, res) => {
       });
     }
     
-    // 从数据库获取对应平台的最新版本信息
+    // 从数据库获取安卓平台的最新版本信息
     const [versions] = await db.execute(
       'SELECT * FROM app_versions WHERE platform = ? ORDER BY id DESC LIMIT 1',
-      [platform.toLowerCase()]
+      [platform]
     );
     
     if (!versions || versions.length === 0) {
@@ -69,9 +71,7 @@ exports.checkForUpdates = async (req, res) => {
         forceUpdate: latestVersion.force_update === 1,
         releaseNotes: latestVersion.release_notes,
         releaseDate: latestVersion.release_date,
-        // 根据平台提供不同的下载信息
-        ...(platform === 'android' ? { downloadUrl: latestVersion.download_url } : {}),
-        ...(platform === 'ios' ? { appStoreUrl: latestVersion.app_store_url } : {})
+        downloadUrl: latestVersion.download_url
       });
     }
     
@@ -99,12 +99,13 @@ exports.checkForUpdates = async (req, res) => {
  */
 exports.getVersionHistory = async (req, res) => {
   try {
-    const { platform = 'web' } = req.query;
+    // 固定使用android平台
+    const platform = 'android';
     
-    // 从数据库获取对应平台的版本信息
+    // 从数据库获取安卓平台的版本信息
     const [platformVersions] = await db.execute(
       'SELECT * FROM app_versions WHERE platform = ? ORDER BY id DESC',
-      [platform.toLowerCase()]
+      [platform]
     );
     
     if (!platformVersions || platformVersions.length === 0) {
@@ -121,8 +122,7 @@ exports.getVersionHistory = async (req, res) => {
       releaseDate: version.release_date,
       forceUpdate: version.force_update === 1,
       releaseNotes: version.release_notes,
-      downloadUrl: version.download_url,
-      appStoreUrl: version.app_store_url
+      downloadUrl: version.download_url
     }));
     
     // 返回版本历史记录

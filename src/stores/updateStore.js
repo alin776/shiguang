@@ -14,7 +14,7 @@ export const useUpdateStore = defineStore('update', {
     checkError: null, // 检查错误信息
     downloadProgress: 0, // 下载进度
     isDownloading: false, // 是否正在下载
-    platform: 'web', // 默认平台为web
+    platform: 'android', // 默认平台为android
   }),
   
   actions: {
@@ -29,26 +29,9 @@ export const useUpdateStore = defineStore('update', {
       this.checkError = null;
       
       try {
-        let platform = 'web';
-        let buildNumber = '0';
-        
-        // 尝试获取当前平台信息 - 仅在原生平台尝试
-        try {
-          // 检测是否在Capacitor环境中
-          if (window.Capacitor && window.Capacitor.isNativePlatform()) {
-            const info = await App.getInfo();
-            platform = info.platform;
-            buildNumber = info.build;
-          } else {
-            // Web环境，使用默认值
-            platform = 'web';
-            buildNumber = APP_VERSION.BUILD_NUMBER;
-          }
-        } catch (error) {
-          console.log('在Web环境中运行，使用默认平台信息');
-          platform = 'web';
-          buildNumber = APP_VERSION.BUILD_NUMBER;
-        }
+        // 所有设备都使用android平台
+        const platform = 'android';
+        const buildNumber = APP_VERSION.BUILD_NUMBER;
         
         this.platform = platform;
         
@@ -91,24 +74,12 @@ export const useUpdateStore = defineStore('update', {
       this.downloadProgress = 0;
       
       try {
-        // 根据平台处理下载
-        if (this.platform === 'web') {
-          // Web版本只需要刷新页面
-          window.location.reload();
-          return true;
-        } else if (this.platform === 'android') {
-          // Android平台下载APK
-          const downloadUrl = this.updateInfo.downloadUrl;
-          
-          // 使用capacitor浏览器打开下载链接
-          window.open(downloadUrl, '_system');
-          return true;
-        } else if (this.platform === 'ios') {
-          // iOS平台跳转App Store
-          const appStoreUrl = this.updateInfo.appStoreUrl;
-          window.open(appStoreUrl, '_system');
-          return true;
-        }
+        // Android平台下载APK
+        const downloadUrl = this.updateInfo.downloadUrl;
+        
+        // 使用capacitor浏览器打开下载链接
+        window.open(downloadUrl, '_system');
+        return true;
       } catch (error) {
         console.error('下载更新失败:', error);
         throw error;
