@@ -619,5 +619,34 @@ export const useAuthStore = defineStore("auth", {
         throw error.response?.data || error;
       }
     },
+
+    // 发送邮箱验证码
+    async sendEmailVerificationCode(email, type = "register") {
+      try {
+        const response = await axios.post(
+          `${API_BASE_URL}/api/users/send-verification-code`,
+          { 
+            email,
+            type // 验证码用途，可以是register或resetPassword
+          }
+        );
+        return response.data;
+      } catch (error) {
+        throw error.response?.data || error;
+      }
+    },
+    
+    // 使用验证码重置密码
+    async resetPasswordWithVerificationCode(resetData) {
+      try {
+        const response = await axios.post(
+          `${API_BASE_URL}/api/users/reset-password-with-code`,
+          resetData
+        );
+        return response.data;
+      } catch (error) {
+        throw error.response?.data || error;
+      }
+    },
   },
 });

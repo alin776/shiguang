@@ -234,7 +234,7 @@ const initCharts = () => {
   userActivityChart = initChart(
     'userActivityChart', 
     data.value.userActivity || [], 
-    '活跃用户数',
+    '用户活跃度',
     ['#67C23A', '#E6A23C']
   )
 }
@@ -252,7 +252,11 @@ const initChart = (elementId, chartData, seriesName, colors) => {
   const option = {
     tooltip: {
       trigger: 'axis',
-      formatter: '{b}<br />{a}: {c}'
+      formatter: function(params) {
+        const date = params[0].name;
+        const value = params[0].value;
+        return `${date}<br/>${params[0].seriesName}: ${value}`;
+      }
     },
     grid: {
       left: '3%',

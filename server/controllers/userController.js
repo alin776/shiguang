@@ -205,6 +205,58 @@ const resetPassword = async (req, res) => {
   }
 };
 
+// 使用邮箱验证码重置密码
+const resetPasswordWithCode = async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { email, verificationCode, newPassword } = req.body;
+
+    // 验证验证码
+    const [codes] = await db.execute(
+      "SELECT * FROM verification_codes WHERE email = ? AND code = ? AND is_used = FALSE AND expiry_time > NOW() ORDER BY created_at DESC LIMIT 1",
+      [email, verificationCode]
+    );
+
+    if (codes.length === 0) {
+      return res.status(400).json({ message: "验证码无效或已过期，请重新获取" });
+    }
+
+    // 查找用户
+    const [users] = await db.execute(
+      "SELECT id FROM users WHERE email = ?",
+      [email]
+    );
+
+    if (users.length === 0) {
+      return res.status(404).json({ message: "该邮箱未注册，请先注册账号" });
+    }
+
+    // 标记验证码为已使用
+    await db.execute(
+      "UPDATE verification_codes SET is_used = TRUE WHERE id = ?",
+      [codes[0].id]
+    );
+
+    // 加密新密码
+    const hashedPassword = await bcrypt.hash(newPassword, 12);
+
+    // 更新密码
+    await db.execute(
+      "UPDATE users SET password = ? WHERE email = ?",
+      [hashedPassword, email]
+    );
+
+    res.json({ message: "密码重置成功，请使用新密码登录" });
+  } catch (error) {
+    console.error("使用验证码重置密码错误:", error);
+    res.status(500).json({ message: "重置密码失败，请稍后重试" });
+  }
+};
+
 // 用户等级经验配置
 const LEVEL_EXPERIENCE = {
   1: 0,      // 1级所需经验值
@@ -791,7 +843,7 @@ const getUserProfile = async (req, res) => {
     // 获取用户基本信息
     const [userResult] = await db.execute(
       `SELECT 
-        u.id, u.username, u.avatar, u.bio, u.cover_image,
+        u.id, u.username, u.avatar, u.bio, u.cover_image, u.title,
         (SELECT COUNT(DISTINCT follower_id) FROM follows WHERE followed_id = ?) as followers_count,
         (SELECT COUNT(DISTINCT followed_id) FROM follows WHERE follower_id = ?) as following_count,
         (SELECT COUNT(*) FROM posts WHERE user_id = u.id) as posts_count,
@@ -1080,6 +1132,7 @@ module.exports = {
   register,
   login,
   resetPassword,
+  resetPasswordWithCode,
   getCurrentUser,
   getSettings,
   updateSettings,

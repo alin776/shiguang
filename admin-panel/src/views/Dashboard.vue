@@ -18,58 +18,102 @@
           <el-icon><Menu /></el-icon>
           <span>仪表盘</span>
         </el-menu-item>
-        <el-menu-item index="/posts">
-          <el-icon><Document /></el-icon>
-          <span>帖子管理</span>
-        </el-menu-item>
-        <el-menu-item index="/users">
-          <el-icon><User /></el-icon>
-          <span>用户管理</span>
-        </el-menu-item>
-        <el-menu-item index="/tasks">
-          <el-icon><List /></el-icon>
-          <span>任务管理</span>
-        </el-menu-item>
-        <el-menu-item index="/categories">
-          <el-icon><FolderOpened /></el-icon>
-          <span>分类管理</span>
-        </el-menu-item>
-        <el-menu-item index="/activities">
-          <el-icon><Calendar /></el-icon>
-          <span>活动管理</span>
-        </el-menu-item>
-        <el-menu-item index="/feedbacks">
-          <el-icon><ChatDotRound /></el-icon>
-          <span>反馈管理</span>
-        </el-menu-item>
-        <el-menu-item index="/notes">
-          <el-icon><Notebook /></el-icon>
-          <span>小记管理</span>
-        </el-menu-item>
-        <el-menu-item index="/versions">
-          <el-icon><Connection /></el-icon>
-          <span>版本管理</span>
-        </el-menu-item>
-        <el-menu-item index="/content-review">
-          <el-icon><Check /></el-icon>
-          <span>内容审核</span>
-        </el-menu-item>
-        <el-menu-item index="/reports">
-          <el-icon><Warning /></el-icon>
-          <span>举报管理</span>
-        </el-menu-item>
-        <el-menu-item index="/announcements">
-          <el-icon><Bell /></el-icon>
-          <span>公告管理</span>
-        </el-menu-item>
-        <el-menu-item index="/points-products">
-          <el-icon><GoodsFilled /></el-icon>
-          <span>积分商品管理</span>
-        </el-menu-item>
-        <el-menu-item index="/points-exchanges">
-          <el-icon><Tickets /></el-icon>
-          <span>积分兑换记录</span>
-        </el-menu-item>
+        
+        <!-- 内容管理 -->
+        <el-sub-menu index="content">
+          <template #title>
+            <el-icon><Document /></el-icon>
+            <span>内容管理</span>
+          </template>
+          <el-menu-item index="/posts">
+            <el-icon><Document /></el-icon>
+            <span>帖子管理</span>
+          </el-menu-item>
+          <el-menu-item index="/notes">
+            <el-icon><Notebook /></el-icon>
+            <span>小记管理</span>
+          </el-menu-item>
+          <el-menu-item index="/categories">
+            <el-icon><FolderOpened /></el-icon>
+            <span>分类管理</span>
+          </el-menu-item>
+          <el-menu-item index="/content-review">
+            <el-icon><Check /></el-icon>
+            <span>内容审核</span>
+          </el-menu-item>
+        </el-sub-menu>
+        
+        <!-- 用户管理 -->
+        <el-sub-menu index="users">
+          <template #title>
+            <el-icon><User /></el-icon>
+            <span>用户管理</span>
+          </template>
+          <el-menu-item index="/users">
+            <el-icon><User /></el-icon>
+            <span>用户列表</span>
+          </el-menu-item>
+          <el-menu-item index="/feedbacks">
+            <el-icon><ChatDotRound /></el-icon>
+            <span>反馈管理</span>
+          </el-menu-item>
+          <el-menu-item index="/reports">
+            <el-icon><Warning /></el-icon>
+            <span>举报管理</span>
+          </el-menu-item>
+        </el-sub-menu>
+        
+        <!-- 活动管理 -->
+        <el-sub-menu index="activities">
+          <template #title>
+            <el-icon><Calendar /></el-icon>
+            <span>活动管理</span>
+          </template>
+          <el-menu-item index="/activities">
+            <el-icon><Calendar /></el-icon>
+            <span>活动列表</span>
+          </el-menu-item>
+          <el-menu-item index="/tasks">
+            <el-icon><List /></el-icon>
+            <span>任务管理</span>
+          </el-menu-item>
+        </el-sub-menu>
+        
+        <!-- 积分系统 -->
+        <el-sub-menu index="points">
+          <template #title>
+            <el-icon><GoodsFilled /></el-icon>
+            <span>积分系统</span>
+          </template>
+          <el-menu-item index="/points-products">
+            <el-icon><GoodsFilled /></el-icon>
+            <span>积分商品</span>
+          </el-menu-item>
+          <el-menu-item index="/points-exchanges">
+            <el-icon><Tickets /></el-icon>
+            <span>兑换记录</span>
+          </el-menu-item>
+          <el-menu-item index="/card-game-records">
+            <el-icon><VideoPlay /></el-icon>
+            <span>抽卡记录</span>
+          </el-menu-item>
+        </el-sub-menu>
+        
+        <!-- 系统设置 -->
+        <el-sub-menu index="system">
+          <template #title>
+            <el-icon><Setting /></el-icon>
+            <span>系统设置</span>
+          </template>
+          <el-menu-item index="/announcements">
+            <el-icon><Bell /></el-icon>
+            <span>公告管理</span>
+          </el-menu-item>
+          <el-menu-item index="/versions">
+            <el-icon><Connection /></el-icon>
+            <span>版本管理</span>
+          </el-menu-item>
+        </el-sub-menu>
       </el-menu>
     </div>
     
@@ -93,6 +137,7 @@
             <el-breadcrumb-item v-if="$route.name === 'announcements'">公告管理</el-breadcrumb-item>
             <el-breadcrumb-item v-if="$route.name === 'points-products'">积分商品管理</el-breadcrumb-item>
             <el-breadcrumb-item v-if="$route.name === 'points-exchanges'">积分兑换记录</el-breadcrumb-item>
+            <el-breadcrumb-item v-if="$route.name === 'card-game-records'">抽卡游戏记录</el-breadcrumb-item>
           </el-breadcrumb>
         </div>
         <div class="user-actions">
@@ -126,7 +171,7 @@ import { ElMessageBox } from 'element-plus'
 import { 
   Menu, Document, FolderOpened, ArrowDown, ChatDotRound, 
   Notebook, Connection, User, List, Check, Warning, Bell, 
-  Calendar, GoodsFilled, Tickets 
+  Calendar, GoodsFilled, Tickets, VideoPlay, Setting 
 } from '@element-plus/icons-vue'
 
 const userStore = useUserStore()

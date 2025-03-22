@@ -11,7 +11,7 @@ exports.sendVerificationCode = async (req, res) => {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { email } = req.body;
+    const { email, type = "register" } = req.body;
 
     // 检查邮箱是否已被注册
     const [existingUsers] = await db.execute(
@@ -19,8 +19,17 @@ exports.sendVerificationCode = async (req, res) => {
       [email]
     );
 
-    if (existingUsers.length > 0) {
-      return res.status(400).json({ message: "该邮箱已被注册" });
+    // 针对不同场景进行不同处理
+    if (type === "register") {
+      // 注册场景：如果邮箱已存在，则返回错误
+      if (existingUsers.length > 0) {
+        return res.status(400).json({ message: "该邮箱已被注册" });
+      }
+    } else if (type === "resetPassword") {
+      // 找回密码场景：如果邮箱不存在，则返回错误
+      if (existingUsers.length === 0) {
+        return res.status(404).json({ message: "该邮箱未注册" });
+      }
     }
 
     // 检查是否在短时间内重复发送
@@ -45,8 +54,8 @@ exports.sendVerificationCode = async (req, res) => {
       [email, verificationCode, expiryTime]
     );
     
-    // 发送验证码邮件
-    await emailService.sendVerificationEmail(email, verificationCode);
+    // 发送验证码邮件，传递type参数
+    await emailService.sendVerificationEmail(email, verificationCode, type);
     
     res.json({ message: "验证码已发送到您的邮箱" });
   } catch (error) {

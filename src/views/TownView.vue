@@ -107,6 +107,24 @@
           </div>
         </div>
       </div>
+
+      <div class="point-section">
+        <h3>积分体系</h3>
+        <div class="point-options">
+          <router-link to="/tasks" class="point-option">
+            <el-icon><Trophy /></el-icon>
+            <span>任务中心</span>
+          </router-link>
+          <router-link to="/points/exchange" class="point-option">
+            <el-icon><Shop /></el-icon>
+            <span>积分兑换</span>
+          </router-link>
+          <router-link to="/games/card-game" class="point-option">
+            <el-icon><TrendCharts /></el-icon>
+            <span>每日抽奖</span>
+          </router-link>
+        </div>
+      </div>
     </div>
     <BottomNavBar />
   </div>
@@ -116,7 +134,7 @@
 import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
-import { View, ChatDotRound, ArrowRight } from "@element-plus/icons-vue";
+import { View, ChatDotRound, ArrowRight, Trophy, Shop, TrendCharts } from "@element-plus/icons-vue";
 import BottomNavBar from "@/components/BottomNavBar.vue";
 import { useCommunityStore } from "@/stores/community";
 import { API_BASE_URL } from "@/config";
@@ -666,6 +684,7 @@ onMounted(async () => {
 .post-content {
   flex: 1;
   min-width: 0;
+  text-align: left; /* 确保内容区域整体靠左对齐 */
 }
 
 .post-title {
@@ -768,5 +787,41 @@ onMounted(async () => {
 /* 论坛渐变色 */
 .forum-gradient {
   background: linear-gradient(135deg, #1677ff, #0099ff, #00c4ff);
+}
+
+.point-section {
+  margin: 0 16px 20px;
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  padding: 16px;
+  overflow: hidden;
+}
+
+.point-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.point-option {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px;
+  border-radius: 8px;
+  background-color: #f5f7fa;
+  color: #333;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.point-option:hover {
+  background-color: #e8f3ff;
+}
+
+.task-icon {
+  margin-right: 8px;
 }
 </style> 

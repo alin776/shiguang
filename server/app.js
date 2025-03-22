@@ -28,6 +28,7 @@ const announcementRoutes = require("./routes/announcementRoutes");
 const townRoutes = require("./routes/townRoutes");
 const forumRoutes = require("./routes/forumRoutes");
 const activityRoutes = require("./routes/activityRoutes");
+const gameRoutes = require("./routes/gameRoutes");
 const emailService = require("./services/emailService");
 const titleService = require("./services/titleService");
 
@@ -139,6 +140,7 @@ app.use("/api/announcements", announcementRoutes);
 app.use("/api/town", townRoutes);
 app.use("/api/forum", forumRoutes);
 app.use("/api/activities", activityRoutes);
+app.use("/api/games", gameRoutes);
 
 // 初始化邮件服务
 emailService.initMailer();

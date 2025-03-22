@@ -1129,6 +1129,7 @@ const getTitleClass = (title) => {
 .post-content {
   padding: 12px;
   position: relative;
+  text-align: left; /* 确保内容靠左显示 */
 }
 
 .post-author {
@@ -1156,26 +1157,28 @@ const getTitleClass = (title) => {
 }
 
 .post-title {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
-  margin: 0 0 6px;
+  margin: 0 0 8px;
   color: #333;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   line-height: 1.4;
+  text-align: left; /* 确保帖子标题靠左显示 */
 }
 
 .post-text {
-  font-size: 13px;
+  font-size: 14px;
   color: #666;
   margin: 0 0 8px;
   display: -webkit-box;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  line-height: 1.4;
+  line-height: 1.5;
+  text-align: left; /* 确保帖子内容靠左显示 */
 }
 
 /* 帖子底部 */
@@ -1576,6 +1579,7 @@ const getTitleClass = (title) => {
   -webkit-box-orient: vertical;
   overflow: hidden;
   line-height: 1.4;
+  text-align: left; /* 确保标题靠左显示 */
 }
 
 .post-list-content .post-text {
@@ -1587,6 +1591,7 @@ const getTitleClass = (title) => {
   -webkit-box-orient: vertical;
   overflow: hidden;
   line-height: 1.5;
+  text-align: left; /* 确保内容靠左显示 */
 }
 
 .post-list-content .post-text.longer-text {

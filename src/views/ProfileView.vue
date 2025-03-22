@@ -106,6 +106,13 @@
             <el-icon><Goods /></el-icon>
             <span>积分兑换</span>
           </div>
+          <div
+            class="action-btn"
+            @click="router.push('/games/card-game')"
+          >
+            <el-icon><TrendCharts /></el-icon>
+            <span>抽卡游戏</span>
+          </div>
         </div>
       </div>
     </div>
@@ -283,6 +290,7 @@ import {
   List,
   Calendar,
   Goods,
+  TrendCharts,
 } from "@element-plus/icons-vue";
 import BottomNavBar from "../components/BottomNavBar.vue";
 import useProfileLogic from "../mine/js/profile.js";
@@ -859,5 +867,81 @@ const navigateToPoints = () => {
 
 .profile-page {
   background-color: transparent !important;
+}
+
+.post-title {
+  padding: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #2c3e50;
+  text-align: left;
+}
+
+.post-title-large {
+  padding: 12px 12px 6px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #2c3e50;
+  text-align: left;
+}
+
+.post-content {
+  padding: 0 12px 12px;
+  font-size: 14px;
+  color: #7f8c8d;
+  line-height: 1.5;
+  text-align: left;
+}
+
+.feature-panel {
+  background-color: white;
+  padding: 16px;
+  border-radius: 12px;
+  margin-top: 16px;
+  margin-bottom: 16px;
+}
+
+.feature-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.feature-buttons {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.feature-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: #f8f8f8;
+  color: #555;
+  border-radius: 8px;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.85rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.feature-button:hover {
+  background-color: #eee;
+  transform: translateY(-2px);
+  box-shadow: 0 3px 5px rgba(0, 0, 0, 0.1);
+}
+
+@media (prefers-color-scheme: dark) {
+  .feature-button {
+    background-color: #2a2a2a;
+    color: #e0e0e0;
+  }
+  
+  .feature-button:hover {
+    background-color: #333;
+  }
 }
 </style>

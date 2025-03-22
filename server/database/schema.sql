@@ -454,4 +454,29 @@ CREATE TABLE IF NOT EXISTS `points_exchanges` (
   `completion_time` TIMESTAMP NULL COMMENT '完成时间',
   FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
   FOREIGN KEY (`product_id`) REFERENCES `points_products`(`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci; 
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 卡片游戏结果表
+CREATE TABLE IF NOT EXISTS `card_game_results` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `winning_position` tinyint(4) NOT NULL COMMENT '获胜位置（0-2）',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='卡片游戏结果记录';
+
+-- 卡片游戏投注表
+CREATE TABLE IF NOT EXISTS `card_game_bets` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) NOT NULL COMMENT '用户ID',
+  `selected_position` tinyint(4) NOT NULL COMMENT '选择的位置（0-2）',
+  `bet_amount` int(11) NOT NULL COMMENT '投注金额',
+  `result_id` int(11) DEFAULT NULL COMMENT '关联的结果ID',
+  `is_win` tinyint(1) DEFAULT NULL COMMENT '是否获胜',
+  `reward` int(11) DEFAULT NULL COMMENT '奖励金额',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `fk_card_game_bets_user` (`user_id`),
+  KEY `fk_card_game_bets_result` (`result_id`),
+  CONSTRAINT `fk_card_game_bets_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_card_game_bets_result` FOREIGN KEY (`result_id`) REFERENCES `card_game_results` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='卡片游戏投注记录'; 

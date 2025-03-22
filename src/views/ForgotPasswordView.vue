@@ -11,7 +11,7 @@
       <div class="forgot-password-header">
         <img src="../assets/logo.png" alt="时光" class="logo" />
         <h1 class="forgot-password-title">找回密码</h1>
-        <p class="forgot-password-subtitle">请输入您的手机号和新密码</p>
+        <p class="forgot-password-subtitle">请使用邮箱验证码验证身份</p>
       </div>
 
       <el-form 
@@ -21,12 +21,30 @@
         ref="formRef" 
         label-position="top"
       >
-        <el-form-item label="手机号" prop="phone">
+        <el-form-item label="邮箱" prop="email">
           <el-input 
-            v-model="formData.phone" 
-            placeholder="请输入手机号"
-            prefix-icon="Phone"
+            v-model="formData.email" 
+            placeholder="请输入邮箱"
+            prefix-icon="Message"
           />
+        </el-form-item>
+        
+        <el-form-item label="验证码" prop="verificationCode">
+          <div class="verification-code-container">
+            <el-input 
+              v-model="formData.verificationCode" 
+              placeholder="请输入验证码"
+              prefix-icon="Key"
+            />
+            <el-button 
+              type="primary" 
+              :disabled="countdown > 0" 
+              @click="sendVerificationCode"
+              class="verification-code-btn"
+            >
+              {{ countdown > 0 ? `${countdown}秒后重试` : '获取验证码' }}
+            </el-button>
+          </div>
         </el-form-item>
         
         <el-form-item label="新密码" prop="password">
@@ -71,7 +89,7 @@
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { ref, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
 import { ArrowLeft } from "@element-plus/icons-vue";
@@ -83,19 +101,27 @@ const formRef = ref(null);
 const loading = ref(false);
 
 const formData = ref({
-  phone: "",
+  email: "",
+  verificationCode: "",
   password: "",
   confirmPassword: "",
 });
 
+const countdown = ref(0);
+let countdownTimer = null;
+
 const rules = {
-  phone: [
-    { required: true, message: "请输入手机号", trigger: "blur" },
+  email: [
+    { required: true, message: "请输入邮箱", trigger: "blur" },
     {
-      pattern: /^1[3-9]\d{9}$/,
-      message: "请输入正确的手机号",
+      type: "email",
+      message: "请输入正确的邮箱地址",
       trigger: "blur",
     },
+  ],
+  verificationCode: [
+    { required: true, message: "请输入验证码", trigger: "blur" },
+    { min: 4, max: 6, message: "验证码长度不正确", trigger: "blur" },
   ],
   password: [
     { required: true, message: "请输入新密码", trigger: "blur" },
@@ -122,8 +148,9 @@ const handleSubmit = async () => {
   try {
     loading.value = true;
     await formRef.value.validate();
-    await authStore.resetPassword({
-      phone: formData.value.phone,
+    await authStore.resetPasswordWithVerificationCode({
+      email: formData.value.email,
+      verificationCode: formData.value.verificationCode,
       newPassword: formData.value.password,
     });
     ElMessage.success("密码重置成功，请重新登录");
@@ -134,6 +161,37 @@ const handleSubmit = async () => {
     loading.value = false;
   }
 };
+
+const sendVerificationCode = async () => {
+  try {
+    // 验证邮箱
+    await formRef.value.validateField("email");
+    
+    loading.value = true;
+    await authStore.sendEmailVerificationCode(formData.value.email, "resetPassword");
+    ElMessage.success("验证码已发送至您的邮箱");
+    
+    // 开始倒计时
+    countdown.value = 60;
+    countdownTimer = setInterval(() => {
+      countdown.value--;
+      if (countdown.value <= 0) {
+        clearInterval(countdownTimer);
+      }
+    }, 1000);
+  } catch (error) {
+    ElMessage.error(error.message || "发送验证码失败");
+  } finally {
+    loading.value = false;
+  }
+};
+
+// 组件卸载时清除定时器
+onUnmounted(() => {
+  if (countdownTimer) {
+    clearInterval(countdownTimer);
+  }
+});
 </script>
 
 <style scoped>
@@ -349,6 +407,25 @@ const handleSubmit = async () => {
 :deep(.el-form-item.is-error .el-input__wrapper) {
   border-color: var(--danger-color) !important;
   box-shadow: 0 0 0 1px rgba(255, 59, 48, 0.1) !important;
+}
+
+.verification-code-container {
+  display: flex;
+  gap: 10px;
+}
+
+.verification-code-btn {
+  white-space: nowrap;
+  min-width: 100px;
+  background: linear-gradient(135deg, var(--primary-color), #2980b9);
+  border: none;
+  color: white;
+  font-weight: 500;
+}
+
+.verification-code-btn:disabled {
+  opacity: 0.7;
+  background: linear-gradient(135deg, #8eb7e2, #80a7c5);
 }
 
 @media screen and (max-width: 480px) {

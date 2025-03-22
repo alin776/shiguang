@@ -23,6 +23,7 @@ import TitleGuideView from "../views/TitleGuideView.vue"; // 添加称号指南�
 import ActivityListView from "../views/activities/ActivityListView.vue"; // 添加活动列表页面组件导入
 import ActivityDetailView from "../views/activities/ActivityDetailView.vue"; // 添加活动详情页面组件导入
 import PointsExchangeView from "../views/PointsExchangeView.vue"; // 添加积分兑换页面组件导入
+import CardGameView from "../views/CardGameView.vue"; // 添加卡牌游戏页面组件导入
 import { ref } from "vue";
 
 const routes = [
@@ -259,6 +260,15 @@ const routes = [
     meta: { 
       requiresAuth: true,
       title: "积分兑换" 
+    },
+  },
+  {
+    path: "/games/card-game",
+    name: "CardGame",
+    component: CardGameView,
+    meta: {
+      requiresAuth: true,
+      title: "每日抽奖"
     },
   },
   {

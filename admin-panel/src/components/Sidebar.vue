@@ -40,6 +40,21 @@
       <span>公告管理</span>
     </el-menu-item>
     
+    <el-menu-item index="/points-products">
+      <el-icon><GoodsFilled /></el-icon>
+      <span>积分商品管理</span>
+    </el-menu-item>
+    
+    <el-menu-item index="/points-exchanges">
+      <el-icon><Tickets /></el-icon>
+      <span>积分兑换记录</span>
+    </el-menu-item>
+    
+    <el-menu-item index="/card-game-records">
+      <el-icon><VideoPlay /></el-icon>
+      <span>抽卡游戏记录</span>
+    </el-menu-item>
+    
     <el-menu-item index="/settings">
       <el-icon><Setting /></el-icon>
       <span>系统设置</span>
@@ -57,7 +72,10 @@ import {
   Setting,
   ChatLineRound,
   List,
-  Bell
+  Bell,
+  GoodsFilled,
+  Tickets,
+  VideoPlay
 } from '@element-plus/icons-vue'
 
 const route = useRoute()

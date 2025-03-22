@@ -3,7 +3,7 @@ const router = express.Router();
 const userController = require("../controllers/userController");
 const verificationController = require("../controllers/verificationController");
 const auth = require("../middleware/auth");
-const { check } = require("express-validator");
+const { check, body } = require("express-validator");
 const multer = require("multer");
 const path = require("path");
 const pointsProductController = require("../controllers/pointsProductController");
@@ -149,6 +149,17 @@ router.post(
       .withMessage("新密码至少6个字符"),
   ],
   userController.resetPassword
+);
+
+// 重置密码使用验证码
+router.post(
+  "/reset-password-with-code",
+  [
+    body("email").isEmail().withMessage("请输入有效的邮箱地址"),
+    body("verificationCode").isLength({ min: 6, max: 6 }).withMessage("验证码必须是6位"),
+    body("newPassword").isLength({ min: 6 }).withMessage("密码至少需要6个字符"),
+  ],
+  userController.resetPasswordWithCode
 );
 
 // 添加头像上传路由

@@ -244,20 +244,59 @@ exports.getDashboardData = async (req, res) => {
     // 获取最近7天的用户活跃度数据（基于登录、发帖、评论等活动）
     const [userActivity] = await db.execute(`
       SELECT 
-        DATE(activity_date) as date,
-        COUNT(DISTINCT user_id) as active_users
+        activity_date as date,
+        SUM(activity_score) as count
       FROM (
-        SELECT user_id, DATE(created_at) as activity_date FROM posts
+        -- 帖子数 * 2
+        SELECT 
+          DATE(created_at) as activity_date,
+          COUNT(*) * 2 as activity_score
+        FROM posts
         WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+        GROUP BY DATE(created_at)
+        
         UNION ALL
-        SELECT user_id, DATE(created_at) as activity_date FROM comments
+        
+        -- 评论数 * 1
+        SELECT 
+          DATE(created_at) as activity_date,
+          COUNT(*) * 1 as activity_score
+        FROM comments
         WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+        GROUP BY DATE(created_at)
+        
         UNION ALL
-        SELECT id as user_id, DATE(updated_at) as activity_date FROM users
-        WHERE updated_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+        
+        -- 帖子点赞数 * 0.5
+        SELECT 
+          DATE(created_at) as activity_date,
+          COUNT(*) * 0.5 as activity_score
+        FROM likes
+        WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+        GROUP BY DATE(created_at)
+        
+        UNION ALL
+        
+        -- 评论点赞数 * 0.5
+        SELECT 
+          DATE(created_at) as activity_date,
+          COUNT(*) * 0.5 as activity_score
+        FROM comment_likes
+        WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+        GROUP BY DATE(created_at)
+        
+        UNION ALL
+        
+        -- 小记点赞数 * 0.5
+        SELECT 
+          DATE(created_at) as activity_date,
+          COUNT(*) * 0.5 as activity_score
+        FROM note_likes
+        WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+        GROUP BY DATE(created_at)
       ) as activities
-      GROUP BY date
-      ORDER BY date
+      GROUP BY activity_date
+      ORDER BY activity_date
     `);
     
     // 获取最近活动（最新10条用户注册、帖子发布、评论等）

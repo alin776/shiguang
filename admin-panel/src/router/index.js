@@ -113,6 +113,15 @@ const routes = [
           requiresAuth: true,
           title: '积分兑换记录'
         }
+      },
+      {
+        path: 'card-game-records',
+        name: 'card-game-records',
+        component: () => import('../views/CardGameRecords.vue'),
+        meta: { 
+          requiresAuth: true,
+          title: '抽卡游戏记录'
+        }
       }
     ]
   },

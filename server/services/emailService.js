@@ -36,17 +36,37 @@ const initMailer = () => {
 };
 
 // 发送验证码邮件
-const sendVerificationEmail = async (to, code) => {
+const sendVerificationEmail = async (to, code, type = "register") => {
   // 如果发送器未初始化，则初始化
   if (!transporter) {
     initMailer();
   }
   
-  const mailOptions = {
-    from: process.env.EMAIL_USER || 'your-email@qq.com', // 发件人
-    to: to,                              // 收件人
-    subject: '时光 - 邮箱验证码',          // 邮件主题
-    html: `
+  // 根据不同类型设置不同的邮件内容
+  let subject = '时光 - 邮箱验证码';
+  let content = '';
+  
+  if (type === 'resetPassword') {
+    subject = '时光 - 找回密码验证码';
+    content = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px;">
+        <h2 style="color: #3498db; text-align: center;">时光 - 找回密码</h2>
+        <p>尊敬的用户：</p>
+        <p>您好！您正在进行密码重置操作。请使用以下验证码完成身份验证：</p>
+        <div style="background-color: #f7f7f7; padding: 15px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 5px; color: #333;">
+          ${code}
+        </div>
+        <p style="margin-top: 20px;">此验证码将在15分钟后失效，请尽快完成验证。</p>
+        <p>如果这不是您本人的操作，请忽略此邮件并确保您的账号安全。</p>
+        <p style="margin-top: 30px; font-size: 12px; color: #777; text-align: center;">
+          此邮件由系统自动发送，请勿回复。<br>
+          © ${new Date().getFullYear()} 时光应用 版权所有
+        </p>
+      </div>
+    `;
+  } else {
+    // 默认注册验证码模板
+    content = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px;">
         <h2 style="color: #3498db; text-align: center;">时光 - 邮箱验证</h2>
         <p>尊敬的用户：</p>
@@ -61,7 +81,14 @@ const sendVerificationEmail = async (to, code) => {
           © ${new Date().getFullYear()} 时光应用 版权所有
         </p>
       </div>
-    `
+    `;
+  }
+  
+  const mailOptions = {
+    from: process.env.EMAIL_USER || 'your-email@qq.com', // 发件人
+    to: to,                              // 收件人
+    subject: subject,                    // 邮件主题
+    html: content
   };
   
   try {

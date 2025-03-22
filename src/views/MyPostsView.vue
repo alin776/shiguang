@@ -244,33 +244,27 @@ onMounted(() => {
 
 .post-content {
   padding: 16px;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  text-align: left;
 }
 
 .post-title {
-  margin: 0;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 600;
-  color: #2c3e50;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  line-height: 1.4;
+  margin: 0 0 10px;
+  color: #333;
+  text-align: left;
 }
 
 .post-text {
-  margin: 0;
   font-size: 14px;
-  color: #34495e;
+  color: #666;
+  margin: 0 0 15px;
+  line-height: 1.5;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  line-height: 1.5;
+  text-align: left;
 }
 
 .post-time {

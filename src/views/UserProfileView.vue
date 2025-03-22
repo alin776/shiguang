@@ -39,15 +39,19 @@
               
               <div class="username-action-container">
                 <div class="username-container">
-                  <h1 class="username">{{ userProfile.username }}</h1>
-                  <div class="level-tag">Lv.{{ userProfile.level || 1 }}</div>
+                  <div class="username-badges-row">
+                    <h1 class="username">{{ userProfile.username }}</h1>
+                    <div class="user-badges">
+                      <div class="level-tag">Lv.{{ userProfile.level || 1 }}</div>
+                      <span 
+                        v-if="userProfile.title" 
+                        class="user-title-inline"
+                        :class="getTitleClass(userProfile.title)"
+                      >{{ userProfile.title }}</span>
+                    </div>
+                  </div>
                 </div>
                 
-                <!-- 显示用户称号 -->
-                <div class="user-title" v-if="userProfile.title">
-                  <el-tag size="small" class="title-tag">{{ userProfile.title }}</el-tag>
-                </div>
-
                 <div class="action-btn-container" v-if="!isOwnProfile">
                   <el-button
                     class="follow-btn"
@@ -290,6 +294,21 @@ const getCoverUrl = (cover) => {
   return getImageUrl(cover);
 };
 
+// 根据称号名称返回对应的样式类
+const getTitleClass = (title) => {
+  if (!title) return '';
+  
+  if (title === '云步官方') {
+    return 'title-official';
+  } else if (title === '持之以恒') {
+    return 'title-persistent';
+  } else if (title === '巅峰大神') {
+    return 'title-master';
+  }
+  
+  return '';
+};
+
 onMounted(() => {
   loadUserProfile();
 });
@@ -399,25 +418,16 @@ onMounted(() => {
 
 /* 用户名和等级 */
 .username-container {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  flex-wrap: wrap;
   width: 100%;
   min-width: 0;
   margin-bottom: 8px;
 }
 
-/* 用户称号样式 */
-.user-title {
-  margin-bottom: 8px;
-}
-
-.title-tag {
-  background-color: #f2f6fc;
-  border-color: #d9ecff;
-  color: #409eff;
-  font-weight: bold;
+.username-badges-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 8px;
 }
 
 /* 用户名样式 */
@@ -429,19 +439,72 @@ onMounted(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  line-height: 1.2;
+}
+
+/* 用户徽章容器 */
+.user-badges {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 2px; /* 稍微下移一点，但保持靠近用户名 */
 }
 
 .level-tag {
   background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%);
   color: white;
-  padding: 2px 10px;
-  border-radius: 15px;
-  font-size: 14px;
+  padding: 1px 8px;
+  border-radius: 12px;
+  font-size: 12px;
   font-weight: 700;
   font-style: italic;
   box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
   white-space: nowrap;
-  margin-top: 6px;
+}
+
+/* 用户称号样式 */
+.user-title-inline {
+  font-size: 0.7rem;
+  color: #333;
+  background-color: rgba(255, 255, 255, 0.8);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  font-family: "PingFang SC", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, sans-serif;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.2);
+  white-space: nowrap;
+  max-width: 100%;
+  overflow: visible;
+}
+
+/* 官方称号 - 金色 */
+.title-official {
+  color: #6d4b2f !important;
+  background-color: #f8d66d !important;
+  border: 1px solid #e3b748 !important;
+  font-weight: 600 !important;
+  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.5) !important;
+  letter-spacing: 0.5px !important;
+}
+
+/* 持之以恒称号 - 绿色 */
+.title-persistent {
+  color: #2c5e2e !important;
+  background-color: #a8e2aa !important;
+  border: 1px solid #56c158 !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.4px !important;
+}
+
+/* 巅峰大神称号 - 红色 */
+.title-master {
+  color: #ffffff !important;
+  background-color: #e74c3c !important;
+  border: 1px solid #c0392b !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.4px !important;
 }
 
 /* 操作按钮 */
@@ -584,6 +647,7 @@ onMounted(() => {
 
 .post-content {
   padding: 16px;
+  text-align: left;
 }
 
 .post-title {
@@ -591,6 +655,7 @@ onMounted(() => {
   font-weight: 600;
   margin: 0 0 8px;
   color: #333;
+  text-align: left;
 }
 
 .post-text {
@@ -602,6 +667,7 @@ onMounted(() => {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  text-align: left;
 }
 
 .post-meta {
