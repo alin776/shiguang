@@ -83,6 +83,8 @@ import { Microphone, VideoPlay, VideoPause, Delete, Connection } from '@element-
 import axios from 'axios';
 import { API_BASE_URL } from '@/config';
 import { useAuthStore } from '@/stores/auth';
+import { Capacitor } from '@capacitor/core';
+import { Microphone as MicrophonePlugin } from '@mozartec/capacitor-microphone';
 
 const props = defineProps({
   value: {
@@ -214,6 +216,29 @@ const checkPendingUploads = async () => {
 // 开始录音
 const startRecording = async () => {
   try {
+    // 检查是否在Capacitor环境中
+    if (Capacitor.isNativePlatform()) {
+      // 请求麦克风权限（Capacitor原生API）
+      try {
+        const microphonePermission = await MicrophonePlugin.checkPermissions();
+        
+        if (microphonePermission.microphone !== 'granted') {
+          // 权限未授予，请求权限
+          const requestResult = await MicrophonePlugin.requestPermissions();
+          
+          if (requestResult.microphone !== 'granted') {
+            ElMessage.error('录音需要麦克风权限，请在设备设置中启用权限');
+            return;
+          }
+        }
+      } catch (permError) {
+        console.error('权限检查失败:', permError);
+        ElMessage.error('权限检查失败，请确保已授予麦克风权限');
+        return;
+      }
+    }
+    
+    // 获取麦克风流
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     
     // 检测设备类型，为不同设备选择合适的音频格式

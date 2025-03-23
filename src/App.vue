@@ -15,6 +15,7 @@ import zhCn from "element-plus/dist/locale/zh-cn.mjs";
 import { useAuthStore } from "./stores/auth";
 import { onMounted, ref, watch } from "vue";
 import { App as CapacitorApp } from "@capacitor/app";
+import { StatusBar, Style } from "@capacitor/status-bar";
 import UpdateChecker from "./components/UpdateChecker.vue";
 import { useUpdateStore } from "./stores/updateStore";
 import { APP_VERSION } from "./config";
@@ -31,6 +32,18 @@ onMounted(async () => {
       // 检查是否在原生平台
       if (window.Capacitor && window.Capacitor.isNativePlatform()) {
         isCapacitorEnabled.value = true;
+        
+        // 设置状态栏为透明
+        try {
+          // 设置状态栏背景为透明
+          await StatusBar.setBackgroundColor({ color: '#00000000' });
+          // 使用亮色的图标 (白色图标)
+          await StatusBar.setStyle({ style: Style.Dark });
+          // 显示状态栏
+          await StatusBar.show();
+        } catch (statusBarError) {
+          console.error('设置状态栏失败:', statusBarError);
+        }
         
         // 获取应用信息并设置当前版本
         try {

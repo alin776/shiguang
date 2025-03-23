@@ -6,7 +6,7 @@
 
 ## 项目介绍
 
-"时光"是一款专注于生活分享与社区互动的轻社交平台。它为用户提供了一个温馨的社区空间，可以分享日常生活、记录成长、发现志同道合的朋友。应用采用简约现代的设计风格，双列瀑布流布局，为用户带来流畅舒适的浏览体验。
+"时光"是一款专注于生活分享与社区互动的多功能社交平台。它为用户提供了一个温馨的社区空间，可以分享日常生活、记录成长、参与互动游戏、完成任务挑战、获取积分奖励以及发现志同道合的朋友。应用采用简约现代的设计风格，双列瀑布流布局，为用户带来流畅舒适的浏览体验。
 
 ## 核心功能
 
@@ -17,6 +17,8 @@
 - 分类筛选系统
 - 帖子搜索功能
 - 帖子详情查看
+- 关注用户和关注内容流
+- 用户资料页面查看
 
 ### 内容发布
 
@@ -24,6 +26,8 @@
 - 多图片上传与预览
 - 分类标签选择
 - 富文本编辑支持
+- 笔记编辑与发布
+- 临时草稿保存
 
 ### 互动功能
 
@@ -31,13 +35,50 @@
 - 评论与回复功能
 - 本地点赞状态保存
 - 评论点赞功能
+- 用户关注系统
+- 通知消息系统
 
 ### 用户系统
 
 - 用户注册与登录
 - 个人主页与资料设置
 - 用户头像管理
-- 消息通知系统
+- 密码管理（修改密码、找回密码）
+- 用户称号与等级系统
+- 用户验证系统
+
+### 游戏与活动
+
+- 卡牌游戏系统
+- 小镇互动系统
+- 活动中心
+- 日历事件系统
+- 每日签到奖励
+- 任务中心
+
+### 积分与奖励
+
+- 积分获取系统
+- 积分商城兑换
+- 完成任务获取奖励
+- 连续签到奖励机制
+
+### 管理功能
+
+- 后台管理系统
+- 内容审核机制
+- 用户管理功能
+- 公告发布系统
+- 数据统计与分析
+- 活动管理系统
+
+### 其他功能
+
+- 自动更新检查系统
+- 版本历史记录
+- 用户反馈系统
+- 系统公告查看
+- 跨平台支持（Web、Android）
 
 ## 技术栈
 
@@ -49,6 +90,7 @@
 - **UI组件**: Element Plus
 - **HTTP客户端**: Axios
 - **构建工具**: Vite
+- **移动应用**: Capacitor (Android)
 
 ### 后端
 
@@ -57,54 +99,60 @@
 - **数据库**: MySQL
 - **认证**: JWT
 - **文件上传**: Multer
+- **邮件服务**: Nodemailer
+- **定时任务**: Node-cron
 - **跨域处理**: CORS
 
 ## 项目结构
 
 ```
+├── admin-panel/            # 管理员面板
+├── android/                # Android应用配置
 ├── public/                 # 静态资源
-├── src/
-│   ├── assets/             # 资源文件
-│   ├── components/         # 公共组件
-│   │   ├── BottomNavBar.vue  # 底部导航栏
-│   │   ├── NotificationBadge.vue # 通知徽章
-│   │   └── ...
-│   ├── config/             # 配置文件
-│   ├── router/             # 路由配置
-│   ├── stores/             # Pinia状态仓库
-│   │   ├── auth.js         # 认证状态
-│   │   ├── community.js    # 社区相关状态
-│   │   └── ...
-│   ├── utils/              # 工具函数
-│   │   ├── formatTime.js   # 时间格式化
-│   │   ├── imageHelpers.js # 图片处理助手
-│   │   └── ...
-│   ├── views/              # 页面组件
-│   │   ├── CommunityView.vue  # 社区主页
-│   │   ├── PostView.vue    # 帖子详情页
-│   │   ├── ProfileView.vue # 个人主页
-│   │   └── ...
-│   ├── App.vue             # 根组件
-│   └── main.js             # 入口文件
 ├── server/                 # 后端服务
 │   ├── config/             # 配置文件
 │   ├── controllers/        # 控制器
-│   │   ├── authController.js  # 认证控制器
-│   │   ├── communityController.js # 社区控制器
+│   │   ├── adminController.js     # 管理员功能
+│   │   ├── authController.js      # 认证控制
+│   │   ├── communityController.js # 社区功能
+│   │   ├── cardGameController.js  # 卡牌游戏
+│   │   ├── taskController.js      # 任务系统
+│   │   ├── pointsProductController.js # 积分商城
+│   │   ├── TownController.js      # 小镇系统
+│   │   ├── notificationController.js # 通知系统
+│   │   ├── updateController.js    # 更新系统
 │   │   └── ...
+│   ├── database/           # 数据库相关
 │   ├── middleware/         # 中间件
-│   │   ├── auth.js         # 认证中间件
-│   │   └── ...
+│   ├── models/             # 数据模型
 │   ├── routes/             # 路由定义
-│   │   ├── auth.js         # 认证路由
-│   │   ├── community.js    # 社区路由
-│   │   └── ...
+│   ├── services/           # 服务层
+│   ├── scripts/            # 脚本工具
 │   ├── uploads/            # 上传文件目录
 │   └── app.js              # 服务器入口文件
+├── src/
+│   ├── assets/             # 资源文件
+│   ├── components/         # 公共组件
+│   ├── composables/        # 组合式函数
+│   ├── config/             # 配置文件
+│   ├── router/             # 路由配置
+│   ├── stores/             # Pinia状态仓库
+│   ├── utils/              # 工具函数
+│   ├── views/              # 页面组件
+│   │   ├── CommunityView.vue  # 社区主页
+│   │   ├── CardGameView.vue   # 卡牌游戏
+│   │   ├── TownView.vue       # 小镇系统
+│   │   ├── ProfileView.vue    # 个人资料
+│   │   ├── TaskCenterView.vue # 任务中心
+│   │   ├── PointsExchangeView.vue # 积分商城
+│   │   ├── NotificationsView.vue # 通知页面
+│   │   └── ...
+│   ├── App.vue             # 根组件
+│   └── main.js             # 入口文件
 ├── .env                    # 环境变量
-├── .gitignore              # Git忽略文件
-├── package.json            # 项目配置
-└── vite.config.js          # Vite配置
+├── capacitor.config.ts     # Capacitor配置
+├── vite.config.js          # Vite配置
+└── package.json            # 项目配置
 ```
 
 ## 快速开始
@@ -159,6 +207,9 @@ DB_USER=your_username
 DB_PASSWORD=your_password
 DB_NAME=shiguang
 JWT_SECRET=your_jwt_secret
+EMAIL_USER=your_email@example.com
+EMAIL_PASS=your_email_password
+EMAIL_SERVICE=gmail
 PORT=3000
 ```
 
@@ -182,13 +233,39 @@ SOURCE server/database/schema.sql;
 npm start
 ```
 
+### 管理面板开发
+
+1. 进入管理面板目录
+
+```bash
+cd admin-panel
+```
+
+2. 安装依赖
+
+```bash
+npm install
+```
+
+3. 启动开发服务器
+
+```bash
+npm run dev
+```
+
+4. 构建生产版本
+
+```bash
+npm run build
+```
+
 ## 部署指南
 
 ### 前端部署
 
 1. 修改API配置
 
-在 `src/config/index.js` 中更新API基础URL:
+在 `src/config.js` 中更新API基础URL:
 
 ```javascript
 export const API_BASE_URL = 'https://your-domain.com/api';
@@ -223,6 +300,9 @@ DB_USER=production_user
 DB_PASSWORD=secure_password
 DB_NAME=shiguang_prod
 JWT_SECRET=strong_random_secret
+EMAIL_USER=your_email@example.com
+EMAIL_PASS=your_email_password
+EMAIL_SERVICE=gmail
 PORT=3000
 ```
 
@@ -258,6 +338,34 @@ server {
 }
 ```
 
+### Android版本部署
+
+1. 安装Capacitor依赖
+
+```bash
+npm install @capacitor/core @capacitor/android
+```
+
+2. 构建前端应用
+
+```bash
+npm run build
+```
+
+3. 同步Capacitor资源
+
+```bash
+npx cap sync
+```
+
+4. 打开Android Studio进行构建
+
+```bash
+npx cap open android
+```
+
+5. 在Android Studio中生成签名APK
+
 ## 自动更新系统指南
 
 时光App现已集成了自动更新检查和远程更新系统，以确保用户总能使用最新版本。以下是更新系统的主要功能和部署说明：
@@ -267,7 +375,7 @@ server {
 - **自动版本检查**：应用启动时自动检查新版本
 - **手动检查更新**：用户可在设置中手动触发检查
 - **版本历史记录**：显示应用所有版本的历史记录
-- **跨平台支持**：支持Web、Android和iOS平台
+- **跨平台支持**：支持Web、Android平台
 - **强制更新选项**：可设置必须更新的版本
 
 ### 部署指南
@@ -292,7 +400,7 @@ const appVersions = {
     // ...更多版本
   ],
   
-  // iOS和Web版本配置类似
+  // 其他平台版本配置类似
 }
 ```
 
@@ -313,41 +421,43 @@ const appVersions = {
 
 2. Android版本更新：
    - 修改`capacitor.config.ts`中的版本号
-   - 使用Capacitor构建新版本APK：
-   ```bash
-   npm run build
-   npx cap sync
-   npx cap open android
-   ```
-   
-3. iOS版本更新：
-   - 更新App Store版本信息
-   - 在`updateController.js`中更新`appStoreUrl`
+   - 使用Capacitor构建新版本APK
 
-### 测试更新系统
+## 游戏与互动系统
 
-1. 设置低版本号测试：
-   - 在前端设置较低版本号(如0.9.0)
-   - 启动应用，应出现更新提示
+### 卡牌游戏
 
-2. 查看版本历史：
-   - 进入"设置 -> 版本历史"查看完整版本记录
+时光平台集成了互动卡牌游戏系统，用户可以：
+- 收集各种稀有度的卡牌
+- 完成特定任务获取卡牌
+- 查看卡牌详情和收藏状态
+- 体验游戏化社交互动
 
-3. 手动检查更新：
-   - 进入"设置 -> 检查更新"触发手动更新检查
+### 小镇系统
 
-### 注意事项
+虚拟小镇互动系统提供：
+- 用户个人小镇空间
+- 互动建筑功能
+- 小镇升级机制
+- 社交互动功能
 
-- Android平台更新需要APK签名一致
-- iOS平台更新需通过App Store审核
-- Web平台更新只需刷新页面即可应用新版本
-- 建议使用[语义化版本号](https://semver.org/lang/zh-CN/)管理版本
+## 任务与积分系统
 
-## 功能截图
+### 任务中心
 
-![社区首页](screenshots/community.png)
-![帖子详情](screenshots/post-detail.png)
-![发布内容](screenshots/create-post.png)
+用户可以通过完成各种任务获取积分和奖励：
+- 每日任务
+- 成长任务
+- 特殊活动任务
+- 连续签到奖励
+
+### 积分商城
+
+获取的积分可以在积分商城兑换多种奖励：
+- 虚拟物品
+- 特殊称号
+- 限定头像框
+- 其他平台特权
 
 ## 浏览器兼容性
 

@@ -9,11 +9,13 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@capacitor/android": "^7.0.1",
+    "@capacitor/android": "^7.1.0",
     "@capacitor/app": "^7.0.0",
     "@capacitor/cli": "^6.2.0",
-    "@capacitor/core": "^7.0.1",
+    "@capacitor/core": "^7.1.0",
     "@capacitor/ios": "^7.0.1",
+    "@capacitor/status-bar": "^7.0.0",
+    "@mozartec/capacitor-microphone": "^7.0.0",
     "@vueuse/core": "^12.7.0",
     "axios": "^1.7.9",
     "echarts": "^5.6.0",

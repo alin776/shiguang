@@ -30,6 +30,7 @@ export const useAuthStore = defineStore("auth", {
   },
 
   getters: {
+    isLoggedIn: (state) => !!state.token && !!state.user,
     isAuthenticated: (state) => !!state.token,
     userAvatar: (state) => getAvatarUrl(state.user?.avatar),
     userCover: (state) => {
@@ -552,10 +553,56 @@ export const useAuthStore = defineStore("auth", {
       }
       
       try {
-        await this.fetchUserInfo();
-        return true;
-      } catch (error) {
+        // 验证用户登录状态
+        const response = await axios.get(`${API_BASE_URL}/api/users/me`, {
+          headers: {
+            Authorization: `Bearer ${this.token}`,
+          },
+        });
+        
+        if (response.status === 200) {
+          // 获取最新的用户信息
+          await this.fetchUserInfo();
+          return true;
+        }
+        
+        // 如果验证失败，执行登出
         this.logout();
+        return false;
+      } catch (error) {
+        console.error("验证用户登录失败:", error);
+        this.logout();
+        return false;
+      }
+    },
+
+    // 恢复登录状态
+    async restoreLogin(token) {
+      if (!token) return false;
+      
+      try {
+        this.token = token;
+        localStorage.setItem("token", token);
+        
+        // 获取用户信息
+        const response = await axios.get(`${API_BASE_URL}/api/users/me`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        
+        if (response.status === 200 && response.data) {
+          this.user = response.data;
+          localStorage.setItem("user", JSON.stringify(response.data));
+          console.log("成功恢复用户登录状态");
+          return true;
+        }
+        
+        return false;
+      } catch (error) {
+        console.error("恢复登录状态失败:", error);
+        this.token = null;
+        localStorage.removeItem("token");
         return false;
       }
     },

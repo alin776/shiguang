@@ -24,6 +24,23 @@
     <div class="task-section">
       <h2 class="section-title">每日任务</h2>
       
+      <!-- 添加广告任务 -->
+      <div class="task-item special-task" @click="navigateToAd">
+        <div class="task-content">
+          <div class="task-icon">
+            <el-icon><VideoPlay /></el-icon>
+          </div>
+          <div class="task-info">
+            <div class="task-title">观看广告</div>
+            <div class="task-description">通过观看广告获得时光币奖励</div>
+          </div>
+        </div>
+        
+        <div class="task-status">
+          <el-button type="primary" size="small">去观看</el-button>
+        </div>
+      </div>
+      
       <div class="task-list">
         <div 
           v-for="task in dailyTasks" 
@@ -85,7 +102,8 @@ import {
   ChatLineRound, 
   Star, 
   CircleCheckFilled,
-  InfoFilled
+  InfoFilled,
+  VideoPlay
 } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 import { useAuthStore } from '../stores/auth';
@@ -131,6 +149,11 @@ const dailyExpPercentage = computed(() => {
 
 const isTaskCompleted = (task) => {
   return task.isCompleted || task.current >= task.target;
+};
+
+// 添加导航方法
+const navigateToAd = () => {
+  router.push('/ad');
 };
 
 onMounted(() => {
@@ -356,5 +379,17 @@ onMounted(() => {
   font-size: 16px;
   font-weight: 500;
   border-radius: 30px;
+}
+
+.special-task {
+  background-color: #f0f9eb;
+  border: 1px solid #e1f3d8;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.special-task:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 </style> 
