@@ -94,9 +94,8 @@ defineEmits(["prev-month", "next-month", "select-day"]);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
-  color: var(--text-color);
-  padding: 0 5px;
+  margin-bottom: 20px;
+  padding: 0 10px;
 }
 
 .month-label {
@@ -155,6 +154,12 @@ defineEmits(["prev-month", "next-month", "select-day"]);
 }
 
 .calendar-grid {
+  background-color: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  margin-bottom: 20px;
+  padding: 20px;
+  margin-top: 10px;
   display: flex;
   flex-direction: column;
 }

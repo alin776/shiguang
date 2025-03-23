@@ -97,6 +97,12 @@ export const useCommunityStore = defineStore("community", {
     // 获取帖子详情
     async getPost(id) {
       try {
+        // 检查ID是否有效
+        if (!id) {
+          console.error("获取帖子详情失败: 帖子ID未提供");
+          return null;
+        }
+        
         this.loading = true;
         const authStore = useAuthStore();
         const response = await axios.get(
@@ -942,6 +948,40 @@ export const useCommunityStore = defineStore("community", {
         // 返回空数据而不是抛出错误，防止页面崩溃
         return { activities: [] };
       }
-    }
+    },
+
+    // 获取帖子的评论列表
+    async getPostComments(postId) {
+      try {
+        const authStore = useAuthStore();
+        const response = await axios.get(
+          `${API_BASE_URL}/api/community/posts/${postId}/comments`,
+          {
+            headers: { Authorization: `Bearer ${authStore.token}` },
+          }
+        );
+        return response.data;
+      } catch (error) {
+        console.error("获取评论列表失败:", error);
+        throw error.response?.data || error;
+      }
+    },
+    
+    // 根据评论ID获取评论详情（包括所属帖子ID）
+    async getCommentById(commentId) {
+      try {
+        const authStore = useAuthStore();
+        const response = await axios.get(
+          `${API_BASE_URL}/api/community/comments/${commentId}`,
+          {
+            headers: { Authorization: `Bearer ${authStore.token}` },
+          }
+        );
+        return response.data;
+      } catch (error) {
+        console.error("获取评论详情失败:", error);
+        throw error.response?.data || error;
+      }
+    },
   },
 });

@@ -3,6 +3,9 @@
     <div class="notifications-page">
       <!-- 顶部标题栏 -->
       <div class="page-header">
+        <!-- 添加状态栏安全区域占位 -->
+        <div class="safe-area-top"></div>
+        
         <div class="header-title">
           <h2>通知</h2>
         </div>
@@ -174,11 +177,13 @@ import { ref, onMounted } from "vue";
 import { ElMessage } from "element-plus";
 import { useRouter } from "vue-router";
 import { useNotificationStore } from "@/stores/notification";
+import { useCommunityStore } from "@/stores/community";
 import BottomNavBar from "@/components/BottomNavBar.vue";
 import dayjs from "dayjs";
 
 const router = useRouter();
 const notificationStore = useNotificationStore();
+const communityStore = useCommunityStore();
 
 const notifications = ref([]);
 const likeNotifications = ref([]);
@@ -297,20 +302,46 @@ const markAllAsRead = async () => {
 // 处理通知点击
 const handleNotificationClick = async (notification) => {
   try {
+    // 打印通知数据以便调试
+    console.log("通知点击:", notification);
+    
     // 标记为已读
     if (!notification.is_read) {
       const response = await notificationStore.markAsRead([notification.id]);
       notification.is_read = true;
       unreadCount.value = response.unreadCount;
     }
-
-    // 根据通知类型跳转到相应页面
-    if (notification.source_type === "post") {
-      router.push(`/community/post/${notification.source_id}`);
-    } else if (notification.source_type === "comment") {
-      router.push(`/community/post/${notification.post_id}#comment-${notification.source_id}`);
-    } else if (notification.source_type === "announcement") {
-      router.push(`/announcements/${notification.source_id}`);
+    
+    // 优先使用post_id进行跳转
+    if (notification.post_id) {
+      console.log("使用post_id跳转到帖子:", `/community/post/${notification.post_id}`);
+      router.push(`/community/post/${notification.post_id}`);
+      return;
+    }
+    
+    // 如果没有post_id，再根据通知类型进行处理
+    const sourceType = notification.source_type || notification.type;
+    const sourceId = notification.source_id;
+    
+    if (sourceType === "follow") {
+      // 关注类型通知，跳转到用户个人资料页
+      if (notification.actor && notification.actor.id) {
+        router.push(`/user/${notification.actor.id}`);
+      } else {
+        ElMessage.warning("无法跳转到用户资料页");
+      }
+    } else if (sourceType === "system") {
+      // 系统通知不跳转
+      return;
+    } else {
+      // 其他类型，如果有sourceId尝试跳转到帖子详情
+      if (sourceId) {
+        router.push(`/community/post/${sourceId}`);
+      } else {
+        // 如果实在没有可用的ID，跳转到社区首页
+        ElMessage.info("无法找到相关内容，跳转到社区页面");
+        router.push('/community');
+      }
     }
   } catch (error) {
     console.error("处理通知点击失败:", error);
@@ -341,26 +372,37 @@ onMounted(() => {
   min-height: 100vh;
   background: #f8f9fa;
   padding-bottom: 70px; /* 为底部导航栏留出空间 */
+  padding-top: var(--safe-area-top); /* 添加顶部安全区域 */
 }
 
 .notifications-page {
-  padding-top: 60px;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: #f5f5f5;
 }
 
-/* 顶部标题栏 */
 .page-header {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 56px;
   background-color: #ffffff;
+  position: sticky;
+  top: 0;
+  z-index: 100;
   box-shadow: 0 1px 6px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+}
+
+.header-title {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 16px;
-  z-index: 20;
+  height: 56px;
+}
+
+.safe-area-top {
+  height: var(--safe-area-top, 0);
+  width: 100%;
 }
 
 .header-title h2 {

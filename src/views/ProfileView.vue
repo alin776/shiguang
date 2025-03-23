@@ -866,7 +866,9 @@ const navigateToPoints = () => {
 }
 
 .profile-page {
-  background-color: transparent !important;
+  min-height: 100vh;
+  background-color: #f5f7fa;
+  padding-top: var(--safe-area-top);
 }
 
 .post-title {

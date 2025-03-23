@@ -433,6 +433,7 @@ onMounted(async () => {
   min-height: 100vh;
   background: #f8f9fa;
   padding-bottom: 70px; /* 为底部导航栏留出空间 */
+  padding-top: var(--safe-area-top); /* 添加顶部安全区域 */
 }
 
 .town-page {
@@ -443,7 +444,7 @@ onMounted(async () => {
 /* 顶部标题栏 */
 .page-header {
   position: fixed;
-  top: 0;
+  top: var(--safe-area-top); /* 修改顶部位置，考虑安全区域 */
   left: 0;
   right: 0;
   height: 56px;

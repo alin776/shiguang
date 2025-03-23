@@ -132,7 +132,7 @@
                 class="post-cover"
                 v-if="post.images && post.images.length > 0"
               >
-                <img :src="post.images[0]" :alt="post.title" />
+                <img :src="post.images[0]" :alt="post.title" loading="lazy" />
               </div>
             </div>
 
@@ -210,7 +210,7 @@
                 class="post-cover"
                 v-if="post.images && post.images.length > 0"
               >
-                <img :src="post.images[0]" :alt="post.title" />
+                <img :src="post.images[0]" :alt="post.title" loading="lazy" />
               </div>
             </div>
 
@@ -293,20 +293,20 @@
             >
               <!-- 单图显示 -->
               <div v-if="post.images.length === 1" class="single-image">
-                <img :src="post.images[0]" :alt="post.title" />
+                <img :src="post.images[0]" :alt="post.title" loading="lazy" />
               </div>
               
               <!-- 两图并排显示 -->
               <div v-else-if="post.images.length === 2" class="image-grid grid-2">
                 <div class="image-item" v-for="(img, index) in post.images.slice(0, 2)" :key="index">
-                  <img :src="img" :alt="`${post.title} - ${index + 1}`" />
+                  <img :src="img" :alt="`${post.title} - ${index + 1}`" loading="lazy" />
                 </div>
               </div>
               
               <!-- 三图及以上网格显示 -->
               <div v-else class="image-grid grid-3">
                 <div class="image-item" v-for="(img, index) in post.images.slice(0, 3)" :key="index">
-                  <img :src="img" :alt="`${post.title} - ${index + 1}`" />
+                  <img :src="img" :alt="`${post.title} - ${index + 1}`" loading="lazy" />
                   <!-- 如果有更多图片，在第三张上显示 -->
                   <div v-if="index === 2 && post.images.length > 3" class="image-count">
                     <span>+{{ post.images.length - 3 }}</span>
@@ -374,6 +374,7 @@ import { useCommunityStore } from "@/stores/community";
 import { useAuthStore } from "@/stores/auth";
 import { API_BASE_URL } from "@/config";
 import { getAvatarUrl, getImageUrl } from "@/utils/imageHelpers";
+import { getThumbnailUrl } from "../utils/imageCompression";
 
 const router = useRouter();
 const communityStore = useCommunityStore();
@@ -455,6 +456,35 @@ const loadPosts = async (page = 1, append = false) => {
           }
           
           console.log(`处理后的音频URL: ${post.audio}`);
+        }
+        
+        // 处理图片路径并应用压缩
+        if (post.images) {
+          try {
+            // 如果是字符串，解析为数组
+            const imageArray = typeof post.images === 'string' ? JSON.parse(post.images) : post.images;
+            
+            // 处理每个图片URL，应用缩略图压缩
+            post.images = imageArray.map(img => {
+              // 确保URL格式正确
+              let imageUrl = img;
+              
+              // 如果图片URL不是以http开头，添加基础URL
+              if (img && typeof img === 'string') {
+                if (img.startsWith('/')) {
+                  imageUrl = API_BASE_URL + img;
+                } else if (!img.startsWith('http')) {
+                  imageUrl = API_BASE_URL + '/' + img;
+                }
+              }
+              
+              // 应用缩略图压缩
+              return getThumbnailUrl(imageUrl);
+            });
+          } catch (error) {
+            console.error('处理帖子图片出错:', error, post.images);
+            post.images = [];
+          }
         }
       });
       
@@ -928,6 +958,7 @@ const getTitleClass = (title) => {
   min-height: 100vh;
   background: linear-gradient(135deg, #f8f9fa, #f1f3f5);
   padding-bottom: 70px; /* 为底部导航栏留出空间 */
+  padding-top: var(--safe-area-top); /* 添加顶部安全区域 */
 }
 
 .community-page {
@@ -938,7 +969,7 @@ const getTitleClass = (title) => {
 /* 顶部搜索栏 */
 .page-header {
   position: fixed;
-  top: 0;
+  top: var(--safe-area-top); /* 修改顶部位置，考虑安全区域 */
   left: 0;
   right: 0;
   height: 56px;

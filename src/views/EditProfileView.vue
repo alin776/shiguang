@@ -2,11 +2,21 @@
   <div class="edit-profile-page">
     <!-- 页面头部 -->
     <div class="page-header">
-      <el-icon class="back-icon" @click="router.back()"><ArrowLeft /></el-icon>
-      <h2>编辑个人资料</h2>
-      <button class="save-btn" :disabled="saving" @click="saveProfile">
-        {{ saving ? "保存中..." : "保存" }}
-      </button>
+      <!-- 添加状态栏安全区域占位 -->
+      <div class="safe-area-top"></div>
+      <div class="header-content">
+        <div class="left-section">
+          <el-icon class="back-icon" @click="router.back()"><ArrowLeft /></el-icon>
+        </div>
+        <div class="center-section">
+          <h2>编辑个人资料</h2>
+        </div>
+        <div class="right-section">
+          <button class="save-btn" :disabled="saving" @click="saveProfile">
+            {{ saving ? "保存中..." : "保存" }}
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- 封面图片 -->
@@ -313,14 +323,42 @@ const displayCover = computed(() => {
 /* 页面头部 */
 .page-header {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 16px;
-  height: 56px;
+  flex-direction: column;
   background-color: #ffffff;
   position: relative;
   border-bottom: 1px solid #eaeaea;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.safe-area-top {
+  height: var(--safe-area-top, 0);
+  width: 100%;
+}
+
+.header-content {
+  display: flex;
+  align-items: center;
+  height: 56px;
+  width: 100%;
+}
+
+.left-section {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  padding-left: 16px;
+}
+
+.center-section {
+  flex: 2;
+  text-align: center;
+}
+
+.right-section {
+  flex: 1;
+  display: flex;
+  justify-content: flex-end;
+  padding-right: 16px;
 }
 
 .back-icon {
@@ -329,10 +367,7 @@ const displayCover = computed(() => {
   cursor: pointer;
 }
 
-.page-header h2 {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
+.center-section h2 {
   margin: 0;
   font-size: 18px;
   font-weight: 500;

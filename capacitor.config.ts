@@ -6,6 +6,19 @@ const config: CapacitorConfig = {
   webDir: 'dist',
   server: {
     androidScheme: 'http'
+  },
+  android: {
+    // Android特有设置
+  },
+  plugins: {
+    SplashScreen: {
+      launchAutoHide: false
+    },
+    StatusBar: {
+      style: 'DARK',
+      backgroundColor: '#ffffff', // 设置为应用主背景色
+      overlaysWebView: true
+    }
   }
 };
 

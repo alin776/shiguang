@@ -40,11 +40,11 @@
           v-for="(image, index) in parseImages(comment.images)" 
           :key="index" 
           class="comment-image-container"
-          @contextmenu.prevent="showContextMenu($event, image)"
+          @contextmenu.prevent="showImageMenu($event, image)"
           @touchstart="handleTouchStart($event, image)"
           @touchend="handleTouchEnd"
         >
-          <img :src="image" alt="评论图片" class="comment-image" @click="previewImage(image)" />
+          <img :src="processImageUrl(image)" @error="handleImageError" alt="评论图片" class="comment-image" @click="previewImage(image)" />
         </div>
       </div>
       
@@ -142,11 +142,11 @@
               v-for="(image, index) in parseImages(reply.images)" 
               :key="index" 
               class="reply-image-container"
-              @contextmenu.prevent="showContextMenu($event, image)"
+              @contextmenu.prevent="showImageMenu($event, image)"
               @touchstart="handleTouchStart($event, image)"
               @touchend="handleTouchEnd"
             >
-              <img :src="image" alt="回复图片" class="reply-image" @click="previewImage(image)" />
+              <img :src="processImageUrl(image)" @error="handleImageError" alt="回复图片" class="reply-image" @click="previewImage(image)" />
             </div>
           </div>
           
@@ -161,6 +161,16 @@
               @click="$emit('delete-reply', reply.id)"
             >
               删除
+            </span>
+          </div>
+          
+          <!-- 添加回复回复的按钮 -->
+          <div class="reply-actions reply-to-reply" v-else>
+            <span
+              class="reply-action"
+              @click="replyToReply(comment.id, reply.user?.id, reply.user?.username)"
+            >
+              回复
             </span>
           </div>
         </div>
@@ -198,7 +208,7 @@
 
 <script setup>
 import { Star, VideoPlay, VideoPause, Warning } from "@element-plus/icons-vue";
-import { getAvatarUrl } from "../../../utils/imageHelpers";
+import { getAvatarUrl, getImageUrl, preloadImage } from "../../../utils/imageHelpers";
 import { formatTime } from "../../../utils/timeHelpers";
 import { ref, computed, onMounted, onBeforeUnmount } from "vue";
 import { API_BASE_URL } from "@/config";
@@ -226,7 +236,7 @@ const props = defineProps({
   },
 });
 
-defineEmits([
+const emit = defineEmits([
   "user-click",
   "reply",
   "like-comment",
@@ -234,6 +244,7 @@ defineEmits([
   "delete-reply",
   "refresh-emojis",
   "report-comment",
+  "reply-to-reply"
 ]);
 
 // 音频播放相关
@@ -253,11 +264,86 @@ const parseImages = (images) => {
     try {
       return JSON.parse(images);
     } catch (e) {
+      console.error('解析图片数据失败:', e);
+      // 尝试检测是否是单张图片的字符串URL
+      if (typeof images === 'string' && (images.includes('http') || images.includes('/uploads'))) {
+        return [images];
+      }
       return [];
     }
   }
   
   return Array.isArray(images) ? images : [];
+};
+
+// 处理图片URL并添加错误回退
+const processImageUrl = (imageUrl) => {
+  if (!imageUrl) return '';
+  
+  try {
+    // 使用图片处理工具获取正确的URL
+    const url = getImageUrl(imageUrl);
+    
+    // 检测平台，在移动端添加额外参数防止缓存问题
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    if (isMobile) {
+      // 确保URL末尾有随机参数防止缓存
+      const separator = url.includes('?') ? '&' : '?';
+      return `${url}${separator}mobile=1&nocache=${Date.now()}`;
+    }
+    
+    return url;
+  } catch (error) {
+    console.error('处理图片URL出错:', error, '原URL:', imageUrl);
+    // 如果处理失败，尝试直接返回原始URL
+    return imageUrl;
+  }
+};
+
+// 处理图片加载错误
+const handleImageError = (event) => {
+  console.error('图片加载失败:', event.target.src);
+  const img = event.target;
+  
+  // 记录原始URL，移除缓存参数后重试
+  const originalSrc = img.src;
+  
+  // 检查是否已经重试过
+  if (!img.dataset.retried) {
+    img.dataset.retried = 'true';
+    
+    // 移除可能导致问题的查询参数
+    let newSrc = originalSrc.split('?')[0];
+    // 添加新的时间戳
+    newSrc += `?retry=${Date.now()}`;
+    
+    console.log('重试加载图片:', newSrc);
+    img.src = newSrc;
+  } else {
+    // 已经重试过，显示占位图
+    console.log('图片重试后仍然失败，显示占位图');
+    img.onerror = null; // 防止无限循环
+    img.src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiM5OTkiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cmVjdCB4PSIzIiB5PSIzIiB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHJ4PSIyIiByeT0iMiI+PC9yZWN0PjxjaXJjbGUgY3g9IjguNSIgY3k9IjguNSIgcj0iMS41Ij48L2NpcmNsZT48cG9seWxpbmUgcG9pbnRzPSIyMSAxNSAxNiAxMCA1IDIxIj48L3BvbHlsaW5lPjwvc3ZnPg==';
+    img.style.padding = '5px';
+    img.style.background = '#f5f5f5';
+  }
+};
+
+// 预加载评论中的图片
+const preloadCommentImages = async () => {
+  if (!props.comment) return;
+  
+  const images = parseImages(props.comment.images);
+  if (images && images.length > 0) {
+    console.log('预加载评论图片:', images);
+    for (const imgUrl of images) {
+      try {
+        await preloadImage(processImageUrl(imgUrl));
+      } catch (error) {
+        console.error('预加载图片失败:', imgUrl, error);
+      }
+    }
+  }
 };
 
 // 计算音频源URL
@@ -312,6 +398,9 @@ onMounted(() => {
       }, 100);
     }
   }
+  
+  // 预加载图片
+  preloadCommentImages();
 });
 
 // 音频元数据加载完成
@@ -508,7 +597,7 @@ const handleTouchStart = (event, imageUrl) => {
   event.preventDefault();
   // 开始长按计时
   longPressTimer = setTimeout(() => {
-    showContextMenu(event, imageUrl);
+    showImageMenu(event, imageUrl);
   }, longPressDuration);
 };
 
@@ -521,11 +610,8 @@ const handleTouchEnd = () => {
   }
 };
 
-// 显示上下文菜单
-const showContextMenu = (event, imageUrl) => {
-  // 阻止默认右键菜单
-  event.preventDefault();
-  
+// 显示图片上下文菜单
+const showImageMenu = (event, image) => {
   // 创建自定义菜单
   const menuDiv = document.createElement('div');
   menuDiv.className = 'custom-context-menu';
@@ -535,31 +621,51 @@ const showContextMenu = (event, imageUrl) => {
   menuDiv.style.boxShadow = '0 2px 12px 0 rgba(0, 0, 0, 0.1)';
   menuDiv.style.borderRadius = '4px';
   menuDiv.style.padding = '5px 0';
+  menuDiv.style.width = '140px';
   
-  // 添加菜单选项
+  // 获取安全区域顶部高度
+  const safeAreaTop = getComputedStyle(document.documentElement).getPropertyValue('--safe-area-top') || '20px';
+  
+  // 设置位置，考虑安全区域
+  if (event.clientX && event.clientY) {
+    const y = Math.max(event.clientY, parseInt(safeAreaTop) + 10); // 确保不被状态栏遮挡
+    menuDiv.style.left = `${event.clientX}px`;
+    menuDiv.style.top = `${y}px`;
+  } else {
+    // 触摸事件没有clientX/Y，使用触摸点坐标
+    const touch = event.touches ? event.touches[0] : event;
+    const y = Math.max(touch.clientY, parseInt(safeAreaTop) + 10); // 确保不被状态栏遮挡
+    menuDiv.style.left = `${touch.clientX}px`;
+    menuDiv.style.top = `${y}px`;
+  }
+  
+  // 添加到文档
+  document.body.appendChild(menuDiv);
+  
+  // 添加选项
   const saveOption = document.createElement('div');
   saveOption.className = 'menu-option';
-  saveOption.style.padding = '8px 16px';
+  saveOption.style.padding = '12px 16px';
   saveOption.style.cursor = 'pointer';
   saveOption.innerText = '保存图片';
   saveOption.addEventListener('click', () => {
-    saveImage(imageUrl);
+    saveImage(image);
     document.body.removeChild(menuDiv);
   });
   
   const addEmojiOption = document.createElement('div');
   addEmojiOption.className = 'menu-option';
-  addEmojiOption.style.padding = '8px 16px';
+  addEmojiOption.style.padding = '12px 16px';
   addEmojiOption.style.cursor = 'pointer';
   addEmojiOption.innerText = '添加到表情包';
   addEmojiOption.addEventListener('click', () => {
-    addToEmojis(imageUrl);
+    addToEmojis(image);
     document.body.removeChild(menuDiv);
   });
   
   const cancelOption = document.createElement('div');
   cancelOption.className = 'menu-option';
-  cancelOption.style.padding = '8px 16px';
+  cancelOption.style.padding = '12px 16px';
   cancelOption.style.cursor = 'pointer';
   cancelOption.style.borderTop = '1px solid #eee';
   cancelOption.innerText = '取消';
@@ -567,24 +673,9 @@ const showContextMenu = (event, imageUrl) => {
     document.body.removeChild(menuDiv);
   });
   
-  // 添加到菜单
   menuDiv.appendChild(saveOption);
   menuDiv.appendChild(addEmojiOption);
   menuDiv.appendChild(cancelOption);
-  
-  // 定位菜单
-  if (event.clientX && event.clientY) {
-    menuDiv.style.left = `${event.clientX}px`;
-    menuDiv.style.top = `${event.clientY}px`;
-  } else {
-    // 触摸事件没有clientX/Y，使用触摸点坐标
-    const touch = event.touches ? event.touches[0] : event;
-    menuDiv.style.left = `${touch.clientX}px`;
-    menuDiv.style.top = `${touch.clientY}px`;
-  }
-  
-  // 添加到文档
-  document.body.appendChild(menuDiv);
   
   // 点击其他地方关闭菜单
   const closeMenu = (e) => {
@@ -627,10 +718,11 @@ const addToEmojis = async (url) => {
     });
     
     if (response.ok) {
-      ElMessage.success('已添加到表情包');
-      // 通知评论组件刷新表情包
+      // 成功后通知评论组件刷新表情包，并显示成功消息
       emit('refresh-emojis');
+      ElMessage.success('已添加到表情包');
     } else {
+      // 仅在响应不成功时显示错误消息
       ElMessage.error('添加失败');
     }
   } catch (error) {
@@ -652,6 +744,16 @@ const getTitleClass = (title) => {
   }
   
   return '';
+};
+
+// 添加回复回复的函数
+const replyToReply = (commentId, replyToUserId, replyToUsername) => {
+  // 向父组件发送回复回复的事件
+  emit('reply-to-reply', {
+    commentId,
+    replyToUserId: replyToUserId || null,
+    replyToUsername: replyToUsername || ''
+  });
 };
 </script>
 
@@ -893,6 +995,24 @@ const getTitleClass = (title) => {
   display: flex;
   justify-content: flex-end;
   margin-top: 4px;
+}
+
+.reply-actions.reply-to-reply {
+  justify-content: flex-start;
+  margin-top: 4px;
+}
+
+.reply-action {
+  color: #1677ff;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-left: 8px;
+}
+
+.reply-action:hover {
+  color: #4096ff;
+  text-decoration: underline;
 }
 
 .delete-action {

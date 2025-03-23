@@ -216,33 +216,80 @@ const checkPendingUploads = async () => {
 // 开始录音
 const startRecording = async () => {
   try {
+    console.log('开始录音流程，检测平台环境...');
     // 检查是否在Capacitor环境中
     if (Capacitor.isNativePlatform()) {
-      // 请求麦克风权限（Capacitor原生API）
+      console.log('在Capacitor原生环境中运行，平台:', Capacitor.getPlatform());
+      // 检测设备类型
+      const isAndroid = Capacitor.getPlatform() === 'android';
+      const isIOS = Capacitor.getPlatform() === 'ios';
+      
       try {
-        const microphonePermission = await MicrophonePlugin.checkPermissions();
+        // 检查麦克风权限（Capacitor API）
+        console.log('检查麦克风权限状态...');
+        const permissionStatus = await MicrophonePlugin.checkPermissions();
+        console.log('当前麦克风权限状态:', permissionStatus);
         
-        if (microphonePermission.microphone !== 'granted') {
-          // 权限未授予，请求权限
+        // 如果权限未授予，请求权限
+        if (permissionStatus.microphone !== 'granted') {
+          console.log('麦克风权限未授予，请求权限...');
           const requestResult = await MicrophonePlugin.requestPermissions();
+          console.log('权限请求结果:', requestResult);
           
           if (requestResult.microphone !== 'granted') {
+            console.error('用户拒绝授予麦克风权限');
             ElMessage.error('录音需要麦克风权限，请在设备设置中启用权限');
             return;
           }
         }
+        
+        console.log('麦克风权限已获取，继续录音流程');
       } catch (permError) {
-        console.error('权限检查失败:', permError);
-        ElMessage.error('权限检查失败，请确保已授予麦克风权限');
-        return;
+        console.error('权限检查出错:', permError);
+        
+        // 尝试直接获取媒体流，某些Android设备上Capacitor的权限API可能有问题
+        // 但权限实际上已经授予
+        console.log('尝试直接获取媒体流，绕过权限检查...');
+        if (isAndroid) {
+          try {
+            // 在Android上尝试直接获取媒体流
+            const streamTest = await navigator.mediaDevices.getUserMedia({ 
+              audio: true,
+              video: false
+            });
+            
+            // 如果成功获取流，表示权限已经被授予
+            console.log('成功获取媒体流，权限实际已授予');
+            
+            // 释放测试流
+            streamTest.getTracks().forEach(track => track.stop());
+          } catch (streamError) {
+            // 直接获取流也失败，确实没有权限
+            console.error('直接获取媒体流失败:', streamError);
+            ElMessage.error('录音权限被拒绝，请在设置中允许应用使用麦克风，然后重启应用');
+            return;
+          }
+        } else {
+          // 非Android设备，还是报错
+          ElMessage.error('麦克风权限检查失败，请重启应用或检查设备设置');
+          return;
+        }
       }
+    } else {
+      console.log('在Web环境中运行，使用标准Web API');
     }
     
+    console.log('开始请求媒体流...');
     // 获取麦克风流
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const stream = await navigator.mediaDevices.getUserMedia({ 
+      audio: true,
+      video: false
+    });
+    console.log('媒体流获取成功:', stream);
     
     // 检测设备类型，为不同设备选择合适的音频格式
-    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) || Capacitor.getPlatform() === 'ios';
+    const isAndroid = /Android/i.test(navigator.userAgent) || Capacitor.getPlatform() === 'android';
     let mimeType = 'audio/webm;codecs=opus'; // 默认格式
     
     // 针对iOS设备选择更兼容的格式
@@ -262,24 +309,43 @@ const startRecording = async () => {
         console.warn('检测音频格式支持时出错，将使用默认格式', e);
       }
     }
+    // 针对Android设备
+    else if (isAndroid) {
+      try {
+        if (MediaRecorder.isTypeSupported('audio/webm')) {
+          mimeType = 'audio/webm';
+          console.log('使用Android兼容的audio/webm格式');
+        } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+          mimeType = 'audio/mp4';
+          console.log('使用Android兼容的audio/mp4格式');
+        } else {
+          console.log('Android设备不支持推荐的音频格式，尝试使用默认格式');
+        }
+      } catch (e) {
+        console.warn('检测音频格式支持时出错，将使用默认格式', e);
+      }
+    }
     
     // 使用更兼容的音频格式选项
     try {
+      console.log('初始化MediaRecorder，使用格式:', mimeType);
       mediaRecorder = new MediaRecorder(stream, { mimeType });
-      console.log('使用音频格式:', mimeType);
     } catch (err) {
-      console.warn('指定的音频格式不受支持，将使用默认格式');
+      console.warn('指定的音频格式不受支持，将使用默认格式:', err);
       mediaRecorder = new MediaRecorder(stream);
     }
     
     audioChunks = [];
     
     mediaRecorder.ondataavailable = (event) => {
+      console.log('收到音频数据:', event.data.size, '字节');
       audioChunks.push(event.data);
     };
     
     mediaRecorder.onstop = async () => {
-      const audioBlob = new Blob(audioChunks, { type: mimeType });
+      console.log('录音停止，处理音频数据...');
+      const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType || mimeType });
+      console.log('音频Blob创建成功，大小:', audioBlob.size, '字节');
       
       // 上传音频文件到服务器
       await uploadAudio(audioBlob);
@@ -292,6 +358,7 @@ const startRecording = async () => {
     checkNetworkConnection();
     
     // 开始录音
+    console.log('开始录音...');
     mediaRecorder.start();
     isRecording.value = true;
     recordingTime.value = 0;
@@ -301,6 +368,7 @@ const startRecording = async () => {
       recordingTime.value++;
       // 限制录音最长时间为60秒
       if (recordingTime.value >= 60) {
+        console.log('已达到最大录音时长(60秒)，自动停止');
         stopRecording();
       }
     }, 1000);
@@ -310,19 +378,33 @@ const startRecording = async () => {
       activeDots.value = (activeDots.value % 3) + 1;
     }, 500);
     
-  } catch (error) {
-    console.error('录音失败:', error);
+    console.log('录音初始化完成，正在录制中...');
     
-    // 更友好的错误提示，区分不同设备
+  } catch (error) {
+    console.error('录音失败详细信息:', error);
+    
+    // 更友好的错误提示，区分不同设备和错误类型
     const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
     const isAndroid = /Android/i.test(navigator.userAgent);
     
-    if (isIOS) {
-      ElMessage.error('录音失败，请确保在iOS设备上已授予麦克风权限并使用Safari浏览器');
-    } else if (isAndroid) {
-      ElMessage.error('录音失败，请确保已授予麦克风权限');
+    if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+      if (isIOS) {
+        ElMessage.error('录音权限被拒绝，请在iOS设置中允许此应用使用麦克风');
+      } else if (isAndroid) {
+        ElMessage.error('录音权限被拒绝，请在设置中允许应用使用麦克风，然后重启应用');
+      } else {
+        ElMessage.error('录音权限被拒绝，请在浏览器设置中允许使用麦克风');
+      }
+    } else if (error.name === 'NotFoundError') {
+      ElMessage.error('未找到麦克风设备，请确保设备有可用的麦克风');
+    } else if (error.name === 'NotReadableError' || error.name === 'AbortError') {
+      ElMessage.error('麦克风正被其他应用使用，请关闭可能使用麦克风的其他应用');
     } else {
-      ElMessage.error('录音初始化失败，请确保已授予麦克风权限');
+      if (isAndroid) {
+        ElMessage.error('录音初始化失败，请重启应用或检查麦克风权限设置');
+      } else {
+        ElMessage.error('录音初始化失败: ' + (error.message || '未知错误'));
+      }
     }
   }
 };

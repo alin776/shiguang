@@ -1,134 +1,141 @@
 <template>
   <div class="points-exchange">
     <div class="page-header">
-      <div class="title-wrapper">
-        <el-button class="back-button" @click="goBack" text>
-          <el-icon><ArrowLeft /></el-icon>
-        </el-button>
-        <h1 class="title">积分兑换商城</h1>
-      </div>
-      <div class="user-points">
-        <span class="label">您的积分</span>
-        <span class="count points-count">{{ userPoints }}</span>
+      <div class="safe-area-top"></div>
+      <div class="header-content">
+        <div class="left-section">
+          <el-button class="back-button" @click="goBack" text>
+            <el-icon><ArrowLeft /></el-icon>
+          </el-button>
+        </div>
+        <div class="center-section">
+          <h1 class="title">积分兑换商城</h1>
+        </div>
+        <div class="right-section">
+          <div class="user-points">
+            <span class="points-count">{{ userPoints }}</span>
+          </div>
+        </div>
       </div>
     </div>
 
-    <el-tabs v-model="activeTab" class="exchange-tabs">
-      <el-tab-pane label="商品列表" name="products">
-        <div v-if="loading" class="loading-spinner">
-          <el-skeleton :rows="3" animated />
-        </div>
-        
-        <div v-else-if="error" class="error-message">
-          <el-alert
-            :title="error"
-            type="error"
-            show-icon
-            :closable="false"
-          />
-        </div>
-        
-        <div v-else-if="products.length === 0" class="empty-state">
-          <el-empty description="暂无商品" />
-        </div>
-        
-        <div v-else class="products-grid">
-          <div
-            v-for="product in products"
-            :key="product.id"
-            class="product-card"
-          >
-            <div class="product-image">
-              <img
-                :src="product.image_url || defaultProductImage"
-                :alt="product.name"
-                @error="handleImageError"
-              />
-            </div>
-            <div class="product-info">
-              <h3 class="product-name">{{ product.name }}</h3>
-              <p v-if="product.description" class="product-description">
-                {{ product.description }}
-              </p>
-              <div class="product-stock" :class="{ 'out-of-stock': product.quantity <= 0 }">
-                剩余: {{ product.quantity }}
+    <div class="points-content">
+      <el-tabs v-model="activeTab" class="exchange-tabs">
+        <el-tab-pane label="商品列表" name="products">
+          <div v-if="loading" class="loading-spinner">
+            <el-skeleton :rows="3" animated />
+          </div>
+          
+          <div v-else-if="error" class="error-message">
+            <el-alert
+              :title="error"
+              type="error"
+              show-icon
+              :closable="false"
+            />
+          </div>
+          
+          <div v-else-if="products.length === 0" class="empty-state">
+            <el-empty description="暂无商品" />
+          </div>
+          
+          <div v-else class="products-grid">
+            <div
+              v-for="product in products"
+              :key="product.id"
+              class="product-card"
+            >
+              <div class="product-image">
+                <img
+                  :src="product.image_url || defaultProductImage"
+                  :alt="product.name"
+                  @error="handleImageError"
+                />
               </div>
-              <div class="product-points">
-                {{ product.points_cost }} 积分
+              <div class="product-info">
+                <h3 class="product-name">{{ product.name }}</h3>
+                <div class="product-meta">
+                  <div class="product-stock" :class="{ 'out-of-stock': product.quantity <= 0 }">
+                    剩余: {{ product.quantity }}
+                  </div>
+                </div>
+                <div class="product-points">
+                  {{ product.points_cost }} 积分
+                </div>
+                <el-button
+                  type="primary"
+                  class="exchange-button"
+                  :disabled="product.quantity <= 0 || userPoints < product.points_cost"
+                  @click="handleExchange(product)"
+                >
+                  {{ getButtonText(product) }}
+                </el-button>
               </div>
-              <el-button
-                type="primary"
-                class="exchange-button"
-                :disabled="product.quantity <= 0 || userPoints < product.points_cost"
-                @click="handleExchange(product)"
-              >
-                {{ getButtonText(product) }}
-              </el-button>
             </div>
           </div>
-        </div>
-      </el-tab-pane>
-      
-      <el-tab-pane label="兑换记录" name="exchanges">
-        <div v-if="loading" class="loading-spinner">
-          <el-skeleton :rows="3" animated />
-        </div>
+        </el-tab-pane>
         
-        <div v-else-if="exchanges.length === 0" class="empty-state">
-          <el-empty description="暂无兑换记录" />
-        </div>
-        
-        <div v-else class="exchanges-table">
-          <el-table :data="exchanges" style="width: 100%">
-            <el-table-column prop="product_name" label="商品名称" />
-            <el-table-column prop="points_cost" label="消耗积分" width="100" />
-            <el-table-column prop="exchange_time" label="兑换时间" width="180">
-              <template #default="scope">
-                {{ formatDate(scope.row.exchange_time) }}
-              </template>
-            </el-table-column>
-            <el-table-column prop="status" label="状态" width="120">
-              <template #default="scope">
-                <el-tag :type="getStatusType(scope.row.status)">
-                  {{ getStatusText(scope.row.status) }}
-                </el-tag>
-              </template>
-            </el-table-column>
-          </el-table>
-        </div>
-      </el-tab-pane>
-    </el-tabs>
+        <el-tab-pane label="兑换记录" name="exchanges">
+          <div v-if="loading" class="loading-spinner">
+            <el-skeleton :rows="3" animated />
+          </div>
+          
+          <div v-else-if="exchanges.length === 0" class="empty-state">
+            <el-empty description="暂无兑换记录" />
+          </div>
+          
+          <div v-else class="exchanges-table">
+            <el-table :data="exchanges" style="width: 100%">
+              <el-table-column prop="product_name" label="商品名称" />
+              <el-table-column prop="points_cost" label="消耗积分" width="100" />
+              <el-table-column prop="exchange_time" label="兑换时间" width="180">
+                <template #default="scope">
+                  {{ formatDate(scope.row.exchange_time) }}
+                </template>
+              </el-table-column>
+              <el-table-column prop="status" label="状态" width="120">
+                <template #default="scope">
+                  <el-tag :type="getStatusType(scope.row.status)">
+                    {{ getStatusText(scope.row.status) }}
+                  </el-tag>
+                </template>
+              </el-table-column>
+            </el-table>
+          </div>
+        </el-tab-pane>
+      </el-tabs>
 
-    <!-- 确认兑换对话框 -->
-    <el-dialog
-      v-model="confirmDialogVisible"
-      title="确认兑换"
-      width="80%"
-      class="exchange-dialog"
-    >
-      <div v-if="selectedProduct" class="confirm-exchange">
-        <p>您确定要兑换以下商品吗？</p>
-        <div class="confirm-product-info">
-          <h4>{{ selectedProduct.name }}</h4>
-          <p>所需积分: {{ selectedProduct.points_cost }}</p>
-          <p>当前积分: {{ userPoints }}</p>
-          <p>兑换后剩余: {{ userPoints - selectedProduct.points_cost }}</p>
+      <!-- 确认兑换对话框 -->
+      <el-dialog
+        v-model="confirmDialogVisible"
+        title="确认兑换"
+        width="80%"
+        class="exchange-dialog"
+      >
+        <div v-if="selectedProduct" class="confirm-exchange">
+          <p>您确定要兑换以下商品吗？</p>
+          <div class="confirm-product-info">
+            <h4>{{ selectedProduct.name }}</h4>
+            <p>所需积分: {{ selectedProduct.points_cost }}</p>
+            <p>当前积分: {{ userPoints }}</p>
+            <p>兑换后剩余: {{ userPoints - selectedProduct.points_cost }}</p>
+          </div>
         </div>
-      </div>
-      
-      <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="confirmDialogVisible = false">取消</el-button>
-          <el-button
-            type="primary"
-            @click="confirmExchange"
-            :loading="exchangeLoading"
-          >
-            确认兑换
-          </el-button>
-        </span>
-      </template>
-    </el-dialog>
+        
+        <template #footer>
+          <span class="dialog-footer">
+            <el-button @click="confirmDialogVisible = false">取消</el-button>
+            <el-button
+              type="primary"
+              @click="confirmExchange"
+              :loading="exchangeLoading"
+            >
+              确认兑换
+            </el-button>
+          </span>
+        </template>
+      </el-dialog>
+    </div>
   </div>
 </template>
 
@@ -282,25 +289,50 @@ const goBack = () => {
 
 <style scoped>
 .points-exchange {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 16px;
+  min-height: 100vh;
+  background-color: #f8f9fc;
 }
 
 .page-header {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
+  flex-direction: column;
+  background-color: #ffffff;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  border-bottom: 1px solid #ebeef5;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
 }
 
-.title-wrapper {
+.safe-area-top {
+  height: var(--safe-area-top, 0);
+  width: 100%;
+}
+
+.header-content {
   display: flex;
   align-items: center;
+  padding: 0 16px;
+  height: 56px;
+}
+
+.left-section {
+  width: 40px;
+}
+
+.center-section {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+}
+
+.right-section {
+  width: 80px;
+  display: flex;
+  justify-content: flex-end;
 }
 
 .back-button {
-  margin-right: 8px;
   font-size: 20px;
   border: none;
   box-shadow: none;
@@ -314,9 +346,10 @@ const goBack = () => {
 }
 
 .title {
-  font-size: 24px;
-  font-weight: bold;
+  font-size: 18px;
+  font-weight: 500;
   margin: 0;
+  text-align: center;
 }
 
 .user-points {
@@ -325,33 +358,33 @@ const goBack = () => {
   align-items: flex-end;
 }
 
-.user-points .label {
-  font-size: 14px;
-  color: #666;
-}
-
 .points-count {
-  font-size: 24px;
+  font-size: 18px;
   font-weight: bold;
   color: #f56c6c;
 }
 
+.points-content {
+  padding: 16px;
+}
+
 .exchange-tabs {
-  margin-top: 16px;
+  margin-top: 8px;
 }
 
 .products-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
   gap: 16px;
   margin-top: 16px;
 }
 
 .product-card {
   border: 1px solid #ebeef5;
-  border-radius: 4px;
+  border-radius: 8px;
   overflow: hidden;
   transition: transform 0.3s, box-shadow 0.3s;
+  background-color: #ffffff;
 }
 
 .product-card:hover {
@@ -372,29 +405,25 @@ const goBack = () => {
 }
 
 .product-info {
-  padding: 16px;
+  padding: 12px;
 }
 
 .product-name {
   margin: 0 0 8px;
   font-size: 16px;
   font-weight: bold;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.product-description {
-  margin: 0 0 8px;
-  font-size: 14px;
-  color: #666;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+.product-meta {
+  margin-bottom: 8px;
 }
 
 .product-stock {
   font-size: 12px;
   color: #67c23a;
-  margin-bottom: 8px;
 }
 
 .product-stock.out-of-stock {
@@ -405,7 +434,7 @@ const goBack = () => {
   font-size: 18px;
   font-weight: bold;
   color: #f56c6c;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .exchange-button {
@@ -444,16 +473,6 @@ const goBack = () => {
 }
 
 @media (max-width: 768px) {
-  .page-header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  
-  .user-points {
-    margin-top: 8px;
-    align-items: flex-start;
-  }
-  
   .products-grid {
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   }

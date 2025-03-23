@@ -662,14 +662,14 @@ watch(
 </script>
 
 <style scoped>
+/* 日历页面根容器 */
 .calendar-page {
   min-height: 100vh;
   padding-bottom: 70px;
-  padding-top: 0;
-  margin-top: 0;
-  background: linear-gradient(135deg, #f0f7ff, #e6f2ff);
   position: relative;
   overflow: hidden;
+  background: linear-gradient(135deg, #f0f7ff, #e6f2ff);
+  padding-top: env(safe-area-inset-top, 20px); /* 增加顶部空间，适配状态栏 */
 }
 
 .background-wrapper {
@@ -682,29 +682,32 @@ watch(
   pointer-events: none;
 }
 
+/* 内容区域容器 */
 .calendar-content {
   width: 100%;
   max-width: 100%;
   margin: 0 auto;
-  padding: 0;
   position: relative;
   z-index: 5;
   background-color: rgba(255, 255, 255, 0.98);
+  padding-top: max(10px, env(safe-area-inset-top, 30px)); /* 确保顶部有足够的空间 */
+}
+
+/* 顶部切换按钮 */
+.header-switch {
+  margin-top: 10px; /* 增加更多顶部间距 */
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: center;
 }
 
 .toolbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 10px;
-  position: relative;
-  z-index: 5;
-  background-color: rgba(255, 255, 255, 0.98);
-  padding: 12px 16px;
-  border-radius: 0;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
-  border: none;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.8);
+  margin-bottom: 15px;
+  padding: 0 15px;
+  margin-top: 15px; /* 增加顶部间距 */
 }
 
 .title {

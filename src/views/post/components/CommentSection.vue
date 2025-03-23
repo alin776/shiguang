@@ -19,6 +19,7 @@
         @delete-reply="$emit('delete-reply', $event)"
         @refresh-emojis="refreshEmojis"
         @report-comment="$emit('report-comment', $event)"
+        @reply-to-reply="handleReplyToReply"
       />
     </div>
 
@@ -72,7 +73,12 @@
     <!-- 选中的表情包预览区 -->
     <div v-if="commentImages.length > 0" class="selected-images-container">
       <div v-for="(image, index) in commentImages" :key="index" class="selected-image-item">
-        <img :src="image" alt="选中的表情/图片" />
+        <img 
+          :src="image" 
+          alt="选中的表情/图片" 
+          @error="handleImageError" 
+          class="selected-image"
+        />
         <div class="remove-selected-image" @click="removeImage(index)">
           <el-icon><Close /></el-icon>
         </div>
@@ -116,6 +122,7 @@
               :src="emoji.url" 
               alt="表情包"
               class="emoji-image"
+              @error="handleImageError"
             />
           </div>
         </div>
@@ -167,6 +174,7 @@ import axios from 'axios';
 import { ElMessage } from 'element-plus';
 import { API_BASE_URL } from "@/config";
 import { useAuthStore } from "@/stores/auth";
+import { getImageUrl, getProcessedImageUrl, preloadImage } from "../../../utils/imageHelpers";
 
 const props = defineProps({
   comments: {
@@ -196,6 +204,7 @@ const emit = defineEmits([
   "submit-comment",
   "cancel-reply",
   "report-comment",
+  "reply-to-reply"
 ]);
 
 const commentContent = ref("");
@@ -220,7 +229,27 @@ const fetchUserEmojis = async () => {
     const response = await axios.get(`${API_BASE_URL}/api/community/emojis`, {
       headers: { Authorization: `Bearer ${authStore.token}` }
     });
-    myEmojis.value = response.data.emojis;
+    
+    // 确保表情包URL处理正确
+    if (response.data && response.data.emojis) {
+      const processedEmojis = response.data.emojis.map(emoji => {
+        if (emoji.url) {
+          // 使用移动端优化的图片URL处理函数
+          emoji.url = getProcessedImageUrl(emoji.url);
+          // 添加时间戳参数防止缓存
+          const separator = emoji.url.includes('?') ? '&' : '?';
+          emoji.url = `${emoji.url}${separator}t=${Date.now()}`;
+        }
+        return emoji;
+      });
+      myEmojis.value = processedEmojis;
+      console.log('处理后的表情包数据:', processedEmojis);
+      
+      // 预加载表情包图片
+      preloadEmojis();
+    } else {
+      console.warn('获取表情包返回数据格式不正确:', response.data);
+    }
   } catch (error) {
     console.error('获取表情包失败:', error);
   }
@@ -240,8 +269,17 @@ const insertEmoji = (url) => {
   if (!commentImages.value) {
     commentImages.value = [];
   }
-  commentImages.value.push(url);
-  showMediaPanel.value = false; // 选择后自动关闭面板
+  
+  try {
+    // 使用新函数处理URL，确保在移动设备上正确显示
+    const processedUrl = getProcessedImageUrl(url);
+    console.log('插入表情包:', processedUrl);
+    commentImages.value.push(processedUrl);
+    showMediaPanel.value = false; // 选择后自动关闭面板
+  } catch (error) {
+    console.error('表情包URL处理失败:', error);
+    ElMessage.error('添加表情包失败');
+  }
 };
 
 // 刷新表情包列表
@@ -251,10 +289,44 @@ const refreshEmojis = async () => {
     const response = await axios.get(`${API_BASE_URL}/api/community/emojis`, {
       headers: { Authorization: `Bearer ${authStore.token}` }
     });
-    myEmojis.value = response.data.emojis;
+    
+    if (response.data && response.data.emojis) {
+      // 处理表情包URL
+      const emojis = response.data.emojis.map(emoji => {
+        // 确保表情包URL正确
+        if (emoji.url && !emoji.url.startsWith('http') && !emoji.url.startsWith('/')) {
+          emoji.url = getImageUrl(emoji.url);
+        }
+        return emoji;
+      });
+      
+      myEmojis.value = emojis;
+      
+      // 预加载表情包图片
+      preloadEmojis();
+    } else {
+      console.warn('刷新表情包返回数据格式不正确:', response.data);
+    }
   } catch (error) {
     console.error('刷新表情包失败:', error);
   }
+};
+
+// 预加载表情包图片
+const preloadEmojis = async () => {
+  if (!myEmojis.value || myEmojis.value.length === 0) return;
+  
+  console.log('开始预加载表情包图片...');
+  for (const emoji of myEmojis.value) {
+    if (emoji.url) {
+      try {
+        await preloadImage(emoji.url);
+      } catch (err) {
+        console.error('预加载表情包图片失败:', emoji.url, err);
+      }
+    }
+  }
+  console.log('表情包预加载完成');
 };
 
 // 处理图片选择
@@ -291,7 +363,11 @@ const handleImageSelected = async (file) => {
       if (!commentImages.value) {
         commentImages.value = [];
       }
-      commentImages.value.push(response.data.url);
+      
+      // 使用新函数处理URL，确保在移动设备上正确显示
+      const processedUrl = getProcessedImageUrl(response.data.url);
+      console.log('添加上传图片:', processedUrl);
+      commentImages.value.push(processedUrl);
     } else {
       ElMessage.error('图片上传失败');
     }
@@ -487,6 +563,46 @@ const handleEmojiTouchEnd = () => {
     emojiLongPressTimer = null;
   }
 };
+
+// 处理图片加载错误
+const handleImageError = (event) => {
+  console.error('图片加载失败:', event.target.src);
+  const img = event.target;
+  
+  // 检查是否已经重试过
+  const retryCount = parseInt(img.dataset.retryCount || '0');
+  
+  if (retryCount < 3) {
+    // 最多尝试3次
+    img.dataset.retryCount = (retryCount + 1).toString();
+    
+    // 获取原始URL并移除参数
+    let originalSrc = img.src;
+    // 除去查询参数
+    originalSrc = originalSrc.split('?')[0];
+    
+    // 添加新的时间戳和其他必要参数
+    const newSrc = `${originalSrc}?retry=${retryCount + 1}&t=${Date.now()}`;
+    
+    console.log(`重试(${retryCount + 1}/3)加载图片:`, newSrc);
+    
+    // 延迟一点时间再尝试，避免连续失败
+    setTimeout(() => {
+      img.src = newSrc;
+    }, 300);
+  } else {
+    // 已经重试3次，显示占位图
+    console.log('图片重试3次后仍然失败，显示占位图');
+    img.onerror = null; // 防止无限循环
+    img.src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiM5OTkiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cmVjdCB4PSIzIiB5PSIzIiB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHJ4PSIyIiByeT0iMiI+PC9yZWN0PjxjaXJjbGUgY3g9IjguNSIgY3k9IjguNSIgcj0iMS41Ij48L2NpcmNsZT48cG9seWxpbmUgcG9pbnRzPSIyMSAxNSAxNiAxMCA1IDIxIj48L3BvbHlsaW5lPjwvc3ZnPg==';
+  }
+};
+
+// 处理reply-to-reply事件
+const handleReplyToReply = (reply) => {
+  // 转发事件到父组件
+  emit('reply-to-reply', reply);
+};
 </script>
 
 <style scoped>
@@ -677,44 +793,56 @@ const handleEmojiTouchEnd = () => {
 }
 
 .emoji-grid {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
   gap: 12px;
-  padding: 12px 16px;
-  justify-content: flex-start;
+  padding: 15px;
 }
 
 .emoji-item {
-  width: 60px;
-  height: 60px;
-  cursor: pointer;
-  border-radius: 10px;
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 8px;
+  background-color: #f5f5f5;
   overflow: hidden;
-  padding: 0;
-  margin: 0;
-  border: none;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
   position: relative;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s;
+}
+
+.emoji-item:active {
+  transform: scale(0.95);
 }
 
 .emoji-image {
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  display: block;
-  transition: transform 0.3s ease;
+  object-fit: contain;
+  object-position: center;
+  padding: 5px;
+  background-color: white;
 }
 
-.emoji-item:hover, .emoji-item:active {
-  transform: translateY(-5px) scale(1.05);
-  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.12);
-  z-index: 1;
+.emoji-image[src^="data:image"] {
+  /* 占位图样式调整 */
+  padding: 15px;
+  opacity: 0.6;
 }
 
-.emoji-item:hover .emoji-image {
-  transform: scale(1.1);
+/* 增加一个占位图效果 */
+.emoji-item::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: #f0f0f0;
+  z-index: -1;
 }
 
 .empty-emojis {
@@ -870,86 +998,53 @@ const handleEmojiTouchEnd = () => {
 }
 
 .selected-images-container {
-  position: fixed;
-  bottom: 60px;
-  left: 0;
-  right: 0;
-  background-color: #ffffff;
-  padding: 12px 16px;
-  border-top: 1px solid #f0f0f0;
-  z-index: 9;
   display: flex;
-  overflow-x: auto;
-  overflow-y: hidden;
-  height: auto;
-  max-height: 110px;
-  box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.05);
-  animation: slideIn 0.3s ease-out forwards;
-  scroll-behavior: smooth;
-}
-
-@keyframes slideIn {
-  from {
-    transform: translateY(100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 10px;
+  margin-bottom: 60px; /* 给输入框留出空间 */
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  border: 1px solid #eaeaea;
 }
 
 .selected-image-item {
   position: relative;
   width: 80px;
   height: 80px;
-  flex: 0 0 80px;
-  border-radius: 10px;
+  border-radius: 8px;
   overflow: hidden;
-  margin-right: 12px;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
-  transition: all 0.25s ease;
-  transform: scale(1);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  background-color: #fff;
 }
 
-.selected-image-item:hover {
-  transform: scale(1.05);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
-}
-
-.selected-image-item img {
+.selected-image {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.3s ease;
-}
-
-.selected-image-item:hover img {
-  transform: scale(1.08);
+  border-radius: 6px;
 }
 
 .remove-selected-image {
   position: absolute;
-  top: 6px;
-  right: 6px;
-  background-color: rgba(0, 0, 0, 0.6);
-  color: white;
+  top: 4px;
+  right: 4px;
   width: 22px;
   height: 22px;
   border-radius: 50%;
+  background-color: rgba(0, 0, 0, 0.5);
+  color: white;
   display: flex;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
   cursor: pointer;
-  opacity: 0.9;  /* 默认就显示，但稍微透明一点 */
-  transform: scale(1);
+  font-size: 14px;
   transition: all 0.2s ease;
 }
 
-.selected-image-item:hover .remove-selected-image {
-  opacity: 1;
-  transform: scale(1.1); /* 悬停时稍微放大 */
-  background-color: rgba(0, 0, 0, 0.8); /* 悬停时背景色加深 */
+.remove-selected-image:hover {
+  transform: scale(1.1);
+  background-color: rgba(0, 0, 0, 0.7);
 }
 
 .emoji-panel, .image-panel {

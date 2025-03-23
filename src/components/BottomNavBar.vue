@@ -130,6 +130,7 @@ onMounted(() => {
   left: 0;
   right: 0;
   height: 60px;
+  padding-bottom: env(safe-area-inset-bottom, 0px); /* 添加底部安全区域 */
   background: #ffffff;
   display: flex;
   justify-content: space-around;
@@ -138,7 +139,9 @@ onMounted(() => {
   max-width: inherit;
   margin: 0 auto;
   border-radius: 20px 20px 0 0;
-  padding: 0 10px;
+  padding-left: 10px;
+  padding-right: 10px;
+  padding-top: 0;
   box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
   border-top: 1px solid #f5f5f5;
 }
@@ -220,5 +223,6 @@ onMounted(() => {
   height: 60px;
   width: 100%;
   margin-bottom: 0;
+  padding-bottom: env(safe-area-inset-bottom, 0px); /* 添加底部安全区域 */
 }
 </style>

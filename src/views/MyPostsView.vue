@@ -73,6 +73,7 @@ import BottomNavBar from "../components/BottomNavBar.vue";
 import { useCommunityStore } from "../stores/community";
 import { formatTime } from "../utils/time";
 import { useAuthStore } from "../stores/auth";
+import { getThumbnailUrl } from "../utils/imageCompression";
 
 const router = useRouter();
 const communityStore = useCommunityStore();
@@ -94,11 +95,14 @@ const loadPosts = async () => {
             if (img.includes(`${API_BASE_URL}`)) {
               const matches = img.match(/post-[\w-]+\.\w+$/);
               if (matches) {
-                return `${API_BASE_URL}/uploads/posts/${matches[0]}`;
+                const imgUrl = `${API_BASE_URL}/uploads/posts/${matches[0]}`;
+                return getThumbnailUrl(imgUrl); // 应用图片压缩
               }
-              return img.replace(/\/uploads\/posts\/+/g, "/uploads/posts/");
+              const fixedUrl = img.replace(/\/uploads\/posts\/+/g, "/uploads/posts/");
+              return getThumbnailUrl(fixedUrl); // 应用图片压缩
             }
-            return `${API_BASE_URL}${img}`;
+            const imgUrl = `${API_BASE_URL}${img}`;
+            return getThumbnailUrl(imgUrl); // 应用图片压缩
           })
         : [],
       user: {

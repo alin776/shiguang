@@ -1,5 +1,6 @@
 <template>
   <div class="post-detail-page">
+    <!-- 页面头部 - 删除这个多余的标题栏 -->
     <!-- 帖子头部：用户信息和导航 -->
     <PostHeader
       :post="post"
@@ -38,6 +39,7 @@
         @submit-comment="submitComment"
         @cancel-reply="cancelReply"
         @report-comment="openCommentReportDialog"
+        @reply-to-reply="handleReplyToReply"
       />
     </div>
 
@@ -127,12 +129,16 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { ElMessage, ElMessageBox } from "element-plus";
-import { useCommunityStore } from "../../stores/community";
-import { useAuthStore } from "../../stores/auth";
+import { useCommunityStore } from "@/stores/community";
+import { useAuthStore } from "@/stores/auth";
+import { Back } from '@element-plus/icons-vue'; // 导入Back图标
 import { useUnmountDetection } from "../../composables/useUnmountDetection";
+import formatTime, { formatRelativeTime } from "../../utils/formatTime";
+import { getDetailImageUrl } from "../../utils/imageCompression";
+import { API_BASE_URL } from "../../config";
 
 // 导入组件
 import PostHeader from "./components/PostHeader.vue";
@@ -181,87 +187,230 @@ const commentCount = computed(() => {
   return count;
 });
 
-// 获取帖子详情
-const fetchPostDetails = async () => {
+// 在图片URL处理的地方使用getDetailImageUrl
+const processImageUrl = (imageUrl) => {
+  if (!imageUrl) return "";
+  
   try {
-    loading.value = true;
-    const postId = route.params.id;
-    console.log("正在获取帖子详情, ID:", postId);
+    // 确保正确的URL格式
+    let processedUrl = imageUrl;
     
-    const data = await communityStore.getPost(postId);
-    if (!checkMounted()) return;
-    
-    // 添加调试信息
-    console.log("从API获取到的帖子数据:", data);
-    console.log("帖子标题数据:", {
-      值: data.title,
-      类型: typeof data.title,
-      长度: data.title ? data.title.length : 0
-    });
-    
-    // 处理评论数据
-    const postComments = data.comments || [];
-    
-    // 确保comments是数组
-    if (!Array.isArray(postComments)) {
-      console.error('API返回的comments不是数组:', postComments);
-      comments.value = [];
-    } else {
-      comments.value = postComments;
-      console.log('获取到的评论数据:', comments.value);
+    // 替换localhost为正确的服务器地址
+    if (processedUrl.includes('localhost:3000')) {
+      processedUrl = processedUrl.replace('http://localhost:3000', API_BASE_URL);
     }
     
-    let totalComments = comments.value.length;
+    // 如果不是以http开头，添加API_BASE_URL
+    if (!processedUrl.startsWith('http')) {
+      processedUrl = processedUrl.startsWith('/') ? 
+        `${API_BASE_URL}${processedUrl}` : 
+        `${API_BASE_URL}/${processedUrl}`;
+    }
     
-    // 计算回复的总数
-    comments.value.forEach(comment => {
-      if (comment.replies && Array.isArray(comment.replies)) {
-        totalComments += comment.replies.length;
-      }
+    // 确保不会出现重复的API_BASE_URL
+    if (processedUrl.includes(`${API_BASE_URL}${API_BASE_URL}`)) {
+      processedUrl = processedUrl.replace(`${API_BASE_URL}${API_BASE_URL}`, API_BASE_URL);
+    }
+    
+    // 应用图片压缩处理，但保持较高质量
+    return getDetailImageUrl(processedUrl);
+  } catch (error) {
+    console.error('处理图片URL出错:', error);
+    return imageUrl;
+  }
+};
+
+// 预加载帖子图片
+const preloadImages = (images) => {
+  if (!images || !Array.isArray(images) || images.length === 0) {
+    return Promise.resolve();
+  }
+  
+  // 创建一个图片加载的Promise数组
+  const imagePromises = images.map(imageUrl => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve(true);
+      img.onerror = () => resolve(false); // 即使加载失败也继续
+      img.src = imageUrl;
+      // 设置5秒超时
+      setTimeout(() => resolve(false), 5000);
     });
+  });
+  
+  // 使用Promise.all并行加载所有图片
+  return Promise.all(imagePromises)
+    .then(() => console.log('帖子图片预加载完成'))
+    .catch(err => console.error('帖子图片预加载失败:', err));
+};
+
+// 处理帖子数据函数
+const processPost = async (data) => {
+  console.log('Processing post data:', data);
+  
+  // 处理图片
+  let images = [];
+  if (data.images) {
+    try {
+      if (typeof data.images === 'string') {
+        // 尝试解析JSON字符串
+        images = JSON.parse(data.images);
+      } else if (Array.isArray(data.images)) {
+        images = data.images;
+      }
+      
+      // 应用图片处理
+      images = images.map(img => processImageUrl(img));
+      
+      // 预加载图片（但不阻塞UI渲染）
+      preloadImages(images);
+    } catch (error) {
+      console.error('处理帖子图片出错:', error);
+      images = [];
+    }
+  }
+  
+  // 创建最终的帖子对象，确保保留所有字段
+  post.value = {
+    ...data,
+    images: images,
+    // 确保标题一定存在
+    title: data.title || "无标题"
+  };
+  
+  // 调试输出
+  console.log('处理后的帖子数据:', post.value);
+};
+
+// 获取帖子评论
+const loadComments = async () => {
+  try {
+    if (!post.value || !post.value.id) return;
     
-    // 更新帖子对象中的评论数
+    // 检查post.value是否有comments属性
+    if (post.value.comments && Array.isArray(post.value.comments)) {
+      comments.value = post.value.comments;
+      return;
+    }
+    
+    // 如果没有，尝试从API获取评论
+    const response = await communityStore.getPostComments(post.value.id);
+    if (response && Array.isArray(response)) {
+      comments.value = response;
+    } else {
+      comments.value = [];
+    }
+  } catch (error) {
+    console.error('加载评论失败:', error);
+    comments.value = [];
+  }
+};
+
+// 获取帖子详情
+const getPostDetail = async () => {
+  try {
+    loading.value = true;
+    
+    // 检查路由参数是否存在
+    if (!route.params.id) {
+      console.error("无效的帖子ID：路由参数为空");
+      ElMessage.error("无效的帖子ID");
+      setTimeout(() => router.push('/community'), 1500);
+      return;
+    }
+    
+    console.log("正在获取帖子详情，ID:", route.params.id);
+    
+    // 确保ID是有效的数字或字符串
+    if (route.params.id === "undefined" || route.params.id === "null") {
+      console.error(`无效的帖子ID: ${route.params.id}`);
+      ElMessage.error("无效的帖子ID格式");
+      setTimeout(() => router.push('/community'), 1500);
+      return;
+    }
+    
+    const response = await communityStore.getPost(route.params.id);
+    console.log("获取帖子响应:", response);
+    
+    if (!response) {
+      console.error("获取帖子详情失败: 响应为空");
+      ElMessage.error("获取帖子详情失败");
+      setTimeout(() => router.push('/community'), 1500);
+      return;
+    }
+    
+    // 检查是否有错误标志
+    if (response.error) {
+      console.error("获取帖子详情出错:", response.error);
+      ElMessage.error(`获取帖子详情失败: ${response.error}`);
+      setTimeout(() => router.push('/community'), 1500);
+      return;
+    }
+    
+    // 修改帖子对象，包括解析图片和处理时间格式
+    const data = response;
+    
+    // 处理评论数量
+    // 计算所有评论和子评论的数量
+    const countComments = (comments) => {
+      let count = comments.length;
+      for (const comment of comments) {
+        if (comment.replies && comment.replies.length > 0) {
+          count += comment.replies.length;
+        }
+      }
+      return count;
+    };
+    
+    // 计算评论总数
+    const totalComments = data.comments ? countComments(data.comments) : 0;
     data.comment_count = totalComments;
     data.reply_count = totalComments;
     
-    // 创建最终的帖子对象，确保保留所有字段
-    const processedPost = {
-      ...data,
-      // 确保标题一定存在
-      title: data.title || "无标题"
-    };
+    // 使用processPost函数处理帖子数据
+    processPost(data);
     
-    // 设置最终的帖子数据
-    post.value = processedPost;
+    // 处理完成后加载评论
+    loadComments();
     
-    // 验证标题
-    if (!post.value.title || post.value.title === "undefined" || post.value.title === "null") {
-      console.warn('帖子标题无效，强制设置为默认值');
-      post.value.title = '无标题';
-    } else {
-      console.log('帖子标题最终设置为:', post.value.title);
+    // 增加帖子浏览量 - 调用正确的方法或暂时注释掉
+    // communityStore.incrementViews方法不存在，暂时注释掉
+    // if (data.id) {
+    //   communityStore.incrementViews(data.id);
+    // }
+    
+    // 尝试使用可能存在的其他方法记录浏览量
+    try {
+      if (data.id && communityStore.viewPost) {
+        communityStore.viewPost(data.id);
+      }
+    } catch (e) {
+      console.log('记录浏览量失败:', e);
+      // 忽略错误，不影响主流程
     }
     
-    console.log('最终的帖子数据:', post.value);
-    
-    // 检查是否需要更新API中的评论数
-    if (totalComments > 0 && (!data.comment_count || data.comment_count === 0)) {
-      console.log(`帖子评论数已更新: 实际评论数=${totalComments}, API返回评论数=${data.comment_count}`);
+    // 检查URL中是否有锚点，如果有，滚动到对应评论
+    if (location.hash && location.hash.startsWith('#comment-')) {
+      const commentId = location.hash.replace('#comment-', '');
+      // 设置一个短暂延迟，确保页面已经渲染好
+      setTimeout(() => {
+        const commentElement = document.getElementById(`comment-${commentId}`);
+        if (commentElement) {
+          commentElement.scrollIntoView({ behavior: 'smooth' });
+          // 添加一个高亮效果
+          commentElement.classList.add('highlighted-comment');
+          setTimeout(() => {
+            commentElement.classList.remove('highlighted-comment');
+          }, 3000);
+        }
+      }, 500);
     }
   } catch (error) {
-    if (!checkMounted()) return;
-    console.error("加载帖子详情失败:", error);
-    ElMessage.error("加载失败: " + (error.message || "未知错误"));
-    // 设置错误状态的帖子对象
-    post.value = { 
-      title: "加载失败", 
-      content: "无法获取帖子内容，请稍后再试", 
-      error: error.message || "未知错误" 
-    };
+    console.error("获取帖子详情失败:", error);
+    ElMessage.error("获取帖子详情失败");
+    setTimeout(() => router.push('/community'), 1500);
   } finally {
-    if (checkMounted()) {
-      loading.value = false;
-    }
+    loading.value = false;
   }
 };
 
@@ -343,6 +492,21 @@ const prepareReply = (commentId) => {
   }
 };
 
+// 处理回复回复的逻辑
+const handleReplyToReply = ({ commentId, replyToUserId: targetUserId, replyToUsername }) => {
+  replyMode.value = true;
+  replyToCommentId.value = commentId;
+  
+  // 避免变量命名冲突，使用不同的变量名
+  if (targetUserId !== undefined && targetUserId !== null) {
+    replyToUserId.value = targetUserId;
+  } else {
+    replyToUserId.value = null;
+  }
+  
+  replyUsername.value = replyToUsername || "用户";
+};
+
 // 取消回复
 const cancelReply = () => {
   replyMode.value = false;
@@ -382,7 +546,7 @@ const submitComment = async (commentData) => {
     }
 
     // 重新加载帖子详情及评论
-    await fetchPostDetails();
+    await getPostDetail();
 
     // 重置回复状态
     cancelReply();
@@ -504,6 +668,11 @@ const submitCommentReport = async () => {
   }
 };
 
+// 返回上一页方法
+const goBack = () => {
+  router.back();
+};
+
 // 生命周期钩子
 onMounted(() => {
   // 初始化空数组，确保渲染前有默认值
@@ -512,18 +681,15 @@ onMounted(() => {
   loading.value = true;
   
   // 获取帖子数据
-  fetchPostDetails();
+  getPostDetail();
 });
 </script>
 
 <style scoped>
 .post-detail-page {
   min-height: 100vh;
-  background: #ffffff;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  padding-bottom: 70px;
+  background-color: #f9f9f9;
+  padding-bottom: 70px; /* 为底部导航栏留出空间 */
 }
 
 @media (min-width: 768px) {
@@ -609,5 +775,55 @@ onMounted(() => {
   border-color: #ff7875;
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(255, 77, 79, 0.2);
+}
+
+/* 注释掉或移除不再需要的page-header相关样式 */
+/*
+.page-header {
+  position: sticky;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #fff;
+  border-bottom: 1px solid #f0f0f0;
+  z-index: 10;
+  padding-top: var(--safe-area-top);
+  height: calc(50px + var(--safe-area-top));
+}
+
+.header-title {
+  font-size: 18px;
+  font-weight: 500;
+  flex: 1;
+  text-align: center;
+}
+
+.header-left, .header-right {
+  min-width: 60px;
+  display: flex;
+  align-items: center;
+}
+*/
+
+/* 从锚点跳转过来的评论高亮样式 */
+:deep(.highlighted-comment) {
+  animation: highlight-pulse 3s ease-out;
+  border-left: 3px solid #1677ff;
+}
+
+@keyframes highlight-pulse {
+  0% {
+    background-color: rgba(22, 119, 255, 0.2);
+    box-shadow: 0 0 15px rgba(22, 119, 255, 0.5);
+  }
+  70% {
+    background-color: rgba(22, 119, 255, 0.1);
+    box-shadow: 0 0 10px rgba(22, 119, 255, 0.3);
+  }
+  100% {
+    background-color: transparent;
+    box-shadow: none;
+  }
 }
 </style>

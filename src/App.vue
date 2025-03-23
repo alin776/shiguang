@@ -4,16 +4,30 @@
     <p>加载中...</p>
   </div>
 
+  <!-- 状态栏安全区域占位 -->
+  <div class="status-bar-placeholder"></div>
+
+  <!-- 网络连接提示 -->
+  <div v-if="showOfflineAlert" class="network-status offline">
+    <i class="el-icon-warning"></i> 网络连接已断开，请检查您的网络设置
+  </div>
+  <div v-if="showOnlineAlert" class="network-status online">
+    <i class="el-icon-success"></i> 网络已恢复
+  </div>
+
   <el-config-provider v-if="isAppReady" :locale="zhCn">
     <router-view />
     <UpdateChecker />
   </el-config-provider>
+
+  <!-- 未准备好时也显示路由视图 -->
+  <router-view v-if="!isAppReady" />
 </template>
 
 <script setup>
 import zhCn from "element-plus/dist/locale/zh-cn.mjs";
 import { useAuthStore } from "./stores/auth";
-import { onMounted, ref, watch } from "vue";
+import { onMounted, ref, watch, onUnmounted, nextTick } from "vue";
 import { App as CapacitorApp } from "@capacitor/app";
 import { StatusBar, Style } from "@capacitor/status-bar";
 import UpdateChecker from "./components/UpdateChecker.vue";
@@ -25,75 +39,103 @@ const updateStore = useUpdateStore();
 const isCapacitorEnabled = ref(false);
 const isAppReady = ref(false);
 
+// 网络状态相关
+const isOnline = ref(navigator.onLine);
+const showOfflineAlert = ref(false);
+const showOnlineAlert = ref(false);
+let onlineAlertTimer = null;
+let offlineAlertTimer = null;
+
+// 处理在线状态变化
+const handleOnline = () => {
+  isOnline.value = true;
+  showOfflineAlert.value = false;
+  showOnlineAlert.value = true;
+  
+  // 5秒后自动隐藏在线提示
+  clearTimeout(onlineAlertTimer);
+  onlineAlertTimer = setTimeout(() => {
+    showOnlineAlert.value = false;
+  }, 5000);
+};
+
+// 处理离线状态变化
+const handleOffline = () => {
+  isOnline.value = false;
+  showOnlineAlert.value = false;
+  showOfflineAlert.value = true;
+  
+  // 离线提示一直显示，直到恢复连接
+  clearTimeout(offlineAlertTimer);
+};
+
 onMounted(async () => {
-  // 检查是否在 Capacitor 环境中
-  if (import.meta.env.PROD && CapacitorApp) {
-    try {
-      // 检查是否在原生平台
-      if (window.Capacitor && window.Capacitor.isNativePlatform()) {
-        isCapacitorEnabled.value = true;
-        
-        // 设置状态栏为透明
-        try {
-          // 设置状态栏背景为透明
-          await StatusBar.setBackgroundColor({ color: '#00000000' });
-          // 使用亮色的图标 (白色图标)
-          await StatusBar.setStyle({ style: Style.Dark });
-          // 显示状态栏
-          await StatusBar.show();
-        } catch (statusBarError) {
-          console.error('设置状态栏失败:', statusBarError);
-        }
-        
-        // 获取应用信息并设置当前版本
-        try {
-          const appInfo = await CapacitorApp.getInfo();
-          updateStore.setCurrentVersion(appInfo.version || APP_VERSION.VERSION);
-        } catch (error) {
-          console.error('获取应用信息失败:', error);
-          updateStore.setCurrentVersion(APP_VERSION.VERSION);
-        }
-        
-        CapacitorApp.addListener("backButton", ({ canGoBack }) => {
-          if (canGoBack) {
-            window.history.back();
-          } else {
-            CapacitorApp.exitApp();
-          }
-        });
-      } else {
-        // Web环境，使用配置文件中的版本
-        console.log('Web环境，使用配置版本:', APP_VERSION.VERSION);
-        updateStore.setCurrentVersion(APP_VERSION.VERSION);
-      }
-    } catch (error) {
-      console.error('Capacitor初始化错误:', error);
-      updateStore.setCurrentVersion(APP_VERSION.VERSION);
-    }
-  } else {
-    // 开发环境或非Capacitor环境
-    console.log('开发环境或非Capacitor环境，使用配置版本:', APP_VERSION.VERSION);
-    updateStore.setCurrentVersion(APP_VERSION.VERSION);
-  }
-
+  // 设置状态栏高度
+  setupStatusBarHeight();
+  
+  // 检查是否在原生环境中运行
   try {
-    // 初始化主题
-    authStore.initializeTheme();
-
-    // 检查 token 是否有效
-    if (authStore.token && !authStore.isTokenValid()) {
-      console.log("App 挂载时检测到 Token 已过期，执行登出操作");
-      authStore.logout();
-    }
-    // 检查是否有保存的登录状态
-    else if (authStore.checkSavedLogin()) {
-      await authStore.fetchUserInfo();
+    await CapacitorApp.getInfo();
+    isCapacitorEnabled.value = true;
+    
+    // 设置状态栏
+    if (StatusBar) {
+      // 设置状态栏为透明
+      StatusBar.setBackgroundColor({ color: '#ffffff' });
+      StatusBar.setStyle({ style: Style.Light });
+      
+      // 让状态栏覆盖WebView
+      if (typeof StatusBar.setOverlaysWebView === 'function') {
+        StatusBar.setOverlaysWebView({ overlay: true });
+      }
     }
   } catch (error) {
-    console.error("初始化错误:", error);
-  } finally {
-    isAppReady.value = true;
+    console.log("Not running in a native environment", error);
+    isCapacitorEnabled.value = false;
   }
+
+  // 加载用户信息
+  try {
+    await authStore.initializeAuth();
+  } catch (error) {
+    console.error("Failed to initialize auth:", error);
+  }
+
+  // 检查更新
+  try {
+    await updateStore.checkForUpdates(APP_VERSION.VERSION);
+  } catch (error) {
+    console.error("Failed to check for updates:", error);
+  }
+
+  isAppReady.value = true;
+
+  // 监听网络状态变化
+  window.addEventListener("online", handleOnline);
+  window.addEventListener("offline", handleOffline);
+
+  // 添加调试模式切换快捷键
+  window.addEventListener('keydown', (e) => {
+    // 在非输入框中按下Ctrl+Shift+D切换调试器
+    if (e.ctrlKey && e.shiftKey && e.key === 'D' && 
+        !['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
+      e.preventDefault();
+      showDebugger.value = !showDebugger.value;
+    }
+  });
+
+  // 设置安全区域
+  setupSafeArea();
+});
+
+onUnmounted(() => {
+  // 清除网络状态监听
+  window.removeEventListener('online', handleOnline);
+  window.removeEventListener('offline', handleOffline);
+  
+  // 清除定时器
+  clearTimeout(onlineAlertTimer);
+  clearTimeout(offlineAlertTimer);
 });
 
 // 监听主题变化
@@ -103,6 +145,86 @@ watch(
     authStore.applyTheme(newTheme);
   }
 );
+
+// 设置安全区域高度
+const setupSafeArea = () => {
+  // 检测是否支持CSS环境变量
+  const supportsEnv = window.CSS && window.CSS.supports && window.CSS.supports('top: env(safe-area-inset-top)');
+  
+  if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+    // 原生应用环境
+    
+    // 检测设备类型
+    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const isAndroid = /Android/i.test(navigator.userAgent);
+    
+    // 根据设备类型设置默认值
+    const defaultSafeAreaTop = isIOS ? '44px' : '36px'; // iOS通常是44px，Android通常是24-36px
+    const defaultSafeAreaBottom = isIOS ? '34px' : '0px'; // iOS X系列底部有34px的安全区
+    
+    // 设置顶部安全区域
+    document.documentElement.style.setProperty('--safe-area-top', 
+      supportsEnv ? 'env(safe-area-inset-top)' : defaultSafeAreaTop
+    );
+    
+    // 设置底部安全区域
+    document.documentElement.style.setProperty('--safe-area-bottom', 
+      supportsEnv ? 'env(safe-area-inset-bottom)' : defaultSafeAreaBottom
+    );
+    
+    // 设置左右安全区域（主要用于横屏模式）
+    document.documentElement.style.setProperty('--safe-area-left', 
+      supportsEnv ? 'env(safe-area-inset-left)' : '0px'
+    );
+    
+    document.documentElement.style.setProperty('--safe-area-right', 
+      supportsEnv ? 'env(safe-area-inset-right)' : '0px'
+    );
+    
+    console.log(`已设置状态栏安全区域高度: ${isIOS ? 'iOS' : 'Android'} ${supportsEnv ? '(使用CSS环境变量)' : '(使用默认值)'}`);
+  } else {
+    // 网页环境
+    document.documentElement.style.setProperty('--safe-area-top', '20px'); // 网页中使用固定值
+    document.documentElement.style.setProperty('--safe-area-bottom', '0px');
+    document.documentElement.style.setProperty('--safe-area-left', '0px');
+    document.documentElement.style.setProperty('--safe-area-right', '0px');
+    
+    console.log('已为网页环境设置状态栏安全区域高度');
+  }
+  
+  // 添加class以支持安全区域适配
+  document.body.classList.add('has-safe-area');
+};
+
+// 添加状态栏高度CSS变量
+const setupStatusBarHeight = () => {
+  // 设置CSS变量以保持状态栏高度
+  const setStatusBarHeight = () => {
+    const safeAreaTop = getComputedStyle(document.documentElement).getPropertyValue('--safe-area-top') || '0px';
+    document.documentElement.style.setProperty('--status-bar-height', safeAreaTop);
+    
+    // 使用env变量
+    try {
+      // 尝试获取安全区域高度
+      const envSafeAreaTop = window.getComputedStyle(document.documentElement).getPropertyValue('env(safe-area-inset-top)') || '0px';
+      if (envSafeAreaTop && envSafeAreaTop !== '0px') {
+        document.documentElement.style.setProperty('--safe-area-top', envSafeAreaTop);
+      } else {
+        // 如果获取不到，设置一个默认值
+        document.documentElement.style.setProperty('--safe-area-top', '20px');
+      }
+    } catch(e) {
+      console.error('获取安全区域高度失败:', e);
+      document.documentElement.style.setProperty('--safe-area-top', '20px');
+    }
+  };
+
+  // 初始调用
+  setStatusBarHeight();
+  
+  // 监听窗口大小变化
+  window.addEventListener('resize', setStatusBarHeight);
+};
 </script>
 
 <style>
@@ -129,6 +251,7 @@ watch(
   --card-background: #FFFFFF;
   --card-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
   --header-height: 60px;
+  --safe-area-top: env(safe-area-inset-top, 20px);
 }
 
 body {
@@ -187,6 +310,7 @@ body {
   height: 100vh;
   background: linear-gradient(135deg, #e0f7fa, #bbdefb);
   color: var(--text-color);
+  padding-top: var(--safe-area-top);
 }
 
 .loader {
@@ -297,5 +421,76 @@ a {
 .el-form .el-form-item__label {
   color: #333333 !important;
   font-weight: 600 !important;
+}
+
+/* 网络状态提示样式 */
+.network-status {
+  position: fixed;
+  top: var(--safe-area-top);
+  left: 0;
+  right: 0;
+  padding: 8px;
+  text-align: center;
+  z-index: 1000;
+  font-size: 14px;
+  transition: all 0.3s ease;
+}
+
+.network-status.offline {
+  background-color: rgba(244, 67, 54, 0.9);
+  color: white;
+}
+
+.network-status.online {
+  background-color: rgba(76, 175, 80, 0.9);
+  color: white;
+  animation: fadeOut 5s forwards;
+}
+
+@keyframes fadeOut {
+  0% { opacity: 1; }
+  70% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* 添加全局CSS样式，为页面内容添加顶部安全区域 */
+.page-content {
+  padding-top: var(--safe-area-top);
+}
+
+.page-header {
+  padding-top: var(--safe-area-top);
+  height: calc(50px + var(--safe-area-top));
+  display: flex;
+  align-items: center;
+  z-index: 100;
+}
+
+/* 为状态栏创建安全区域占位 */
+.status-bar-placeholder {
+  width: 100%;
+  height: var(--safe-area-top, env(safe-area-inset-top, 0));
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10000;
+  background-color: transparent;
+  pointer-events: none;
+}
+
+/* 确保所有页面都有正确的顶部内边距 */
+:deep(body) {
+  padding-top: var(--safe-area-top, env(safe-area-inset-top, 0));
+}
+
+:deep(.safe-area-top) {
+  padding-top: var(--safe-area-top, env(safe-area-inset-top, 0));
+}
+
+/* 暗色模式下状态栏的样式 */
+[data-theme='dark'] .status-bar-placeholder {
+  background-color: rgba(25, 25, 25, 0.85);
+  border-bottom-color: rgba(255, 255, 255, 0.05);
 }
 </style>
