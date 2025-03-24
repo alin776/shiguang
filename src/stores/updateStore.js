@@ -74,11 +74,17 @@ export const useUpdateStore = defineStore('update', {
       this.downloadProgress = 0;
       
       try {
-        // Android平台下载APK
+        // 获取后端返回的下载链接
         const downloadUrl = this.updateInfo.downloadUrl;
         
-        // 使用capacitor浏览器打开下载链接
-        window.open(downloadUrl, '_system');
+        if (!downloadUrl) {
+          throw new Error('下载链接无效');
+        }
+        
+        // 使用Capacitor的App.openUrl在系统浏览器中打开下载链接
+        // 这在安卓端会正确处理APK下载
+        await App.openUrl({ url: downloadUrl });
+        
         return true;
       } catch (error) {
         console.error('下载更新失败:', error);

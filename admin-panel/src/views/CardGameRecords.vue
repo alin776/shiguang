@@ -2,6 +2,19 @@
   <div class="card-game-records-container">
     <h1 class="page-title">抽卡游戏记录</h1>
     
+    <!-- 手动开奖按钮 -->
+    <el-row class="action-buttons" :gutter="20">
+      <el-col :span="24">
+        <el-button 
+          type="primary" 
+          :loading="drawLoading" 
+          @click="handleTriggerDraw"
+        >
+          手动开奖（最后一天）
+        </el-button>
+      </el-col>
+    </el-row>
+    
     <!-- 搜索区域 -->
     <div class="search-area">
       <el-form :inline="true" :model="searchForm">
@@ -111,8 +124,8 @@
 
 <script setup>
 import { ref, onMounted, reactive } from 'vue';
-import { ElMessage } from 'element-plus';
-import { getAllCardGameRecords } from '@/api/game';
+import { ElMessage, ElMessageBox } from 'element-plus';
+import { getAllCardGameRecords, triggerCardGameDraw } from '@/api/game';
 
 // 搜索表单
 const searchForm = reactive({
@@ -124,6 +137,7 @@ const searchForm = reactive({
 // 游戏记录数据
 const gameRecords = ref([]);
 const loading = ref(false);
+const drawLoading = ref(false);
 
 // 分页信息
 const pagination = reactive({
@@ -225,6 +239,40 @@ const formatDate = (dateString) => {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
 };
 
+// 手动触发开奖
+const handleTriggerDraw = async () => {
+  try {
+    await ElMessageBox.confirm(
+      '确定要手动触发今日开奖吗？此操作将开启最后一天的奖池，不可撤销！',
+      '确认操作',
+      {
+        confirmButtonText: '确认开奖',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    );
+    
+    drawLoading.value = true;
+    const response = await triggerCardGameDraw();
+    
+    ElMessage.success('开奖成功！');
+    console.log('开奖结果:', response.data);
+    
+    // 刷新数据
+    fetchGameRecords();
+  } catch (error) {
+    if (error === 'cancel') {
+      return;
+    }
+    
+    console.error('触发开奖失败:', error);
+    const errorMsg = error.response?.data?.message || '触发开奖失败';
+    ElMessage.error(errorMsg);
+  } finally {
+    drawLoading.value = false;
+  }
+};
+
 // 组件挂载后获取数据
 onMounted(() => {
   fetchGameRecords();
@@ -240,6 +288,10 @@ onMounted(() => {
   margin-bottom: 20px;
   font-size: 24px;
   color: #333;
+}
+
+.action-buttons {
+  margin-bottom: 20px;
 }
 
 .search-area {

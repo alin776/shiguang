@@ -28,6 +28,15 @@ export function getAllCardGameRecords(params) {
   return api.get('/games/card-game/all-records', { params });
 }
 
+/**
+ * 管理员手动触发开奖
+ * @returns {Promise} - axios promise
+ */
+export function triggerCardGameDraw() {
+  return api.post('/games/card-game/trigger-draw');
+}
+
 export default {
-  getAllCardGameRecords
+  getAllCardGameRecords,
+  triggerCardGameDraw
 }; 

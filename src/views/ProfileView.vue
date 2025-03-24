@@ -108,6 +108,13 @@
           </div>
           <div
             class="action-btn"
+            @click="router.push('/points/history')"
+          >
+            <el-icon><Tickets /></el-icon>
+            <span>积分明细</span>
+          </div>
+          <div
+            class="action-btn"
             @click="router.push('/games/card-game')"
           >
             <el-icon><TrendCharts /></el-icon>
@@ -291,6 +298,7 @@ import {
   Calendar,
   Goods,
   TrendCharts,
+  Tickets,
 } from "@element-plus/icons-vue";
 import BottomNavBar from "../components/BottomNavBar.vue";
 import useProfileLogic from "../mine/js/profile.js";

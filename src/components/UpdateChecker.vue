@@ -74,7 +74,7 @@ const downloadUpdate = async () => {
     await updateStore.downloadUpdate();
     ElNotification({
       title: '更新提示',
-      message: '更新已开始下载，请按照提示完成安装',
+      message: '正在跳转到下载页面，请点击下载并安装新版本',
       type: 'success',
       duration: 5000
     });
@@ -82,7 +82,7 @@ const downloadUpdate = async () => {
   } catch (error) {
     ElNotification({
       title: '更新失败',
-      message: error.message || '下载更新失败，请稍后重试',
+      message: error.message || '打开下载链接失败，请稍后重试',
       type: 'error',
       duration: 5000
     });

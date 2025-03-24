@@ -695,5 +695,28 @@ export const useAuthStore = defineStore("auth", {
         throw error.response?.data || error;
       }
     },
+
+    // 初始化认证，加载用户信息，检查token有效性
+    async initializeAuth() {
+      if (this.token) {
+        try {
+          // 检查token是否有效
+          const isValid = await this.checkAuth();
+          if (isValid) {
+            // 如果有效，获取最新的用户信息
+            await this.fetchUserInfo();
+          } else {
+            // 如果无效，清除登录状态
+            this.logout();
+          }
+        } catch (error) {
+          console.error("初始化认证失败:", error);
+          this.logout();
+        }
+      }
+      // 应用保存的主题
+      this.initializeTheme();
+      return this.isLoggedIn;
+    },
   },
 });

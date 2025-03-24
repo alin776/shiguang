@@ -1,5 +1,6 @@
 <template>
   <div class="submit-note-page">
+    <div class="safe-area-top"></div>
     <div class="header">
       <div class="header-left" @click="goBack">
         <el-icon><ArrowLeft /></el-icon>
@@ -24,7 +25,7 @@
         <el-input
           v-model="noteContent"
           type="textarea"
-          placeholder="分享你的想法..."
+          placeholder="投稿你觉得好的名言或诗歌，会有机会被收录到我们的名言墙哦~"
           :rows="6"
           maxlength="500"
           show-word-limit
@@ -371,11 +372,15 @@ onMounted(() => {
 
 <style scoped>
 .submit-note-page {
-  padding: 0;
-  min-height: 100vh;
+  height: 100vh;
   background-color: #ffffff;
   display: flex;
   flex-direction: column;
+}
+
+.safe-area-top {
+  height: var(--safe-area-top, 0);
+  width: 100%;
 }
 
 .header {

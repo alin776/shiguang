@@ -25,6 +25,7 @@ import ActivityDetailView from "../views/activities/ActivityDetailView.vue"; // 
 import PointsExchangeView from "../views/PointsExchangeView.vue"; // 添加积分兑换页面组件导入
 import CardGameView from "../views/CardGameView.vue"; // 添加卡牌游戏页面组件导入
 import AdView from "../views/AdView.vue"; // 添加广告页面组件导入
+import PointsHistoryView from "../views/points/PointsHistoryView.vue"; // 添加积分明细页面组件导入
 import { ref } from "vue";
 
 const routes = [
@@ -262,6 +263,12 @@ const routes = [
       requiresAuth: true,
       title: "积分兑换" 
     },
+  },
+  {
+    path: "/points/history",
+    name: "PointsHistory",
+    component: PointsHistoryView,
+    meta: { requiresAuth: true },
   },
   {
     path: "/games/card-game",

@@ -1,6 +1,8 @@
 <template>
   <div class="page-container">
     <div class="community-page">
+      <!-- 状态栏安全区域 -->
+      <div class="safe-area-top"></div>
       <!-- 顶部标题栏 -->
       <div class="page-header">
         <div class="search-bar">
@@ -956,20 +958,35 @@ const getTitleClass = (title) => {
 <style scoped>
 .page-container {
   min-height: 100vh;
-  background: linear-gradient(135deg, #f8f9fa, #f1f3f5);
-  padding-bottom: 70px; /* 为底部导航栏留出空间 */
-  padding-top: var(--safe-area-top); /* 添加顶部安全区域 */
+  background-color: #F8F9FC;
+  position: relative;
+  padding-top: var(--safe-area-top, 0); /* 顶部添加安全区域高度的padding */
+}
+
+.safe-area-top {
+  height: var(--safe-area-top, 0);
+  width: 100%;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 30;
+  background-color: transparent; /* 透明背景 */
 }
 
 .community-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  padding-top: 56px; /* 为fixed定位的header留出空间 */
   position: relative;
-  padding-top: 56px;
+  width: 100%;
 }
 
 /* 顶部搜索栏 */
 .page-header {
   position: fixed;
-  top: var(--safe-area-top); /* 修改顶部位置，考虑安全区域 */
+  top: var(--safe-area-top, 0); /* 从安全区域底部开始 */
   left: 0;
   right: 0;
   height: 56px;
