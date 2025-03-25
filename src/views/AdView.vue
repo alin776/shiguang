@@ -13,6 +13,9 @@
     <div class="content">
       <div class="ad-info">
         <p>通过观看广告可以获得时光币奖励</p>
+        <p class="reward-rules">
+          前10次每次25积分，11-15次每次15积分，16-20次每次10积分
+        </p>
       </div>
       
       <button 
@@ -27,7 +30,7 @@
       </button>
       
       <div class="watch-limit-info">
-        <span>今日已观看: {{ watchCount }}/5</span>
+        <span>今日已观看: {{ watchCount }}/20</span>
       </div>
     </div>
   </div>
@@ -58,7 +61,7 @@ const isRewardButtonDisabled = computed(() => {
 
 // 计算是否达到每日观看上限
 const isReachedDailyLimit = computed(() => {
-  return watchCount.value >= 5;
+  return watchCount.value >= 20; // 修改为20次
 });
 
 // 格式化冷却时间显示
@@ -301,12 +304,23 @@ const retryFailedPointsRequests = async () => {
   }
 };
 
+// 根据观看次数计算奖励积分
+const calculateRewardPoints = (count) => {
+  if (count <= 10) {
+    return 25; // 前10次每次25积分
+  } else if (count <= 15) {
+    return 15; // 第11-15次每次15积分
+  } else {
+    return 10; // 第16-20次每次10积分
+  }
+};
+
 // 观看广告后奖励积分
 const rewardUserAfterAd = async () => {
   try {
-    // 奖励30积分
-    const rewardPoints = 30;
-    console.log(`准备为用户添加${rewardPoints}积分奖励`);
+    // 根据当前观看次数计算奖励积分
+    const rewardPoints = calculateRewardPoints(watchCount.value);
+    console.log(`准备为用户添加${rewardPoints}积分奖励（第${watchCount.value}次观看）`);
     
     // 显示加载提示
     ElMessage({
@@ -674,5 +688,11 @@ onUnmounted(() => {
   text-align: center;
   font-size: 14px;
   color: #666;
+}
+
+.reward-rules {
+  font-size: 12px;
+  color: #888;
+  margin-top: 5px;
 }
 </style> 
