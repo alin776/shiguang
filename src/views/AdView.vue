@@ -383,110 +383,6 @@ const startCooldownTimer = () => {
   }, 1000);
 };
 
-// 广告SDK模拟
-const initHJAdsSdk = () => {
-  if (window.HJAdsSdk) {
-    return window.HJAdsSdk;
-  }
-
-  // 模拟SDK对象
-  const HJAdsSdk = {
-    // 激励视频广告类
-    HJAdsSdkRewardVideo: class {
-      constructor(request, listener) {
-        this.request = request;
-        this.listener = listener;
-        this.loaded = false;
-        console.log('创建激励视频广告实例', request);
-        
-        // 保存实例到全局，方便访问
-        window.HJAdsSdk.lastRewardAd = this;
-      }
-        
-      // 加载广告
-      loadAd() {
-        console.log('开始加载激励视频广告', this.request);
-        
-        // 模拟延迟加载，2秒后回调成功
-        setTimeout(() => {
-          if (Math.random() > 0.1) { // 90%概率加载成功
-            this.loaded = true;
-            if (this.listener && this.listener.onAdLoadSuccess) {
-              this.listener.onAdLoadSuccess(this.request?.placementId || '8325559368471521');
-            }
-          } else {
-            // 模拟加载失败情况
-            if (this.listener && this.listener.onAdLoadFailure) {
-              this.listener.onAdLoadFailure(
-                this.request?.placementId || '8325559368471521',
-                -1,
-                '模拟加载失败'
-              );
-            }
-            // 重置广告播放状态
-            isAdPlaying.value = false;
-          }
-        }, 1000);
-      }
-        
-      // 展示广告
-      showAd() {
-        if (!this.loaded) {
-          console.error('广告尚未加载完成，无法展示');
-          if (this.listener && this.listener.onAdShowFailure) {
-            this.listener.onAdShowFailure(
-              this.request?.placementId || '8325559368471521',
-              -1,
-              '广告尚未加载完成'
-            );
-          }
-          // 重置广告播放状态
-          isAdPlaying.value = false;
-          return;
-        }
-          
-        console.log('模拟展示激励视频广告');
-          
-        // 模拟广告展示成功回调
-        if (this.listener && this.listener.onAdShowSuccess) {
-          this.listener.onAdShowSuccess(this.request?.placementId || '8325559368471521');
-        }
-          
-        // 模拟延迟3秒后广告被点击
-        setTimeout(() => {
-          if (this.listener && this.listener.onAdClick) {
-            this.listener.onAdClick(this.request?.placementId || '8325559368471521');
-          }
-        }, 3000);
-          
-        // 模拟延迟5秒后广告关闭
-        setTimeout(() => {
-          // 模拟用户获得奖励
-          if (this.listener && this.listener.onAdRewarded) {
-            this.listener.onAdRewarded({
-              amount: 10,
-              type: 'coin',
-              success: true
-            });
-          }
-          
-          // 模拟广告关闭回调
-          setTimeout(() => {
-            if (this.listener && this.listener.onAdClose) {
-              this.listener.onAdClose(this.request?.placementId || '8325559368471521');
-            }
-            // 重置广告播放状态
-            isAdPlaying.value = false;
-          }, 1000);
-        }, 5000);
-      }
-    }
-  };
-    
-  window.HJAdsSdk = HJAdsSdk;
-  return HJAdsSdk;
-};
-
 // 观看激励视频广告
 const watchRewardAd = async () => {
   // 检查是否已经在播放广告，如果是则直接返回
@@ -501,58 +397,29 @@ const watchRewardAd = async () => {
     return;
   }
 
-  // 检查是否在冷却期
-  if (cooldownSeconds.value > 0) {
-    ElMessage.warning(`请等待 ${cooldownTimeLeft.value} 后再观看`);
-    return;
-  }
+  // 取消CD检查
+  // if (cooldownSeconds.value > 0) {
+  //   ElMessage.warning(`请等待 ${cooldownTimeLeft.value} 后再观看`);
+  //   return;
+  // }
 
   // 设置为正在播放广告状态
   isAdPlaying.value = true;
 
+  // 使用Capacitor插件调用
   try {
-    // 尝试直接调用原生方法
-    if (window.android && window.android.showRewardAd) {
-      const request = {
-        placementId: '2143416663235220', // 激励视频广告位ID
-        userId: authStore.user?.id?.toString() || '', // 从authStore获取用户ID
-        options: {}
-      };
-      
-      console.log('准备调用原生方法展示激励视频广告');
-      window.android.showRewardAd(JSON.stringify(request));
-      return;
-    }
+    console.log('准备通过插件展示激励视频广告');
     
-    // 测试环境使用模拟SDK
-    console.log('测试环境，使用模拟广告SDK');
-    const HJAdsSdk = await initHJAdsSdk();
-    
-    // 创建广告请求
-    const request = {
-      placementId: '8325559368471521', // 替换为实际的激励视频广告位ID
+    // 调用插件方法
+    const result = await window.Capacitor.Plugins.RewardAd.showRewardAd({
+      placementId: '7996454374369345',
       userId: authStore.user?.id?.toString() || '',
-      options: {}
-    };
+    });
     
-    // 创建并加载激励视频广告
-    const rewardAd = new HJAdsSdk.HJAdsSdkRewardVideo(
-      request,
-      {
-        onAdLoadSuccess: (placementId) => onRewardAdLoadSuccess(placementId),
-        onAdLoadFailure: (placementId, errCode, errMsg) => onRewardAdLoadFailure(placementId, errCode, errMsg),
-        onAdShowSuccess: (placementId) => onRewardAdShowSuccess(placementId),
-        onAdShowFailure: (placementId, errCode, errMsg) => onRewardAdShowFailure(placementId, errCode, errMsg),
-        onAdClick: (placementId) => onRewardAdClick(placementId),
-        onAdClose: (placementId) => onRewardAdClose(placementId),
-        onAdRewarded: (reward) => onRewardAdRewarded(reward)
-      }
-    );
-    
-    rewardAd.loadAd();
+    console.log('广告展示成功，获得奖励:', result);
   } catch (error) {
     console.error('加载激励视频广告失败:', error);
-    ElMessage.error('加载激励视频广告失败，请稍后再试');
+    ElMessage.error('广告加载失败，请稍后再试');
     // 重置广告播放状态
     isAdPlaying.value = false;
   }
@@ -612,22 +479,26 @@ const setupAndroidCallbacks = () => {
         const reward = JSON.parse(rewardJson);
         console.log('安卓回调: 用户获得奖励', reward);
         
-        // 设置冷却时间和增加观看次数
-        cooldownSeconds.value = 5 * 60; // 5分钟 = 300秒
+        // 增加观看次数，但不设置冷却时间
+        // cooldownSeconds.value = 5 * 60; // 5分钟 = 300秒
+        cooldownSeconds.value = 0; // 取消CD时间
         watchCount.value++;
         saveWatchData();
-        startCooldownTimer();
+        // 不再启动冷却计时器
+        // startCooldownTimer();
         
         // 奖励积分
         rewardUserAfterAd();
       } catch (e) {
         console.log('安卓回调: 用户获得奖励，JSON解析失败', rewardJson);
         
-        // 设置冷却时间和增加观看次数
-        cooldownSeconds.value = 5 * 60; // 5分钟 = 300秒
+        // 增加观看次数，但不设置冷却时间
+        // cooldownSeconds.value = 5 * 60; // 5分钟 = 300秒
+        cooldownSeconds.value = 0; // 取消CD时间
         watchCount.value++;
         saveWatchData();
-        startCooldownTimer();
+        // 不再启动冷却计时器
+        // startCooldownTimer();
         
         // 奖励积分
         rewardUserAfterAd();
@@ -640,51 +511,17 @@ const setupAndroidCallbacks = () => {
   }
 };
 
-// 添加模拟SDK的广告回调处理器
-// 激励视频广告加载成功回调
-const onRewardAdLoadSuccess = (placementId) => {
-  console.log('激励视频广告加载成功', placementId);
-  // 广告加载成功后自动展示
-  if (window.HJAdsSdk) {
-    window.HJAdsSdk.lastRewardAd?.showAd();
-  }
-};
-
-// 激励视频广告加载失败回调
-const onRewardAdLoadFailure = (placementId, errCode, errMsg) => {
-  console.error('激励视频广告加载失败', placementId, errCode, errMsg);
-  // 重置广告播放状态
-  isAdPlaying.value = false;
-  ElMessage.error('广告加载失败，请稍后再试');
-};
-
-// 激励视频广告展示成功回调
-const onRewardAdShowSuccess = (placementId) => {
-  console.log('激励视频广告展示成功', placementId);
-};
-
-// 激励视频广告展示失败回调
-const onRewardAdShowFailure = (placementId, errCode, errMsg) => {
-  console.error('激励视频广告展示失败', placementId, errCode, errMsg);
-  // 重置广告播放状态
-  isAdPlaying.value = false;
-  ElMessage.error('广告展示失败，请稍后再试');
-};
-
-// 激励视频广告点击回调
-const onRewardAdClick = (placementId) => {
-  console.log('激励视频广告被点击', placementId);
-};
-
-// 激励视频广告奖励回调
+// 激励视频广告奖励回调（用于模拟环境，实际环境不会调用）
 const onRewardAdRewarded = (reward) => {
   console.log('用户获得奖励', reward);
   
-  // 设置冷却时间和增加观看次数
-  cooldownSeconds.value = 5 * 60; // 5分钟 = 300秒
+  // 不再设置冷却时间，只增加观看次数
+  // cooldownSeconds.value = 5 * 60; // 5分钟 = 300秒
+  cooldownSeconds.value = 0; // 取消CD时间
   watchCount.value++;
   saveWatchData();
-  startCooldownTimer();
+  // 不再启动冷却计时器
+  // startCooldownTimer();
   
   // 奖励积分
   rewardUserAfterAd();
@@ -707,6 +544,30 @@ onMounted(() => {
   // 设置安卓回调
   setupAndroidCallbacks();
   
+  // 添加Capacitor插件事件监听
+  window.Capacitor.Plugins.RewardAd.addListener('onRewardAdRewarded', (reward) => {
+    console.log('Capacitor插件回调: 获得奖励', reward);
+    
+    // 增加观看次数
+    cooldownSeconds.value = 0; // 取消CD时间
+    watchCount.value++;
+    saveWatchData();
+    
+    // 奖励积分
+    rewardUserAfterAd();
+  });
+  
+  window.Capacitor.Plugins.RewardAd.addListener('onRewardAdClosed', () => {
+    console.log('Capacitor插件回调: 广告关闭');
+    isAdPlaying.value = false;
+  });
+  
+  window.Capacitor.Plugins.RewardAd.addListener('onRewardAdLoadFailed', (error) => {
+    console.error('Capacitor插件回调: 广告加载失败', error);
+    isAdPlaying.value = false;
+    ElMessage.error('广告加载失败，请稍后再试');
+  });
+  
   // 尝试同步失败的积分请求
   retryFailedPointsRequests();
   
@@ -722,6 +583,9 @@ onUnmounted(() => {
     clearInterval(cooldownTimer.value);
     cooldownTimer.value = null;
   }
+  
+  // 移除Capacitor插件事件监听
+  window.Capacitor.Plugins.RewardAd.removeAllListeners();
   
   // 页面卸载时保存观看数据
   saveWatchData();

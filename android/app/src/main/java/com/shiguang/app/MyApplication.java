@@ -1,7 +1,8 @@
 package com.shiguang.app;
 
 import android.app.Application;
-import com.hj.ads.HJAdsSdk;
+// 尝试com.hj.ads包名
+import com.hzhj.openads.HJAdsSdk;
 
 public class MyApplication extends Application {
     @Override
@@ -21,6 +22,6 @@ public class MyApplication extends Application {
         ads.setDebugEnable(false);
         
         // 使用appId启动SDK
-        ads.startWithAppId(this, "48537"); // 使用正确的AppID
+        ads.startWithAppId(this, "56944"); // 更新为图片中的AppID
     }
 } 

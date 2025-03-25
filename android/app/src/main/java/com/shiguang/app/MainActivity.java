@@ -9,6 +9,9 @@ import com.getcapacitor.BridgeActivity;
 public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        // 注册自定义插件
+        registerPlugin(RewardAdPlugin.class);
+        
         super.onCreate(savedInstanceState);
         
         // 设置状态栏为透明

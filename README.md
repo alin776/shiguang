@@ -414,8 +414,7 @@ const appVersions = {
 {
   "name": "shiguang",
   "private": true,
-  "version": "1.1.0", // 更新版本号
-  // ...
+  "version": "1.1.0"
 }
 ```
 
