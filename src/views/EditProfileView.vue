@@ -1,20 +1,14 @@
 <template>
   <div class="edit-profile-page">
-    <!-- 页面头部 -->
+    <!-- 标题栏 -->
     <div class="page-header">
-      <!-- 添加状态栏安全区域占位 -->
-      <div class="safe-area-top"></div>
       <div class="header-content">
-        <div class="left-section">
-          <el-icon class="back-icon" @click="router.back()"><ArrowLeft /></el-icon>
+        <div class="left-btn" @click="goBack">
+          <el-icon><ArrowLeft /></el-icon>
         </div>
-        <div class="center-section">
-          <h2>编辑个人资料</h2>
-        </div>
-        <div class="right-section">
-          <button class="save-btn" :disabled="saving" @click="saveProfile">
-            {{ saving ? "保存中..." : "保存" }}
-          </button>
+        <div class="title">编辑个人资料</div>
+        <div class="right-btn" @click="saveProfile" :class="{ disabled: !canSave }">
+          保存
         </div>
       </div>
     </div>
@@ -330,11 +324,6 @@ const displayCover = computed(() => {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
-.safe-area-top {
-  height: var(--safe-area-top, 0);
-  width: 100%;
-}
-
 .header-content {
   display: flex;
   align-items: center;
@@ -342,39 +331,23 @@ const displayCover = computed(() => {
   width: 100%;
 }
 
-.left-section {
+.left-btn {
   flex: 1;
   display: flex;
   align-items: center;
   padding-left: 16px;
 }
 
-.center-section {
+.title {
   flex: 2;
   text-align: center;
 }
 
-.right-section {
+.right-btn {
   flex: 1;
   display: flex;
   justify-content: flex-end;
   padding-right: 16px;
-}
-
-.back-icon {
-  font-size: 20px;
-  color: #333333;
-  cursor: pointer;
-}
-
-.center-section h2 {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 500;
-  color: #333333;
-}
-
-.save-btn {
   background-color: #4e95ff;
   color: #ffffff;
   border: none;
@@ -385,11 +358,11 @@ const displayCover = computed(() => {
   transition: background-color 0.3s;
 }
 
-.save-btn:hover {
+.right-btn:hover {
   background-color: #3a85f0;
 }
 
-.save-btn:disabled {
+.right-btn:disabled {
   opacity: 0.7;
   cursor: not-allowed;
 }

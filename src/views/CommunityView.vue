@@ -1,8 +1,6 @@
 <template>
   <div class="page-container">
     <div class="community-page">
-      <!-- 状态栏安全区域 -->
-      <div class="safe-area-top"></div>
       <!-- 顶部标题栏 -->
       <div class="page-header">
         <div class="search-bar">
@@ -960,18 +958,6 @@ const getTitleClass = (title) => {
   min-height: 100vh;
   background-color: #F8F9FC;
   position: relative;
-  padding-top: var(--safe-area-top, 0); /* 顶部添加安全区域高度的padding */
-}
-
-.safe-area-top {
-  height: var(--safe-area-top, 0);
-  width: 100%;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 30;
-  background-color: transparent; /* 透明背景 */
 }
 
 .community-page {
@@ -986,7 +972,7 @@ const getTitleClass = (title) => {
 /* 顶部搜索栏 */
 .page-header {
   position: fixed;
-  top: var(--safe-area-top, 0); /* 从安全区域底部开始 */
+  top: 0;
   left: 0;
   right: 0;
   height: 56px;

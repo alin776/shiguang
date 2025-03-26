@@ -3,9 +3,6 @@
     <div class="notifications-page">
       <!-- 顶部标题栏 -->
       <div class="page-header">
-        <!-- 添加状态栏安全区域占位 -->
-        <div class="safe-area-top"></div>
-        
         <div class="header-title">
           <h2>通知</h2>
         </div>
@@ -398,11 +395,6 @@ onMounted(() => {
   justify-content: space-between;
   padding: 0 16px;
   height: 56px;
-}
-
-.safe-area-top {
-  height: var(--safe-area-top, 0);
-  width: 100%;
 }
 
 .header-title h2 {

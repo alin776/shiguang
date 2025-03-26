@@ -23,6 +23,14 @@
           :src="post.images[currentImageIndex]"
           :alt="post.title"
           class="main-image"
+          @touchstart.prevent="handleTouchStart($event, post.images[currentImageIndex])"
+          @touchend.prevent="handleTouchEnd"
+          @touchmove.prevent
+          @contextmenu.prevent="showImageMenu($event, post.images[currentImageIndex])"
+          @click="previewImage(post.images[currentImageIndex])"
+          crossorigin="anonymous"
+          loading="lazy"
+          referrerpolicy="no-referrer"
         />
         <div class="image-indicator" v-if="post.images.length > 1">
           {{ currentImageIndex + 1 }}/{{ post.images.length }}
@@ -34,7 +42,9 @@
     <div class="post-content">
       <h3 class="post-title" v-if="post.title">{{ post.title }}</h3>
       <h3 class="post-title" v-else>无标题</h3>
-      <p class="post-text">{{ post.content }}</p>
+      <p class="post-text" 
+         @touchstart="handleTextTouchStart($event)" 
+         @touchend="handleTextTouchEnd">{{ post.content }}</p>
       
       <!-- 音频播放器 - 改进设计 -->
       <div v-if="post.audio" class="audio-container">
@@ -103,6 +113,7 @@
 import { ref, computed, onMounted, onUpdated, watch } from "vue";
 import { ArrowLeft, ArrowRight, VideoPlay, VideoPause } from "@element-plus/icons-vue";
 import { API_BASE_URL } from "@/config";
+import { ElMessage } from "element-plus";
 
 const props = defineProps({
   post: {
@@ -328,6 +339,350 @@ const getWaveformOpacity = (index, currentTime, totalDuration) => {
   } else {
     return 0.3;
   }
+};
+
+// 长按相关变量和函数
+let longPressTimer = null;
+let textLongPressTimer = null; 
+const longPressDuration = 500; // 毫秒
+
+// 处理图片触摸开始
+const handleTouchStart = (event, imageUrl) => {
+  event.preventDefault();
+  // 开始长按计时
+  longPressTimer = setTimeout(() => {
+    // 显示确认对话框而不是直接保存
+    showSaveImageConfirm(imageUrl);
+  }, longPressDuration);
+};
+
+// 处理图片触摸结束
+const handleTouchEnd = () => {
+  // 清除长按计时器
+  if (longPressTimer) {
+    clearTimeout(longPressTimer);
+    longPressTimer = null;
+  }
+};
+
+// 显示图片上下文菜单
+const showImageMenu = (event, image) => {
+  // 创建自定义菜单
+  const menuDiv = document.createElement('div');
+  menuDiv.className = 'custom-context-menu';
+  menuDiv.style.position = 'fixed';
+  menuDiv.style.zIndex = '3000';
+  menuDiv.style.background = '#fff';
+  menuDiv.style.boxShadow = '0 2px 12px 0 rgba(0, 0, 0, 0.1)';
+  menuDiv.style.borderRadius = '4px';
+  menuDiv.style.padding = '5px 0';
+  menuDiv.style.width = '140px';
+  
+  // 设置位置
+  if (event.clientX && event.clientY) {
+    menuDiv.style.left = `${event.clientX}px`;
+    menuDiv.style.top = `${event.clientY}px`;
+  } else {
+    // 触摸事件没有clientX/Y，使用触摸点坐标
+    const touch = event.touches ? event.touches[0] : event;
+    menuDiv.style.left = `${touch.clientX}px`;
+    menuDiv.style.top = `${touch.clientY}px`;
+  }
+  
+  // 添加到文档
+  document.body.appendChild(menuDiv);
+  
+  // 添加选项
+  const saveOption = document.createElement('div');
+  saveOption.className = 'menu-option';
+  saveOption.style.padding = '12px 16px';
+  saveOption.style.cursor = 'pointer';
+  saveOption.innerText = '保存图片';
+  saveOption.addEventListener('click', () => {
+    saveImage(image);
+    document.body.removeChild(menuDiv);
+  });
+  
+  const cancelOption = document.createElement('div');
+  cancelOption.className = 'menu-option';
+  cancelOption.style.padding = '12px 16px';
+  cancelOption.style.cursor = 'pointer';
+  cancelOption.style.borderTop = '1px solid #eee';
+  cancelOption.innerText = '取消';
+  cancelOption.addEventListener('click', () => {
+    document.body.removeChild(menuDiv);
+  });
+  
+  menuDiv.appendChild(saveOption);
+  menuDiv.appendChild(cancelOption);
+  
+  // 点击其他地方关闭菜单
+  const closeMenu = (e) => {
+    if (!menuDiv.contains(e.target)) {
+      // 添加检查确保菜单元素仍然在DOM中
+      if (document.body.contains(menuDiv)) {
+        document.body.removeChild(menuDiv);
+      }
+      document.removeEventListener('click', closeMenu);
+    }
+  };
+  
+  // 延迟添加事件，避免立即触发
+  setTimeout(() => {
+    document.addEventListener('click', closeMenu);
+  }, 100);
+};
+
+// 保存图片
+const saveImage = (url) => {
+  try {
+    // 对于移动端浏览器，使用 fetch 请求图片并创建 Blob 对象
+    fetch(url)
+      .then(response => response.blob())
+      .then(blob => {
+        // 创建 Blob URL
+        const blobUrl = URL.createObjectURL(blob);
+        
+        // 创建下载链接
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = 'image_' + new Date().getTime() + '.jpg';
+        link.style.display = 'none';
+        
+        // 添加到文档并触发点击
+        document.body.appendChild(link);
+        link.click();
+        
+        // 清理
+        setTimeout(() => {
+          document.body.removeChild(link);
+          URL.revokeObjectURL(blobUrl);
+        }, 100);
+      })
+      .catch(error => {
+        console.error('保存图片失败:', error);
+        ElMessage.error('保存图片失败，请稍后重试');
+        
+        // 失败时使用备用方法
+        fallbackSaveImage(url);
+      });
+  } catch (error) {
+    console.error('保存图片出错:', error);
+    // 使用备用方法
+    fallbackSaveImage(url);
+  }
+};
+
+// 备用保存图片方法
+const fallbackSaveImage = (url) => {
+  // 创建一个隐藏的a元素并触发下载
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'image_' + new Date().getTime() + '.jpg';
+  a.target = '_blank'; // 增加 target 属性
+  a.rel = 'noopener noreferrer'; // 安全属性
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+};
+
+// 文本长按复制
+const handleTextTouchStart = (event) => {
+  // 开始长按计时
+  textLongPressTimer = setTimeout(() => {
+    copyTextToClipboard(props.post.content);
+    ElMessage.success("文本已复制到剪贴板");
+  }, longPressDuration);
+};
+
+const handleTextTouchEnd = () => {
+  // 清除长按计时器
+  if (textLongPressTimer) {
+    clearTimeout(textLongPressTimer);
+    textLongPressTimer = null;
+  }
+};
+
+// 复制文本到剪贴板
+const copyTextToClipboard = (text) => {
+  if (!text) return;
+  
+  // 使用Clipboard API(现代浏览器)
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text)
+      .catch(err => {
+        console.error('无法复制文本:', err);
+        fallbackCopyTextToClipboard(text);
+      });
+  } else {
+    fallbackCopyTextToClipboard(text);
+  }
+};
+
+// 后备复制方法
+const fallbackCopyTextToClipboard = (text) => {
+  // 创建一个临时文本区域元素
+  const textArea = document.createElement('textarea');
+  textArea.value = text;
+  textArea.style.position = 'fixed';  // 避免滚动到底部
+  textArea.style.left = '-999999px';
+  textArea.style.top = '-999999px';
+  document.body.appendChild(textArea);
+  textArea.focus();
+  textArea.select();
+  
+  try {
+    document.execCommand('copy');
+  } catch (err) {
+    console.error('复制文本失败:', err);
+  }
+  
+  document.body.removeChild(textArea);
+};
+
+// 预览图片
+const previewImage = (url) => {
+  const previewDialog = document.createElement('div');
+  previewDialog.className = 'image-preview-dialog';
+  
+  const previewImg = document.createElement('img');
+  previewImg.src = url;
+  previewImg.className = 'preview-image';
+  
+  // 添加关闭按钮
+  const closeButton = document.createElement('div');
+  closeButton.className = 'preview-close-btn';
+  closeButton.innerHTML = '×';
+  closeButton.addEventListener('click', (e) => {
+    e.stopPropagation();
+    document.body.removeChild(previewDialog);
+    // 恢复页面滚动
+    document.body.style.overflow = '';
+  });
+  
+  previewDialog.appendChild(previewImg);
+  previewDialog.appendChild(closeButton);
+  document.body.appendChild(previewDialog);
+  
+  // 禁止页面滚动
+  document.body.style.overflow = 'hidden';
+  
+  previewDialog.addEventListener('click', () => {
+    document.body.removeChild(previewDialog);
+    // 恢复页面滚动
+    document.body.style.overflow = '';
+  });
+  
+  // 处理移动设备上的滑动手势
+  let startY = 0;
+  let startX = 0;
+  
+  previewDialog.addEventListener('touchstart', (e) => {
+    startY = e.touches[0].clientY;
+    startX = e.touches[0].clientX;
+  });
+  
+  previewDialog.addEventListener('touchmove', (e) => {
+    const currentY = e.touches[0].clientY;
+    const currentX = e.touches[0].clientX;
+    
+    // 垂直滑动超过50px或水平滑动超过100px时关闭预览
+    if (Math.abs(currentY - startY) > 50 || Math.abs(currentX - startX) > 100) {
+      document.body.removeChild(previewDialog);
+      document.body.style.overflow = '';
+    }
+  });
+};
+
+// 显示保存图片确认对话框
+const showSaveImageConfirm = (imageUrl) => {
+  // 创建确认对话框
+  const confirmDialog = document.createElement('div');
+  confirmDialog.className = 'save-image-confirm-dialog';
+  confirmDialog.style.position = 'fixed';
+  confirmDialog.style.top = '50%';
+  confirmDialog.style.left = '50%';
+  confirmDialog.style.transform = 'translate(-50%, -50%)';
+  confirmDialog.style.backgroundColor = '#fff';
+  confirmDialog.style.borderRadius = '12px';
+  confirmDialog.style.padding = '20px';
+  confirmDialog.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+  confirmDialog.style.width = '80%';
+  confirmDialog.style.maxWidth = '300px';
+  confirmDialog.style.zIndex = '10000';
+  confirmDialog.style.textAlign = 'center';
+
+  // 添加标题
+  const title = document.createElement('div');
+  title.textContent = '保存图片';
+  title.style.fontWeight = 'bold';
+  title.style.fontSize = '18px';
+  title.style.marginBottom = '15px';
+  confirmDialog.appendChild(title);
+
+  // 添加提示文字
+  const message = document.createElement('div');
+  message.textContent = '是否保存该图片到相册？';
+  message.style.marginBottom = '20px';
+  message.style.color = '#555';
+  confirmDialog.appendChild(message);
+
+  // 添加按钮容器
+  const buttonContainer = document.createElement('div');
+  buttonContainer.style.display = 'flex';
+  buttonContainer.style.justifyContent = 'space-between';
+  confirmDialog.appendChild(buttonContainer);
+
+  // 添加取消按钮
+  const cancelButton = document.createElement('button');
+  cancelButton.textContent = '取消';
+  cancelButton.style.flex = '1';
+  cancelButton.style.padding = '10px';
+  cancelButton.style.marginRight = '10px';
+  cancelButton.style.border = '1px solid #eee';
+  cancelButton.style.borderRadius = '8px';
+  cancelButton.style.backgroundColor = '#f5f5f5';
+  cancelButton.style.color = '#666';
+  cancelButton.addEventListener('click', () => {
+    document.body.removeChild(confirmDialog);
+    document.body.removeChild(overlay);
+  });
+  buttonContainer.appendChild(cancelButton);
+
+  // 添加确认按钮
+  const confirmButton = document.createElement('button');
+  confirmButton.textContent = '保存';
+  confirmButton.style.flex = '1';
+  confirmButton.style.padding = '10px';
+  confirmButton.style.border = 'none';
+  confirmButton.style.borderRadius = '8px';
+  confirmButton.style.backgroundColor = '#1677ff';
+  confirmButton.style.color = '#fff';
+  confirmButton.addEventListener('click', () => {
+    saveImage(imageUrl);
+    ElMessage.success("图片已保存到相册");
+    document.body.removeChild(confirmDialog);
+    document.body.removeChild(overlay);
+  });
+  buttonContainer.appendChild(confirmButton);
+
+  // 添加半透明遮罩
+  const overlay = document.createElement('div');
+  overlay.style.position = 'fixed';
+  overlay.style.top = '0';
+  overlay.style.left = '0';
+  overlay.style.width = '100%';
+  overlay.style.height = '100%';
+  overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+  overlay.style.zIndex = '9999';
+  overlay.addEventListener('click', () => {
+    document.body.removeChild(confirmDialog);
+    document.body.removeChild(overlay);
+  });
+
+  // 将对话框和遮罩添加到文档
+  document.body.appendChild(overlay);
+  document.body.appendChild(confirmDialog);
 };
 </script>
 
@@ -603,5 +958,61 @@ const getWaveformOpacity = (index, currentTime, totalDuration) => {
   cursor: pointer;
   z-index: 3;
   margin: 0;
+}
+
+/* 图片预览对话框样式 */
+.image-preview-dialog {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  flex-direction: column;
+  touch-action: none;
+}
+
+.preview-image {
+  max-width: 90%;
+  max-height: 90%;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.preview-close-btn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 40px;
+  height: 40px;
+  background-color: rgba(0, 0, 0, 0.6);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  font-size: 24px;
+  line-height: 1;
+  z-index: 10000;
+}
+
+@media screen and (max-width: 480px) {
+  .preview-image {
+    max-width: 95%;
+    max-height: 80%;
+  }
+  
+  .preview-close-btn {
+    top: 15px;
+    right: 15px;
+    width: 36px;
+    height: 36px;
+  }
 }
 </style>

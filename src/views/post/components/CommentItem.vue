@@ -32,7 +32,11 @@
           <div class="comment-time">{{ formatTime(comment.created_at || new Date()) }}</div>
         </div>
       </div>
-      <div class="comment-text">{{ comment.content || "" }}</div>
+      <div 
+        class="comment-text" 
+        @touchstart="handleCommentTextTouchStart($event, comment.content)" 
+        @touchend="handleCommentTextTouchEnd"
+      >{{ comment.content || "" }}</div>
       
       <!-- 评论图片 -->
       <div v-if="comment.images && Array.isArray(parseImages(comment.images)) && parseImages(comment.images).length > 0" class="comment-images">
@@ -44,7 +48,16 @@
           @touchstart="handleTouchStart($event, image)"
           @touchend="handleTouchEnd"
         >
-          <img :src="processImageUrl(image)" @error="handleImageError" alt="评论图片" class="comment-image" @click="previewImage(image)" />
+          <img 
+            :src="processImageUrl(image)" 
+            @error="handleImageError" 
+            alt="评论图片" 
+            class="comment-image" 
+            @click="previewImage(image)" 
+            crossorigin="anonymous"
+            loading="lazy"
+            referrerpolicy="no-referrer"
+          />
         </div>
       </div>
       
@@ -134,7 +147,11 @@
             </div>
             <span class="reply-time">{{ formatTime(reply.created_at) }}</span>
           </div>
-          <div class="reply-text">{{ reply.content }}</div>
+          <div 
+            class="reply-text"
+            @touchstart="handleCommentTextTouchStart($event, reply.content)" 
+            @touchend="handleCommentTextTouchEnd"
+          >{{ reply.content }}</div>
           
           <!-- 回复图片 -->
           <div v-if="reply.images && Array.isArray(parseImages(reply.images)) && parseImages(reply.images).length > 0" class="reply-images">
@@ -146,7 +163,16 @@
               @touchstart="handleTouchStart($event, image)"
               @touchend="handleTouchEnd"
             >
-              <img :src="processImageUrl(image)" @error="handleImageError" alt="回复图片" class="reply-image" @click="previewImage(image)" />
+              <img 
+                :src="processImageUrl(image)" 
+                @error="handleImageError" 
+                alt="回复图片" 
+                class="reply-image" 
+                @click="previewImage(image)" 
+                crossorigin="anonymous"
+                loading="lazy"
+                referrerpolicy="no-referrer"
+              />
             </div>
           </div>
           
@@ -590,6 +616,7 @@ const previewImage = (url) => {
 
 // 长按定时器
 let longPressTimer = null;
+let textLongPressTimer = null;
 const longPressDuration = 500; // 毫秒
 
 // 处理触摸开始
@@ -696,9 +723,52 @@ const showImageMenu = (event, image) => {
 
 // 保存图片
 const saveImage = (url) => {
+  try {
+    // 对于移动端浏览器，使用 fetch 请求图片并创建 Blob 对象
+    fetch(url)
+      .then(response => response.blob())
+      .then(blob => {
+        // 创建 Blob URL
+        const blobUrl = URL.createObjectURL(blob);
+        
+        // 创建下载链接
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = 'image_' + new Date().getTime() + '.jpg';
+        link.style.display = 'none';
+        
+        // 添加到文档并触发点击
+        document.body.appendChild(link);
+        link.click();
+        
+        // 清理
+        setTimeout(() => {
+          document.body.removeChild(link);
+          URL.revokeObjectURL(blobUrl);
+        }, 100);
+      })
+      .catch(error => {
+        console.error('保存图片失败:', error);
+        ElMessage.error('保存图片失败，请稍后重试');
+        
+        // 失败时使用备用方法
+        fallbackSaveImage(url);
+      });
+  } catch (error) {
+    console.error('保存图片出错:', error);
+    // 使用备用方法
+    fallbackSaveImage(url);
+  }
+};
+
+// 备用保存图片方法
+const fallbackSaveImage = (url) => {
+  // 创建一个隐藏的a元素并触发下载
   const a = document.createElement('a');
   a.href = url;
   a.download = 'image_' + new Date().getTime() + '.jpg';
+  a.target = '_blank'; // 增加 target 属性
+  a.rel = 'noopener noreferrer'; // 安全属性
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -707,6 +777,19 @@ const saveImage = (url) => {
 // 添加到表情包
 const addToEmojis = async (url) => {
   try {
+    // 先检查能否访问图片资源
+    try {
+      const imgResponse = await fetch(url, { method: 'HEAD' });
+      if (!imgResponse.ok) {
+        console.error('图片资源不可访问:', imgResponse.status);
+        ElMessage.error('无法访问该图片资源');
+        return;
+      }
+    } catch (fetchError) {
+      console.error('检查图片资源失败:', fetchError);
+      // 继续执行，后端可能有自己的方式处理这个URL
+    }
+    
     const authStore = useAuthStore();
     const response = await fetch(`${API_BASE_URL}/api/community/emojis`, {
       method: 'POST',
@@ -723,7 +806,8 @@ const addToEmojis = async (url) => {
       ElMessage.success('已添加到表情包');
     } else {
       // 仅在响应不成功时显示错误消息
-      ElMessage.error('添加失败');
+      const errorData = await response.json().catch(() => ({}));
+      ElMessage.error(errorData.message || '添加失败');
     }
   } catch (error) {
     console.error('添加表情包失败:', error);
@@ -754,6 +838,61 @@ const replyToReply = (commentId, replyToUserId, replyToUsername) => {
     replyToUserId: replyToUserId || null,
     replyToUsername: replyToUsername || ''
   });
+};
+
+// 处理评论文本长按开始
+const handleCommentTextTouchStart = (event, text) => {
+  // 开始长按计时
+  textLongPressTimer = setTimeout(() => {
+    copyTextToClipboard(text);
+    ElMessage.success("文本已复制到剪贴板");
+  }, longPressDuration);
+};
+
+// 处理评论文本长按结束
+const handleCommentTextTouchEnd = () => {
+  // 清除长按计时器
+  if (textLongPressTimer) {
+    clearTimeout(textLongPressTimer);
+    textLongPressTimer = null;
+  }
+};
+
+// 复制文本到剪贴板
+const copyTextToClipboard = (text) => {
+  if (!text) return;
+  
+  // 使用Clipboard API(现代浏览器)
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text)
+      .catch(err => {
+        console.error('无法复制文本:', err);
+        fallbackCopyTextToClipboard(text);
+      });
+  } else {
+    fallbackCopyTextToClipboard(text);
+  }
+};
+
+// 后备复制方法
+const fallbackCopyTextToClipboard = (text) => {
+  // 创建一个临时文本区域元素
+  const textArea = document.createElement('textarea');
+  textArea.value = text;
+  textArea.style.position = 'fixed';  // 避免滚动到底部
+  textArea.style.left = '-999999px';
+  textArea.style.top = '-999999px';
+  document.body.appendChild(textArea);
+  textArea.focus();
+  textArea.select();
+  
+  try {
+    document.execCommand('copy');
+  } catch (err) {
+    console.error('复制文本失败:', err);
+  }
+  
+  document.body.removeChild(textArea);
 };
 </script>
 

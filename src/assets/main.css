@@ -1,10 +1,4 @@
 :root {
-  /* 安全区域变量 */
-  --safe-area-top: env(safe-area-inset-top, 20px);
-  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
-  --safe-area-left: env(safe-area-inset-left, 0px);
-  --safe-area-right: env(safe-area-inset-right, 0px);
-  
   /* 用于原生/Web调试的标志 */
   --is-native: 0; /* 0:web, 1:native */
 } 

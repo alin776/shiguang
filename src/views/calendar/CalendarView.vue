@@ -669,7 +669,7 @@ watch(
   position: relative;
   overflow: hidden;
   background: linear-gradient(135deg, #f0f7ff, #e6f2ff);
-  padding-top: env(safe-area-inset-top, 20px); /* 增加顶部空间，适配状态栏 */
+  padding-top: 0; /* 无需额外顶部内边距 */
 }
 
 .background-wrapper {
@@ -690,7 +690,7 @@ watch(
   position: relative;
   z-index: 5;
   background-color: rgba(255, 255, 255, 0.98);
-  padding-top: max(10px, env(safe-area-inset-top, 30px)); /* 确保顶部有足够的空间 */
+  padding-top: 10px; /* 固定顶部间距 */
 }
 
 /* 顶部切换按钮 */
@@ -899,5 +899,18 @@ watch(
   width: 1px;
   background-color: #e0e0e0;
   margin: 8px 0;
+}
+
+/* 头部工具栏 */
+.calendar-header {
+  background-color: #fff;
+  border-bottom: 1px solid #ebeef5;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  padding-top: 0; /* 移除顶部内边距 */
 }
 </style>

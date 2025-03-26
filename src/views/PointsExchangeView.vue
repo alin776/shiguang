@@ -1,21 +1,49 @@
 <template>
   <div class="points-exchange">
-    <div class="page-header">
+    <!-- 渐变背景头部区域 -->
+    <div class="gradient-header">
+      <!-- 安全区域 -->
       <div class="safe-area-top"></div>
+      
+      <!-- 标题栏内容 -->
       <div class="header-content">
         <div class="left-section">
-          <el-button class="back-button" @click="goBack" text>
-            <el-icon><ArrowLeft /></el-icon>
-          </el-button>
+          <!-- 移除顶部返回按钮 -->
         </div>
         <div class="center-section">
           <h1 class="title">积分兑换商城</h1>
         </div>
-        <div class="right-section">
-          <div class="user-points">
-            <span class="points-count">{{ userPoints }}</span>
+        <div class="right-section"></div>
+      </div>
+      
+      <!-- 宣传卡片内容 -->
+      <div class="promo-content">
+        <div class="promo-info">
+          <h2 class="promo-title">积分兑换中心</h2>
+          <p class="promo-subtitle">使用积分兑换精彩好礼</p>
+          <div class="user-points-display">
+            <div class="points-icon">
+              <el-icon><GoldMedal /></el-icon>
+            </div>
+            <div class="points-detail">
+              <span class="points-label">我的积分</span>
+              <span class="points-value">{{ userPoints }}</span>
+            </div>
           </div>
+          <p class="promo-desc">每日签到、参与互动获取更多积分</p>
         </div>
+        <div class="promo-decoration">
+          <div class="decoration-circle"></div>
+          <div class="decoration-circle"></div>
+          <div class="decoration-circle"></div>
+        </div>
+      </div>
+      
+      <!-- 新增底部返回按钮 -->
+      <div class="bottom-nav">
+        <el-button class="back-button" @click="goBack" text>
+          <el-icon><ArrowLeft /></el-icon>
+        </el-button>
       </div>
     </div>
 
@@ -144,7 +172,7 @@ import { ref, onMounted, computed } from "vue";
 import { usePointsStore } from "../stores/points";
 import { useAuthStore } from "../stores/auth";
 import { ElMessage } from "element-plus";
-import { ArrowLeft } from "@element-plus/icons-vue";
+import { ArrowLeft, GoldMedal } from "@element-plus/icons-vue";
 import { useRouter } from "vue-router";
 
 const pointsStore = usePointsStore();
@@ -291,22 +319,25 @@ const goBack = () => {
 .points-exchange {
   min-height: 100vh;
   background-color: #f8f9fc;
+  padding: 0;
+  margin: 0;
 }
 
-.page-header {
-  display: flex;
-  flex-direction: column;
-  background-color: #ffffff;
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  border-bottom: 1px solid #ebeef5;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+/* 渐变背景头部区域 */
+.gradient-header {
+  background: linear-gradient(135deg, #ff7e5f, #feb47b);
+  border-radius: 0 0 20px 20px;
+  position: relative;
+  padding-bottom: 60px; /* 增加底部padding为返回按钮留出空间 */
+  margin-bottom: 20px;
+  box-shadow: 0 10px 20px rgba(255, 126, 95, 0.2);
+  overflow: hidden;
 }
 
 .safe-area-top {
   height: var(--safe-area-top, 0);
   width: 100%;
+  background: linear-gradient(135deg, #ff7e5f, #feb47b); /* 确保安全区域也是渐变色 */
 }
 
 .header-content {
@@ -327,22 +358,37 @@ const goBack = () => {
 }
 
 .right-section {
-  width: 80px;
-  display: flex;
-  justify-content: flex-end;
+  width: 40px;
 }
 
+/* 返回按钮样式，适用于顶部和底部 */
 .back-button {
   font-size: 20px;
   border: none;
   box-shadow: none;
   padding: 0;
+  color: #fff;
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .back-button:hover,
 .back-button:focus {
-  background: transparent;
+  background: rgba(255, 255, 255, 0.3);
   box-shadow: none;
+}
+
+/* 底部导航区域样式 */
+.bottom-nav {
+  position: absolute;
+  bottom: 15px;
+  left: 16px;
+  z-index: 5;
 }
 
 .title {
@@ -350,26 +396,124 @@ const goBack = () => {
   font-weight: 500;
   margin: 0;
   text-align: center;
+  color: #fff;
 }
 
-.user-points {
+/* 宣传卡片内容样式 */
+.promo-content {
+  padding: 0 20px;
+  position: relative;
+  z-index: 2;
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+}
+
+.promo-info {
+  color: #fff;
+  max-width: 70%;
+}
+
+.promo-title {
+  font-size: 28px;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.promo-subtitle {
+  font-size: 16px;
+  margin: 0 0 20px 0;
+  opacity: 0.9;
+}
+
+.user-points-display {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  margin-bottom: 15px;
+  backdrop-filter: blur(5px);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+.points-icon {
+  background: #fff;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 12px;
+  color: #ff7e5f;
+  font-size: 20px;
+}
+
+.points-detail {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
 }
 
-.points-count {
-  font-size: 18px;
-  font-weight: bold;
-  color: #f56c6c;
+.points-label {
+  font-size: 14px;
+  opacity: 0.8;
+}
+
+.points-value {
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.promo-desc {
+  font-size: 14px;
+  opacity: 0.8;
+  margin: 0;
+}
+
+.promo-decoration {
+  position: relative;
+  height: 100%;
+}
+
+.decoration-circle {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.decoration-circle:nth-child(1) {
+  width: 80px;
+  height: 80px;
+  right: -20px;
+  top: -30px;
+}
+
+.decoration-circle:nth-child(2) {
+  width: 60px;
+  height: 60px;
+  right: 30px;
+  top: 20px;
+}
+
+.decoration-circle:nth-child(3) {
+  width: 40px;
+  height: 40px;
+  right: -10px;
+  top: 60px;
 }
 
 .points-content {
-  padding: 16px;
+  padding: 0 16px 16px;
 }
 
 .exchange-tabs {
   margin-top: 8px;
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
 }
 
 .products-grid {
@@ -479,6 +623,10 @@ const goBack = () => {
   
   .product-image {
     height: 120px;
+  }
+  
+  .promo-title {
+    font-size: 24px;
   }
 }
 </style> 

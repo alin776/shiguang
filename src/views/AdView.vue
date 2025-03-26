@@ -77,43 +77,125 @@ const goBack = () => {
 };
 
 // 加载观看数据
-const loadWatchData = () => {
+const loadWatchData = async () => {
   const today = new Date().toISOString().split('T')[0]; // 格式: YYYY-MM-DD
   todayDate.value = today;
   
-  // 从localStorage加载数据
-  const savedData = localStorage.getItem('adWatchData');
-  if (savedData) {
+  // 获取用户ID，用于存储与用户相关的数据
+  const userId = authStore.user?.id || localStorage.getItem('userId');
+  
+  // 构建用户特定的存储键
+  const storageKey = userId ? `adWatchData_${userId}` : 'adWatchData';
+  
+  // 如果用户已登录，尝试从服务器获取数据
+  let serverDataLoaded = false;
+  if (authStore.isLoggedIn) {
     try {
-      const data = JSON.parse(savedData);
-      // 如果是同一天，恢复计数和冷却时间
-      if (data.date === today) {
-        watchCount.value = data.count || 0;
+      console.log('尝试从服务器加载广告观看数据');
+      const response = await fetch(`${API_BASE_URL}/api/adview/data`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${authStore.token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('从服务器加载的广告观看数据:', data);
         
-        // 恢复冷却时间
-        if (data.cooldownEndTime) {
-          const endTime = new Date(data.cooldownEndTime).getTime();
-          const now = new Date().getTime();
-          const remaining = Math.floor((endTime - now) / 1000);
-          
-          // 只有当剩余时间大于0时才设置冷却
-          if (remaining > 0) {
-            cooldownSeconds.value = remaining;
-            startCooldownTimer();
+        if (data.success && data.data) {
+          // 检查日期是否匹配
+          if (data.data.date === today) {
+            watchCount.value = data.data.count || 0;
+            console.log('从服务器恢复观看次数:', watchCount.value);
+            serverDataLoaded = true;
+            
+            // 同步到本地存储
+            const localData = {
+              date: today,
+              count: watchCount.value,
+              cooldownEndTime: null
+            };
+            localStorage.setItem(storageKey, JSON.stringify(localData));
           }
         }
       } else {
-        // 新的一天，重置计数
+        console.error('从服务器加载广告观看数据失败:', response.status);
+      }
+    } catch (error) {
+      console.error('从服务器加载广告数据出错:', error);
+    }
+  }
+  
+  // 如果没有从服务器加载到数据，则从localStorage尝试加载
+  if (!serverDataLoaded) {
+    console.log('从本地存储加载广告观看数据');
+    const savedData = localStorage.getItem(storageKey);
+    if (savedData) {
+      try {
+        const data = JSON.parse(savedData);
+        // 如果是同一天，恢复计数和冷却时间
+        if (data.date === today) {
+          watchCount.value = data.count || 0;
+          
+          // 恢复冷却时间
+          if (data.cooldownEndTime) {
+            const endTime = new Date(data.cooldownEndTime).getTime();
+            const now = new Date().getTime();
+            const remaining = Math.floor((endTime - now) / 1000);
+            
+            // 只有当剩余时间大于0时才设置冷却
+            if (remaining > 0) {
+              cooldownSeconds.value = remaining;
+              startCooldownTimer();
+            }
+          }
+        } else {
+          // 新的一天，重置计数
+          resetWatchCount();
+        }
+      } catch (e) {
+        console.error('解析保存的观看数据出错', e);
         resetWatchCount();
       }
-    } catch (e) {
-      console.error('解析保存的观看数据出错', e);
-      resetWatchCount();
     }
+  }
+  
+  // 尝试将本地数据同步到服务器
+  if (authStore.isLoggedIn && watchCount.value > 0) {
+    syncWatchDataToServer();
   }
   
   // 加载用户积分
   loadUserPoints();
+};
+
+// 同步观看数据到服务器
+const syncWatchDataToServer = async () => {
+  if (!authStore.isLoggedIn) return;
+  
+  try {
+    console.log('同步广告观看数据到服务器...');
+    const response = await fetch(`${API_BASE_URL}/api/adview/data`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authStore.token}`
+      },
+      body: JSON.stringify({
+        count: watchCount.value
+      })
+    });
+    
+    if (response.ok) {
+      const result = await response.json();
+      console.log('同步广告观看数据成功:', result);
+    } else {
+      console.error('同步广告观看数据失败:', response.status);
+    }
+  } catch (error) {
+    console.error('同步广告观看数据出错:', error);
+  }
 };
 
 // 加载用户积分
@@ -356,6 +438,12 @@ const rewardUserAfterAd = async () => {
 
 // 保存观看数据到localStorage
 const saveWatchData = () => {
+  // 获取用户ID，用于存储与用户相关的数据
+  const userId = authStore.user?.id || localStorage.getItem('userId');
+  
+  // 构建用户特定的存储键
+  const storageKey = userId ? `adWatchData_${userId}` : 'adWatchData';
+  
   const data = {
     date: todayDate.value,
     count: watchCount.value,
@@ -363,7 +451,17 @@ const saveWatchData = () => {
       new Date(Date.now() + cooldownSeconds.value * 1000).toISOString() : null
   };
   
-  localStorage.setItem('adWatchData', JSON.stringify(data));
+  localStorage.setItem(storageKey, JSON.stringify(data));
+  
+  // 如果已登录，同时也保存一份到userId键，用于应用重装后恢复
+  if (userId) {
+    localStorage.setItem('userId', userId);
+  }
+  
+  // 同步到服务器
+  if (authStore.isLoggedIn) {
+    syncWatchDataToServer();
+  }
 };
 
 // 重置观看次数
@@ -549,6 +647,19 @@ onMounted(() => {
     if (token) {
       // 如果有token但authStore未登录，尝试恢复登录状态
       authStore.restoreLogin(token);
+    }
+  }
+  
+  // 尝试恢复特定于用户的广告观看数据
+  if (authStore.user?.id) {
+    const userSpecificData = localStorage.getItem(`adWatchData_${authStore.user.id}`);
+    const genericData = localStorage.getItem('adWatchData');
+    
+    // 如果有用户特定的数据，优先使用；否则使用通用数据
+    if (!userSpecificData && genericData && localStorage.getItem('userId')) {
+      // 将通用数据迁移到用户特定数据
+      localStorage.setItem(`adWatchData_${authStore.user.id}`, genericData);
+      console.log('已将通用广告数据迁移到用户特定数据');
     }
   }
   

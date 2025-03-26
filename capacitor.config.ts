@@ -13,11 +13,6 @@ const config: CapacitorConfig = {
   plugins: {
     SplashScreen: {
       launchAutoHide: false
-    },
-    StatusBar: {
-      style: 'DARK',
-      backgroundColor: '#ffffff', // 设置为应用主背景色
-      overlaysWebView: true
     }
   }
 };
