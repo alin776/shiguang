@@ -194,6 +194,16 @@ button:focus-visible {
   text-align: center;
   width: 100%;
 }
+/* // 媒体选择器 */
+@media (max-width: 768px) {
+  #app {
+    margin-top:var(--safe-area-top);
+
+  }
+}
+
+
+
 
 @media (prefers-color-scheme: light) {
   :root {
