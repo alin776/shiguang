@@ -9,26 +9,33 @@
       </div>
 
       <!-- 轮播图区域 -->
-      <div class="banner-section">
-        <el-carousel 
-          :interval="5000" 
-          height="160px"
-          indicator-position="outside"
-          arrow="never"
-          :autoplay="true"
-          trigger="hover">
-          <el-carousel-item v-for="item in banners" :key="item.id">
-            <div class="banner-container" @click="handleBannerClick(item)">
-              <img 
-                :src="item.imageUrl" 
-                class="banner-image" 
-                @error="handleImageError($event, item)" 
-                :alt="item.title"
-              />
-              <div class="banner-title">{{ item.title }}</div>
-            </div>
-          </el-carousel-item>
-        </el-carousel>
+      <div class="activities-section">
+        <div class="section-header">
+          <h3 class="section-title">活动</h3>
+          <span class="more-btn" @click="router.push('/activities')">更多 <el-icon><ArrowRight /></el-icon></span>
+        </div>
+        
+        <div class="banner-section">
+          <el-carousel 
+            :interval="5000" 
+            height="160px"
+            indicator-position="none"
+            :autoplay="true"
+            arrow="always"
+            trigger="hover">
+            <el-carousel-item v-for="item in banners" :key="item.id">
+              <div class="banner-container" @click="handleBannerClick(item)">
+                <img 
+                  :src="item.imageUrl" 
+                  class="banner-image" 
+                  @error="handleImageError($event, item)" 
+                  :alt="item.title"
+                />
+                <div class="banner-title">{{ item.title }}</div>
+              </div>
+            </el-carousel-item>
+          </el-carousel>
+        </div>
       </div>
       
       <!-- 公告区域 -->
@@ -770,5 +777,42 @@ onMounted(async () => {
 /* 论坛渐变色 */
 .forum-gradient {
   background: linear-gradient(135deg, #1677ff, #0099ff, #00c4ff);
+}
+
+/* 活动区域样式 */
+.activities-section {
+  margin: 0 16px 20px;
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  padding: 16px;
+  overflow: hidden;
+}
+
+.activities-section .banner-section {
+  margin-bottom: 0;
+  padding-top: 8px;
+}
+
+/* 轮播图左右箭头样式 */
+:deep(.el-carousel__arrow) {
+  width: 36px;
+  height: 36px;
+  background-color: rgba(0, 0, 0, 0.3);
+  border-radius: 50%;
+  font-size: 12px;
+  transition: all 0.3s;
+}
+
+:deep(.el-carousel__arrow:hover) {
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+:deep(.el-carousel__arrow--left) {
+  left: 10px;
+}
+
+:deep(.el-carousel__arrow--right) {
+  right: 10px;
 }
 </style> 

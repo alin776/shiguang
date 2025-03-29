@@ -7,9 +7,6 @@
           <el-icon><ArrowLeft /></el-icon>
         </div>
         <div class="title">编辑个人资料</div>
-        <div class="right-btn" @click="saveProfile" :class="{ disabled: !canSave }">
-          保存
-        </div>
       </div>
     </div>
 
@@ -19,6 +16,9 @@
         class="cover-image"
         :style="{
           backgroundImage: `url(${displayCover})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center center',
+          backgroundRepeat: 'no-repeat'
         }"
       >
         <div class="dark-overlay"></div>
@@ -88,6 +88,13 @@
         </el-form-item>
       </el-form>
     </div>
+    
+    <!-- 添加底部保存按钮 -->
+    <div class="bottom-save-container">
+      <button class="save-button" @click="saveProfile" :class="{ disabled: !canSave }">
+        保存
+      </button>
+    </div>
   </div>
 </template>
 
@@ -103,7 +110,8 @@ import { API_BASE_URL, UPLOAD_ENDPOINTS } from "@/config";
 const router = useRouter();
 const authStore = useAuthStore();
 
-const defaultCover = "../default-cover.jpg"; // 添加默认封面图
+// 使用绝对路径设置默认封面图
+const defaultCover = "/images/default-cover.jpg";
 
 // 添加上传请求头
 const uploadHeaders = computed(() => ({
@@ -135,13 +143,42 @@ onMounted(async () => {
       console.log("提取的头像文件名:", avatarFileName);
     }
 
-    // 处理封面图路径
-    const coverImage = authStore.user?.coverImage;
+    // 处理封面图路径 - 修复字段名：从cover_image获取而不是coverImage
+    const coverImage = authStore.user?.cover_image;
+    console.log("用户原始封面图片路径:", coverImage);
     let coverFileName = "";
+    
     if (coverImage) {
-      const coverMatches = coverImage.match(/cover-[\w-]+\.\w+$/);
-      coverFileName = coverMatches ? coverMatches[0] : "";
-      console.log("提取的封面图文件名:", coverFileName);
+      // 尝试不同的正则表达式匹配
+      let coverMatches = coverImage.match(/cover-[\w-]+\.\w+$/);
+      
+      // 如果第一个正则没有匹配到，尝试更宽松的匹配
+      if (!coverMatches) {
+        coverMatches = coverImage.match(/\/covers\/([^\/\?]+)(\?.*)?$/);
+        if (coverMatches) {
+          coverFileName = coverMatches[1];
+        }
+      } else {
+        coverFileName = coverMatches[0];
+      }
+      
+      // 如果仍然没有匹配到，但路径包含cover，则使用整个路径
+      if (!coverFileName && coverImage.includes('cover')) {
+        if (coverImage.startsWith('http')) {
+          // 从URL中提取文件名部分
+          const urlParts = coverImage.split('/');
+          coverFileName = urlParts[urlParts.length - 1].split('?')[0];
+        } else {
+          coverFileName = coverImage;
+        }
+      }
+      
+      console.log("封面图片路径处理:", {
+        原始路径: coverImage,
+        提取方法: "正则表达式匹配",
+        最终文件名: coverFileName,
+        是否成功提取: !!coverFileName
+      });
     }
     
     // 初始化表单数据
@@ -177,13 +214,13 @@ const saveProfile = async () => {
       return;
     }
     
-    // 构建要发送的数据
+    // 构建要发送的数据 - 使用cover_image字段名而不是coverImage
     const profileData = {
       username: form.value.username.trim(),
       bio: form.value.bio || "",  // 确保bio不为null或undefined
       email: form.value.email,
       avatar: form.value.avatar,  // 只发送文件名
-      coverImage: form.value.coverImage,  // 只发送文件名
+      cover_image: form.value.coverImage,  // 只发送文件名，但使用正确的字段名
     };
     
     console.log("发送的用户资料数据:", profileData);
@@ -283,12 +320,24 @@ const displayAvatar = computed(() => {
 });
 
 const displayCover = computed(() => {
-  if (!form.value.coverImage) return defaultCover;
-  console.log("计算封面URL:", {
+  console.log("获取封面图片，原始封面图片值:", form.value.coverImage);
+  console.log("默认封面图片路径:", defaultCover);
+  
+  if (!form.value.coverImage) {
+    console.log("使用默认封面图片:", defaultCover);
+    return defaultCover;
+  }
+  
+  const processedUrl = getImageUrl(form.value.coverImage);
+  console.log("封面图片路径详情:", {
     原始值: form.value.coverImage,
-    处理后: getImageUrl(form.value.coverImage)
+    API_BASE_URL: API_BASE_URL,
+    UPLOAD_ENDPOINTS: UPLOAD_ENDPOINTS,
+    处理后: processedUrl,
+    完整CSS: `url(${processedUrl})`
   });
-  return getImageUrl(form.value.coverImage);
+  
+  return processedUrl;
 });
 </script>
 
@@ -341,30 +390,6 @@ const displayCover = computed(() => {
 .title {
   flex: 2;
   text-align: center;
-}
-
-.right-btn {
-  flex: 1;
-  display: flex;
-  justify-content: flex-end;
-  padding-right: 16px;
-  background-color: #4e95ff;
-  color: #ffffff;
-  border: none;
-  padding: 6px 16px;
-  border-radius: 4px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: background-color 0.3s;
-}
-
-.right-btn:hover {
-  background-color: #3a85f0;
-}
-
-.right-btn:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
 }
 
 /* 封面图片 */
@@ -452,6 +477,7 @@ const displayCover = computed(() => {
   padding: 16px;
   max-width: 500px;
   margin: 0 auto;
+  padding-bottom: 80px; /* 增加底部边距，避免内容被底部保存按钮遮挡 */
 }
 
 .profile-form {
@@ -500,5 +526,42 @@ const displayCover = computed(() => {
 /* 修复表单样式在浅色模式下的问题 */
 :deep(.el-form-item.is-error .el-input__wrapper) {
   box-shadow: 0 0 0 1px #f56c6c inset;
+}
+
+/* 底部保存按钮容器 */
+.bottom-save-container {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 16px;
+  background-color: #ffffff;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+  z-index: 100;
+  display: flex;
+  justify-content: center;
+}
+
+.save-button {
+  width: 90%;
+  background-color: #4e95ff;
+  color: #ffffff;
+  border: none;
+  padding: 12px 0;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  box-shadow: 0 2px 6px rgba(78, 149, 255, 0.3);
+}
+
+.save-button:hover {
+  background-color: #3a85f0;
+}
+
+.save-button.disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 </style>

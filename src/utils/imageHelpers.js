@@ -76,23 +76,69 @@ export const getImageUrl = (url) => {
   if (!url) return '';
   
   try {
+    console.log("getImageUrl - 原始URL:", url);
+    
+    // 检查是否是封面图片
+    const isCoverImage = url.includes('cover-') || url.includes('/covers/');
+    console.log("是否是封面图片:", isCoverImage);
+
     // 替换localhost:3000为实际API_BASE_URL
     if (url.includes('localhost:3000')) {
       url = url.replace('http://localhost:3000', API_BASE_URL);
+      console.log("替换localhost后:", url);
     }
     
     // 如果已经是绝对URL，直接返回
     if (url.startsWith('http')) {
+      console.log("已是绝对URL,直接返回:", url);
+      
+      // 为封面图片添加缓存破坏参数
+      if (isCoverImage) {
+        const cacheBuster = url.includes('?') ? `&t=${Date.now()}` : `?t=${Date.now()}`;
+        const resultUrl = url + cacheBuster;
+        console.log("添加缓存破坏参数后:", resultUrl);
+        return resultUrl;
+      }
+      
       return url;
     }
     
     // 如果是以"/"开头的路径，拼接API_BASE_URL
     if (url.startsWith('/')) {
-      return `${API_BASE_URL}${url}`;
+      const resultUrl = `${API_BASE_URL}${url}`;
+      console.log("添加API_BASE_URL前缀:", resultUrl);
+      
+      // 为封面图片添加缓存破坏参数
+      if (isCoverImage) {
+        const cacheBuster = `?t=${Date.now()}`;
+        const finalUrl = resultUrl + cacheBuster;
+        console.log("添加缓存破坏参数后:", finalUrl);
+        return finalUrl;
+      }
+      
+      return resultUrl;
+    }
+    
+    // 如果是封面图片，但只有文件名，需要添加正确的路径前缀
+    if (isCoverImage && !url.includes('/')) {
+      const baseUrl = API_BASE_URL.endsWith('/') ? API_BASE_URL : `${API_BASE_URL}/`;
+      const coverPath = UPLOAD_PATHS.COVERS.startsWith('/') ? 
+        UPLOAD_PATHS.COVERS.substring(1) : UPLOAD_PATHS.COVERS;
+      
+      const resultUrl = `${baseUrl}${coverPath}${url}`;
+      console.log("封面图片添加完整路径:", resultUrl);
+      
+      // 添加缓存破坏参数
+      const cacheBuster = `?t=${Date.now()}`;
+      const finalUrl = resultUrl + cacheBuster;
+      console.log("添加缓存破坏参数后:", finalUrl);
+      return finalUrl;
     }
     
     // 其他情况，假设是相对路径，添加前缀
-    return `${API_BASE_URL}/${url}`;
+    const resultUrl = `${API_BASE_URL}/${url}`;
+    console.log("其他情况,添加API_BASE_URL前缀:", resultUrl);
+    return resultUrl;
   } catch (error) {
     console.error('处理图片URL出错:', error, '原URL:', url);
     return url || '';

@@ -194,16 +194,19 @@ button:focus-visible {
   text-align: center;
   width: 100%;
 }
-/* // 媒体选择器 */
+
+/* 页面容器样式 */
+.page-container {
+  padding-top: 20px; /* 添加顶部间距，使所有内容下移 */
+  min-height: 100vh;
+}
+
+/* 媒体选择器 */
 @media (max-width: 768px) {
   #app {
     margin-top:var(--safe-area-top);
-
   }
 }
-
-
-
 
 @media (prefers-color-scheme: light) {
   :root {
@@ -227,12 +230,6 @@ button:focus-visible {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
-}
-
-/* 全局页面容器样式 - 应用于所有视图 */
-.page-container {
-  min-height: 100vh;
-  box-sizing: border-box;
 }
 
 /* 全局页面头部样式 - 应用于所有固定顶部栏 */

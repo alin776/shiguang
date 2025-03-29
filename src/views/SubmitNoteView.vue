@@ -7,16 +7,7 @@
       </div>
       <div class="header-title">发布小记</div>
       <div class="header-right">
-        <el-button 
-          type="primary" 
-          size="small" 
-          :disabled="!isValid || isSubmitting" 
-          @click="submitNote"
-          :loading="isSubmitting"
-          class="submit-button"
-        >
-          发布
-        </el-button>
+        <!-- 发布按钮已移至底部 -->
       </div>
     </div>
 
@@ -56,6 +47,20 @@
           @change="handleImageUpload"
         />
       </div>
+    </div>
+    
+    <!-- 底部固定发布按钮 -->
+    <div class="bottom-submit-area">
+      <el-button 
+        type="primary" 
+        size="large" 
+        :disabled="!isValid || isSubmitting" 
+        @click="submitNote"
+        :loading="isSubmitting"
+        class="bottom-submit-button"
+      >
+        发布
+      </el-button>
     </div>
   </div>
 </template>
@@ -412,12 +417,6 @@ onMounted(() => {
   align-items: center;
 }
 
-.submit-button {
-  border-radius: 20px;
-  padding: 8px 16px;
-  font-weight: 500;
-}
-
 .note-form {
   flex: 1;
   padding: 20px 16px;
@@ -513,5 +512,27 @@ onMounted(() => {
 
 .upload-button .el-icon {
   font-size: 20px;
+}
+
+/* 底部发布按钮区域 */
+.bottom-submit-area {
+  position: sticky;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 16px;
+  background-color: #ffffff;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+  z-index: 10;
+  display: flex;
+  justify-content: center;
+}
+
+.bottom-submit-button {
+  width: 90%;
+  border-radius: 24px;
+  font-weight: 500;
+  font-size: 16px;
+  height: 44px;
 }
 </style> 

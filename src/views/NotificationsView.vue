@@ -369,14 +369,19 @@ onMounted(() => {
   min-height: 100vh;
   background: #f8f9fa;
   padding-bottom: 70px; /* 为底部导航栏留出空间 */
-  padding-top: var(--safe-area-top); /* 添加顶部安全区域 */
+  /* 全局样式中已经定义了padding-top */
 }
 
 .notifications-page {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
+  padding-bottom: 16px;
   background-color: #f5f5f5;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 16px 0;
 }
 
 .page-header {
