@@ -1,48 +1,59 @@
 <template>
   <div class="page-container">
     <div class="community-page">
-      <!-- 顶部标题栏 -->
-      <div class="page-header">
-        <div class="search-bar">
-          <!-- 添加样式切换按钮 -->
-          <div class="view-toggle">
-            <div 
-              class="toggle-btn" 
-              :class="{ active: viewStyle === 'grid' }" 
-              @click="changeViewStyle('grid')"
-            >
-              <el-icon><Grid /></el-icon>
-            </div>
-            <div 
-              class="toggle-btn" 
-              :class="{ active: viewStyle === 'list' }" 
-              @click="changeViewStyle('list')"
-            >
-              <el-icon><List /></el-icon>
+      <!-- 侧边抽屉栏 -->
+      <el-drawer
+        v-model="drawerVisible"
+        title="搜索与筛选"
+        direction="ltr"
+        size="80%"
+        :show-close="true"
+        :with-header="true"
+      >
+        <div class="drawer-content">
+          <!-- 搜索框 -->
+          <div class="drawer-search">
+            <el-input
+              v-model="searchText"
+              placeholder="搜索"
+              :prefix-icon="Search"
+              clearable
+              @clear="handleSearch"
+              @keyup.enter="handleSearch"
+            />
+          </div>
+          
+          <!-- 分类选项 -->
+          <div class="drawer-section">
+            <div class="drawer-section-title">查看方式</div>
+            <div class="view-style-options">
+              <div 
+                class="view-style-option" 
+                :class="{ active: viewStyle === 'grid' }" 
+                @click="changeViewStyle('grid')"
+              >
+                <el-icon><Grid /></el-icon>
+                <span>瀑布流</span>
+              </div>
+              <div 
+                class="view-style-option" 
+                :class="{ active: viewStyle === 'list' }" 
+                @click="changeViewStyle('list')"
+              >
+                <el-icon><List /></el-icon>
+                <span>列表</span>
+              </div>
             </div>
           </div>
-          <el-input
-            v-model="searchText"
-            placeholder="搜索"
-            :prefix-icon="Search"
-            clearable
-            @clear="handleSearch"
-            @keyup.enter="handleSearch"
-          />
-          <div class="filter-button" @click="showFilterMenu = !showFilterMenu">
-            <el-icon><Filter /></el-icon>
-          </div>
-        </div>
-
-        <!-- 筛选菜单 -->
-        <div class="filter-menu" v-if="showFilterMenu">
-          <div class="filter-section">
-            <div class="filter-section-title">排序方式</div>
-            <div class="filter-options">
+          
+          <!-- 排序方式 -->
+          <div class="drawer-section">
+            <div class="drawer-section-title">排序方式</div>
+            <div class="drawer-options">
               <div
                 v-for="tab in sortTabs"
                 :key="tab.value"
-                class="filter-option"
+                class="drawer-option"
                 :class="{ active: currentSort === tab.value }"
                 @click="changeSort(tab.value)"
               >
@@ -51,11 +62,12 @@
             </div>
           </div>
           
-          <div class="filter-section" v-if="categories.length > 0">
-            <div class="filter-section-title">内容分类</div>
-            <div class="filter-options category-options">
+          <!-- 内容分类 -->
+          <div class="drawer-section" v-if="categories.length > 0">
+            <div class="drawer-section-title">内容分类</div>
+            <div class="drawer-options">
               <div 
-                class="filter-option"
+                class="drawer-option"
                 :class="{ active: !selectedCategoryId }"
                 @click="changeCategory(null)"
               >
@@ -64,7 +76,7 @@
               <div 
                 v-for="category in categories" 
                 :key="category.id"
-                class="filter-option"
+                class="drawer-option"
                 :class="{ active: selectedCategoryId === category.id }"
                 @click="changeCategory(category.id)"
               >
@@ -73,19 +85,31 @@
             </div>
           </div>
           
-          <div class="filter-footer">
-            <el-button type="primary" class="close-filter-btn" @click="showFilterMenu = false">确定</el-button>
+          <!-- 确认按钮 -->
+          <div class="drawer-footer">
+            <el-button type="primary" @click="drawerVisible = false">确定</el-button>
           </div>
         </div>
+      </el-drawer>
 
-        <!-- 覆盖层 - 点击关闭筛选菜单 -->
-        <div class="filter-overlay" v-if="showFilterMenu" @click="showFilterMenu = false"></div>
-
-        <!-- 悬浮发帖按钮 -->
-        <div class="floating-button pulse-on-click" @click="router.push('/community/create')">
-          <el-icon><Plus /></el-icon>
-          <span>发帖</span>
+      <!-- 顶部标题栏 -->
+      <div class="page-header">
+        <!-- 菜单按钮 -->
+        <div class="menu-button" @click="drawerVisible = true">
+          <el-icon><Menu /></el-icon>
         </div>
+        
+        <!-- 页面标题 -->
+        <div class="page-title">社区</div>
+        
+        <!-- 空白占位 -->
+        <div class="header-spacer"></div>
+      </div>
+
+      <!-- 悬浮发帖按钮 -->
+      <div class="floating-button pulse-on-click" @click="router.push('/community/create')">
+        <el-icon><Plus /></el-icon>
+        <span>发帖</span>
       </div>
 
       <!-- 帖子列表 -->
@@ -366,7 +390,7 @@
 import { ref, onMounted, computed, nextTick } from "vue";
 import { useRouter } from "vue-router";
 import { ElMessage, ElMessageBox } from "element-plus";
-import { Search, Plus, Picture, View, ChatDotRound, Star, StarFilled, VideoPlay, VideoPause, Filter, Grid, List, Top, HotWater } from "@element-plus/icons-vue";
+import { Search, Plus, Picture, View, ChatDotRound, Star, StarFilled, VideoPlay, VideoPause, Filter, Grid, List, Top, HotWater, Menu } from "@element-plus/icons-vue";
 import BottomNavBar from "@/components/BottomNavBar.vue";
 import AudioRecorder from "@/components/AudioRecorder.vue";
 import formatTime from "@/utils/formatTime";
@@ -391,7 +415,7 @@ const currentPage = ref(1);
 const noMoreData = ref(false);
 const currentSort = ref("latest");
 const likedPostIds = ref(new Set());
-const showFilterMenu = ref(false);
+const drawerVisible = ref(false);
 const viewStyle = ref('grid');
 
 // 排序选项
@@ -954,25 +978,33 @@ const getTitleClass = (title) => {
 </script>
 
 <style scoped>
-.page-container {
-  min-height: 100vh;
-  background-color: #F8F9FC;
-  position: relative;
+/* 顶部装饰区域 */
+.page-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: linear-gradient(135deg, #1677ff, #36a9e1);
+  z-index: 1;
 }
 
 .community-page {
   display: flex;
   flex-direction: column;
   min-height: 100%;
-  padding-top: 56px; /* 为fixed定位的header留出空间 */
+  padding-top: 86px; /* 增加顶部padding，从原来的56px增加到86px */
   position: relative;
   width: 100%;
+  padding-bottom: 70px; /* 为底部导航栏留出空间 */
+  z-index: 2; /* 确保内容在装饰条之上 */
 }
 
-/* 顶部搜索栏 */
+/* 顶部标题栏 - 新设计 */
 .page-header {
   position: fixed;
-  top: 0;
+  top: 20px;
   left: 0;
   right: 0;
   height: 56px;
@@ -984,128 +1016,176 @@ const getTitleClass = (title) => {
   z-index: 20;
   width: 100%;
   box-sizing: border-box;
-}
-
-.search-bar {
-  flex: 1;
-  max-width: 600px;
-  margin: 0 auto;
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.search-icon-container {
-  margin-right: 8px;
-}
-
-.search-input {
-  width: 100%;
-  height: 36px;
-  border: none;
-  outline: none;
-  font-size: 14px;
-  color: #333;
-  background-color: #f5f7fa;
-  padding: 0 12px;
   border-radius: 8px;
+  margin: 0 auto;
+  max-width: 95%;
 }
 
-/* 筛选按钮 */
-.filter-button {
+/* 菜单按钮 */
+.menu-button {
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-left: 12px;
-  margin-right: 12px;
   cursor: pointer;
-  transition: all 0.2s ease;
-  color: #666;
-  width: 24px;
-  height: 24px;
+  color: #333;
+  font-size: 22px;
+  border-radius: 50%;
+  transition: all 0.3s ease;
 }
 
-.filter-button:hover {
+.menu-button:hover {
+  background-color: #f5f7fa;
   color: #1677ff;
 }
 
-/* 筛选菜单 */
-.filter-menu {
-  position: fixed;
-  top: 56px;
-  left: 0;
-  width: 100%;
-  max-height: 80vh;
-  overflow-y: auto;
-  background-color: white;
-  z-index: 100;
-  padding: 16px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  border-bottom-left-radius: 16px;
-  border-bottom-right-radius: 16px;
-  animation: slideDown 0.3s ease;
-}
-
-.filter-section:last-child {
-  margin-bottom: 0;
-}
-
-.filter-section-title {
-  font-size: 16px;
-  font-weight: 500;
-  margin-bottom: 12px;
+/* 页面标题 */
+.page-title {
+  flex: 1;
+  text-align: center;
+  font-size: 18px;
+  font-weight: 600;
   color: #333;
 }
 
-.filter-options {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
+/* 头部占位元素 */
+.header-spacer {
+  width: 40px;
 }
 
-.filter-option {
-  padding: 8px 16px;
+/* 侧边抽屉样式 */
+.drawer-content {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  height: 100%;
+}
+
+.drawer-search {
+  margin-bottom: 10px;
+}
+
+.drawer-section {
+  margin-bottom: 10px;
+}
+
+.drawer-section-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: #333;
+}
+
+.drawer-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.drawer-option {
+  padding: 10px 18px;
   border-radius: 20px;
-  cursor: pointer;
-  transition: all 0.2s ease;
   font-size: 14px;
   color: #666;
   background-color: #f5f7fa;
   border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
 }
 
-.filter-option:active {
-  transform: scale(0.98);
-}
-
-.filter-option.active {
+.drawer-option.active {
   background-color: #1677ff;
   color: white;
+  font-weight: 500;
 }
 
-.category-options {
-  margin-top: 6px;
+.drawer-option:hover:not(.active) {
+  background-color: #e8f3ff;
+  color: #1677ff;
 }
 
-.filter-footer {
+.drawer-footer {
+  margin-top: auto;
+  padding-top: 20px;
   text-align: center;
-  margin-top: 24px;
-  padding-top: 16px;
-  border-top: 1px solid #f0f0f0;
 }
 
-/* 覆盖层 */
-.filter-overlay {
+/* 视图样式选项 */
+.view-style-options {
+  display: flex;
+  gap: 12px;
+}
+
+.view-style-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 20px;
+  font-size: 14px;
+  color: #666;
+  background-color: #f5f7fa;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.view-style-option.active {
+  background-color: #1677ff;
+  color: white;
+  font-weight: 500;
+}
+
+.view-style-option:hover:not(.active) {
+  background-color: #e8f3ff;
+  color: #1677ff;
+}
+
+:deep(.el-drawer__header) {
+  margin-bottom: 0;
+  padding: 16px 20px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+:deep(.el-drawer__body) {
+  padding: 0;
+  overflow-y: auto;
+}
+
+/* 悬浮发帖按钮 */
+.floating-button {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.4);
-  z-index: 99;
+  bottom: 80px;
+  right: 20px;
+  width: auto;
+  height: 48px; /* 稍微增加高度 */
+  padding: 0 20px;
+  border-radius: 24px;
+  background: #1677ff;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 4px 16px rgba(22, 119, 255, 0.3);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  z-index: 30; /* 提高z-index确保在最上层 */
+  font-weight: 500;
+  font-size: 15px;
 }
 
-/* 帖子列表 */
+.page-container {
+  min-height: 100vh;
+  background-color: #F8F9FC;
+  position: relative;
+}
+
 .post-list {
   padding: 12px;
   display: flex;
@@ -1159,7 +1239,6 @@ const getTitleClass = (title) => {
   transform: scale(1.05);
 }
 
-/* 帖子内容 */
 .post-content {
   padding: 12px;
   position: relative;
@@ -1215,7 +1294,6 @@ const getTitleClass = (title) => {
   text-align: left; /* 确保帖子内容靠左显示 */
 }
 
-/* 帖子底部 */
 .post-footer {
   display: flex;
   justify-content: space-between;
@@ -1265,7 +1343,6 @@ const getTitleClass = (title) => {
   color: #999;
 }
 
-/* 图片网格 - 只用于瀑布流布局 */
 .post-images {
   margin-top: 10px;
   width: 100%;
@@ -1307,7 +1384,6 @@ const getTitleClass = (title) => {
   transition: transform 0.3s ease;
 }
 
-/* 媒体查询 - 瀑布流 */
 @media screen and (max-width: 480px) {
   .post-list {
     padding: 6px;
@@ -1359,7 +1435,6 @@ const getTitleClass = (title) => {
   }
 }
 
-/* 媒体查询 - 列表视图 */
 @media screen and (max-width: 480px) {
   .post-list-item {
     padding: 8px;
@@ -1412,354 +1487,6 @@ const getTitleClass = (title) => {
   }
 }
 
-/* 全局顶部通知栏样式 */
-.global-notification {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: auto;
-  background-color: #409eff;
-  color: white;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 16px;
-  z-index: 9999; /* 确保最高层级 */
-  box-shadow: 0 2px 8px rgba(64, 158, 255, 0.2);
-  box-sizing: border-box;
-}
-
-/* 分类相关样式 */
-.post-category {
-  margin-top: 4px;
-  margin-bottom: 6px;
-}
-
-.category-option {
-  display: flex;
-  align-items: center;
-}
-
-@keyframes slideDown {
-  from {
-    transform: translateY(-20px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-.filter-section {
-  margin-bottom: 20px;
-}
-
-.filter-option:hover:not(.active) {
-  background-color: #e8f3ff;
-  color: #1677ff;
-}
-
-/* 关闭按钮样式 */
-.close-filter-btn {
-  width: 120px;
-  padding: 10px 0;
-  font-size: 15px;
-  border-radius: 20px !important;
-}
-
-/* 切换视图按钮样式 */
-.view-toggle {
-  display: flex;
-  align-items: center;
-  background-color: #f5f7fa;
-  border-radius: 8px;
-  margin-right: 12px;
-  overflow: hidden;
-}
-
-.toggle-btn {
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s;
-  color: #666;
-}
-
-.toggle-btn:hover {
-  color: #1677ff;
-  background-color: #e8f3ff;
-}
-
-.toggle-btn.active {
-  color: #1677ff;
-  background-color: #e8f3ff;
-}
-
-/* 列表视图样式 */
-.post-list-view {
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  width: 100%;
-  box-sizing: border-box;
-}
-
-.post-list-item {
-  background-color: #ffffff;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
-  transition: all 0.3s ease;
-  border: none;
-  cursor: pointer;
-  margin-bottom: 12px;
-  display: flex;
-  padding: 12px;
-}
-
-.post-list-item:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-}
-
-.post-list-item.no-image .post-list-content {
-  width: 100%;
-}
-
-.post-list-item .post-cover {
-  width: 100%;
-  padding-bottom: 56.25%; /* 16:9 比例 */
-  position: relative;
-  overflow: hidden;
-  border-radius: 6px;
-  margin-top: 10px;
-}
-
-.post-list-item .post-cover img {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 0.3s ease;
-}
-
-.post-list-item:hover .post-cover img {
-  transform: scale(1.05);
-}
-
-.post-list-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  width: 100%;
-}
-
-/* 添加顶部信息栏样式 */
-.post-list-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
-  flex-wrap: wrap;
-}
-
-.post-time {
-  font-size: 12px;
-  color: #999;
-}
-
-.post-badges {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.post-badge {
-  display: flex;
-  align-items: center;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-size: 12px;
-  font-weight: 500;
-  gap: 2px;
-}
-
-.pin-badge {
-  background-color: #e6f7ff;
-  color: #1890ff;
-}
-
-.hot-badge {
-  background-color: #fff2e8;
-  color: #fa541c;
-}
-
-.post-list-content .post-title {
-  font-size: 16px;
-  font-weight: 600;
-  margin: 0 0 8px;
-  color: #333;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  line-height: 1.4;
-  text-align: left; /* 确保标题靠左显示 */
-}
-
-.post-list-content .post-text {
-  font-size: 14px;
-  color: #666;
-  margin: 0 0 8px;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  line-height: 1.5;
-  text-align: left; /* 确保内容靠左显示 */
-}
-
-.post-list-content .post-text.longer-text {
-  -webkit-line-clamp: 3;
-}
-
-.post-list-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid #f0f0f0;
-}
-
-/* 共享样式 */
-.image-count {
-  position: absolute;
-  bottom: 8px;
-  right: 8px;
-  background-color: rgba(0, 0, 0, 0.4);
-  color: white;
-  padding: 2px 8px;
-  border-radius: 12px;
-  font-size: 12px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-/* 分类标签样式 */
-.category-container {
-  display: flex;
-}
-
-.category-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2px 10px;
-  border-radius: 20px;
-  font-size: 13px;
-  font-weight: normal;
-  color: #ffffff;
-  background-color: transparent;
-  background-image: linear-gradient(to right, #36a9e1, #1677ff);
-  border: none;
-  white-space: nowrap;
-  max-width: 120px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.category-badge:hover {
-  opacity: 0.9;
-}
-
-.like-area {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  background-color: #f0f2f5;
-  padding: 3px 8px;
-  border-radius: 14px;
-  margin-right: 16px;
-  margin-left: auto;
-  position: relative;
-}
-
-.like-icon {
-  font-size: 14px;
-  color: #1677ff;
-}
-
-.like-icon.liked {
-  color: #1677ff;
-  transform: scale(1.1);
-}
-
-.like-count {
-  font-size: 13px;
-  font-weight: 500;
-  color: #666;
-}
-
-/* 悬浮发帖按钮 */
-.floating-button {
-  position: fixed;
-  bottom: 80px;
-  right: 16px;
-  width: auto;
-  height: 44px;
-  padding: 0 18px;
-  border-radius: 22px;
-  background: #1677ff;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  box-shadow: 0 4px 12px rgba(22, 119, 255, 0.2);
-  transition: all 0.3s ease;
-  cursor: pointer;
-  z-index: 10;
-  font-weight: 500;
-  font-size: 14px;
-}
-
-.floating-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 14px rgba(22, 119, 255, 0.3);
-}
-
-.floating-button:active {
-  transform: translateY(0);
-  box-shadow: 0 2px 8px rgba(22, 119, 255, 0.25);
-}
-
-.pulse-on-click:active {
-  animation: pulse 0.3s ease-in-out;
-}
-
-@keyframes pulse {
-  0% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(0.95);
-  }
-  100% {
-    transform: scale(1);
-  }
-}
-
 .empty-state {
   padding: 40px 0;
 }
@@ -1803,7 +1530,6 @@ const getTitleClass = (title) => {
   color: #409eff;
 }
 
-/* 统一底部统计项样式 */
 .post-list-item .post-stats {
   display: flex;
   align-items: center;
@@ -1836,7 +1562,6 @@ const getTitleClass = (title) => {
   color: #1677ff;
 }
 
-/* 同样为瀑布流视图应用相同的样式 */
 .post-card .stat-item {
   display: flex;
   flex-direction: row; /* 确保水平排列 */
@@ -1850,7 +1575,6 @@ const getTitleClass = (title) => {
   vertical-align: middle;
 }
 
-/* 列表视图图片样式 */
 .post-list-item .post-images {
   margin-top: 12px;
   width: 100%;
@@ -1919,7 +1643,6 @@ const getTitleClass = (title) => {
   font-weight: 500;
 }
 
-/* 添加顶部信息栏样式 */
 .post-card-header, .post-list-header {
   display: flex;
   justify-content: space-between;
@@ -1959,7 +1682,6 @@ const getTitleClass = (title) => {
   color: #fa541c;
 }
 
-/* 添加从script中移除的CSS选择器 */
 :deep(.el-input .el-input__wrapper) {
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08);
   border-radius: 8px;
@@ -1977,7 +1699,6 @@ const getTitleClass = (title) => {
   color: #333;
 }
 
-/* 用户称号样式 */
 .user-title-inline {
   font-size: 0.85rem;
   color: #333;
@@ -1994,7 +1715,6 @@ const getTitleClass = (title) => {
   margin-left: 6px;
 }
 
-/* 官方称号 - 金色 */
 .title-official {
   color: #6d4b2f !important;
   background-color: #f8d66d !important;
@@ -2004,7 +1724,6 @@ const getTitleClass = (title) => {
   letter-spacing: 0.5px !important;
 }
 
-/* 持之以恒称号 - 绿色 */
 .title-persistent {
   color: #2c5e2e !important;
   background-color: #a8e2aa !important;
@@ -2013,7 +1732,6 @@ const getTitleClass = (title) => {
   letter-spacing: 0.4px !important;
 }
 
-/* 巅峰大神称号 - 红色 */
 .title-master {
   color: #ffffff !important;
   background-color: #e74c3c !important;
@@ -2021,5 +1739,96 @@ const getTitleClass = (title) => {
   font-weight: 700 !important;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
   letter-spacing: 0.6px !important;
+}
+
+/* 悬浮按钮动画 */
+.pulse-on-click:active {
+  animation: pulse 0.3s ease-in-out;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(0.95);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* 帖子列表 */
+.post-list {
+  padding: 12px;
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* 列表视图样式 */
+.post-list-view {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* 分类标签样式 */
+.category-container {
+  display: flex;
+}
+
+.category-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 10px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: normal;
+  color: #ffffff;
+  background-color: transparent;
+  background-image: linear-gradient(to right, #36a9e1, #1677ff);
+  border: none;
+  white-space: nowrap;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 帖子状态标签 */
+.post-badges {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.post-badge {
+  display: flex;
+  align-items: center;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  gap: 2px;
+}
+
+.pin-badge {
+  background-color: #e6f7ff;
+  color: #1890ff;
+}
+
+.hot-badge {
+  background-color: #fff2e8;
+  color: #fa541c;
+}
+
+.post-time {
+  font-size: 12px;
+  color: #999;
 }
 </style>
