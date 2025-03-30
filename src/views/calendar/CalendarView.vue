@@ -4,7 +4,7 @@
     <div class="background-wrapper">
       <SpaceBackground />
     </div>
-
+    <div class="top-spacing"></div>
     <!-- 内容主体 -->
     <div class="calendar-content">
       <!-- 顶部切换按钮 -->
@@ -672,6 +672,11 @@ watch(
   padding-top: 0; /* 无需额外顶部内边距 */
 }
 
+.top-spacing {
+  height: 20px;
+  width: 100%;
+  background-color: #f8f9fa;
+}
 .background-wrapper {
   position: fixed;
   top: 0;

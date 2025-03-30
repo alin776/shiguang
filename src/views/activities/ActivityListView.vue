@@ -1,5 +1,6 @@
 <template>
   <div class="activity-list-page">
+    <div class="top-spacing"></div>
     <div class="header">
       <div class="back-button" @click="router.back()">
         <el-icon><ArrowLeft /></el-icon>
@@ -279,8 +280,17 @@ onMounted(async () => {
 <style scoped>
 .activity-list-page {
   padding-bottom: 60px;
+  margin-top: 0;
+  min-height: 100vh;
+  display: block;
 }
 
+.top-spacing {
+  height: 30px;
+  width: 100%;
+  background-color: #f8f9fa;
+  flex-shrink: 0;
+}
 .header {
   display: flex;
   align-items: center;

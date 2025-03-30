@@ -990,6 +990,12 @@ const getTitleClass = (title) => {
   z-index: 1;
 }
 
+.top-spacing {
+  height: 40px;
+  width: 100%;
+  background-color: #f8f9fa;
+  flex-shrink: 0;
+}
 .community-page {
   display: flex;
   flex-direction: column;
@@ -1004,7 +1010,7 @@ const getTitleClass = (title) => {
 /* 顶部标题栏 - 新设计 */
 .page-header {
   position: fixed;
-  top: 20px;
+  top: 40px;
   left: 0;
   right: 0;
   height: 56px;

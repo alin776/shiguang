@@ -2,7 +2,7 @@
   <div class="note-page no-extra-padding">
     <!-- 背景改为白色 -->
     <div class="white-background"></div>
-
+    <div class="top-spacing"></div>
     <!-- 内容主体 -->
     <div class="note-content">
       <!-- 顶部标题栏 -->
@@ -1018,6 +1018,11 @@ setupRouteReturnHandler();
   padding-top: var(--safe-area-top); /* 添加顶部安全区域 */
 }
 
+.top-spacing {
+  height: 20px;
+  width: 100%;
+  background-color: #f8f9fa;
+}
 .white-background {
   position: fixed;
   top: 0;

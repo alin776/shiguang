@@ -62,6 +62,12 @@ const navItems = [
     activeIcon: "/icons/community-active.svg",
   },
   {
+    path: "/rate-posts",
+    label: "评分",
+    icon: "/icons/rating.svg",
+    activeIcon: "/icons/rating-active.svg",
+  },
+  {
     path: "/notifications",
     label: "通知",
     icon: "/icons/notification.svg",
@@ -88,6 +94,8 @@ const currentRoute = computed(() => {
     return '/note';
   } else if (path.startsWith('/notifications/')) {
     return '/notifications';
+  } else if (path.startsWith('/rate-posts/')) {
+    return '/rate-posts';
   }
   return path;
 });

@@ -26,6 +26,10 @@ import PointsExchangeView from "../views/PointsExchangeView.vue"; // 添加积�
 import CardGameView from "../views/CardGameView.vue"; // 添加卡牌游戏页面组件导入
 import AdView from "../views/AdView.vue"; // 添加广告页面组件导入
 import PointsHistoryView from "../views/points/PointsHistoryView.vue"; // 添加积分明细页面组件导入
+import RatePostsView from "../views/RatePostsView.vue";
+import RatePostDetailView from "../views/RatePostDetailView.vue";
+import OptionDetailView from "../views/OptionDetailView.vue"; // 添加选项详情页面组件导入
+import CreateRatePostView from "../views/CreateRatePostView.vue";
 import { ref } from "vue";
 
 const routes = [
@@ -285,6 +289,41 @@ const routes = [
     component: AdView,
     meta: {
       requiresAuth: true,
+    },
+  },
+  {
+    path: "/rate-posts",
+    name: "RatePosts",
+    component: RatePostsView,
+    meta: { 
+      requiresAuth: true,
+      title: "评分广场"
+    },
+  },
+  {
+    path: "/rate-posts/:id",
+    name: "RatePostDetail",
+    component: RatePostDetailView,
+    meta: { 
+      requiresAuth: true 
+    },
+  },
+  {
+    path: "/rate-posts/:id/options/:optionId",
+    name: "OptionDetail",
+    component: OptionDetailView,
+    meta: { 
+      requiresAuth: true,
+      title: "选项详情"
+    },
+  },
+  {
+    path: "/rate-posts/create",
+    name: "CreateRatePost",
+    component: CreateRatePostView,
+    meta: { 
+      requiresAuth: true,
+      title: "创建评分贴"
     },
   },
   {
