@@ -2,6 +2,8 @@ import { defineStore } from 'pinia';
 import axios from 'axios';
 import { API_BASE_URL, APP_VERSION } from '../config';
 import { App } from '@capacitor/app';
+import { Capacitor } from '@capacitor/core';
+import { AppLauncher } from '@capacitor/app-launcher';
 
 export const useUpdateStore = defineStore('update', {
   state: () => ({
@@ -81,9 +83,19 @@ export const useUpdateStore = defineStore('update', {
           throw new Error('下载链接无效');
         }
         
-        // 使用Capacitor的App.openUrl在系统浏览器中打开下载链接
-        // 这在安卓端会正确处理APK下载
-        await App.openUrl({ url: downloadUrl });
+        try {
+          // 使用AppLauncher打开URL
+          await AppLauncher.openUrl({ url: downloadUrl });
+        } catch (e) {
+          // 如果AppLauncher失败，回退到其他方法
+          if (Capacitor.getPlatform() === 'android') {
+            // 使用window.open在系统浏览器中打开
+            window.open(downloadUrl, '_system');
+          } else {
+            // iOS平台尝试使用App.openUrl
+            await App.openUrl({ url: downloadUrl });
+          }
+        }
         
         return true;
       } catch (error) {

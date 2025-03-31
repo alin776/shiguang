@@ -1,7 +1,7 @@
 {
   "name": "shiguang",
   "private": true,
-  "version": "2.0.2",
+  "version": "2.0.3",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -11,9 +11,12 @@
   "dependencies": {
     "@capacitor/android": "^7.1.0",
     "@capacitor/app": "^7.0.0",
+    "@capacitor/app-launcher": "^7.0.0",
     "@capacitor/cli": "^6.2.0",
     "@capacitor/core": "^7.1.0",
     "@capacitor/ios": "^7.0.1",
+    "@capacitor/network": "^7.0.0",
+    "@mozartec/capacitor-microphone": "^7.0.0",
     "@vueuse/core": "^12.7.0",
     "axios": "^1.7.9",
     "echarts": "^5.6.0",

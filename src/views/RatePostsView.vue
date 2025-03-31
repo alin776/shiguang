@@ -101,6 +101,33 @@ const categories = ref([
   { id: 'other', name: '其他' }
 ]);
 
+// 加载分类数据
+const loadCategories = async () => {
+  try {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/categories/rate-posts`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error('获取分类数据失败');
+    }
+    
+    const result = await response.json();
+    
+    if (result.success && result.data && result.data.length > 0) {
+      // 添加"全部"分类
+      const allCategories = [{ id: 'all', name: '全部' }, ...result.data];
+      categories.value = allCategories;
+    }
+  } catch (error) {
+    console.error('加载分类数据失败:', error);
+    // 出错时保留默认分类
+  }
+};
+
 // 模拟数据，实际应从API获取
 const ratePosts = ref([
   {
@@ -287,7 +314,8 @@ const goToCreate = () => {
 };
 
 onMounted(() => {
-  loadRatePosts();
+  loadCategories(); // 加载分类数据
+  loadRatePosts(); // 加载评分贴数据
 });
 </script>
 

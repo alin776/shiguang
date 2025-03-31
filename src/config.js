@@ -8,7 +8,7 @@ export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://47.98.2
 
 // 应用版本信息
 export const APP_VERSION = {
-  VERSION: '2.0.2',     // 当前版本号
+  VERSION: '2.0.3',     // 当前版本号
   BUILD_NUMBER: '3',    // 构建号
   RELEASE_DATE: '2024-05-23' // 发布日期
 };
@@ -96,7 +96,7 @@ export const API_ENDPOINTS = {
 // 环境配置
 export const ENV = {
   IS_PRODUCTION: process.env.NODE_ENV === 'production',
-  VERSION: '2.0.2'
+  VERSION: '2.0.3'
 };
 
 // 存储键
