@@ -2516,6 +2516,539 @@ exports.updatePointsExchangeStatus = async (req, res) => {
   }
 };
 
+// 评分贴分类管理
+exports.createRatePostCategory = async (req, res) => {
+  try {
+    const { id, name, description, display_order } = req.body;
+    
+    if (!id || !name) {
+      return res.status(400).json({
+        success: false,
+        message: '分类ID和名称为必填项'
+      });
+    }
+    
+    // 插入分类数据
+    await db.execute(
+      `INSERT INTO rate_post_categories (id, name, description, display_order)
+       VALUES (?, ?, ?, ?)`,
+      [id, name, description || null, display_order || 0]
+    );
+    
+    return res.status(201).json({
+      success: true,
+      message: '评分贴分类创建成功'
+    });
+  } catch (error) {
+    console.error('创建评分贴分类失败:', error);
+    if (error.code === 'ER_DUP_ENTRY') {
+      return res.status(409).json({
+        success: false,
+        message: '分类ID已存在'
+      });
+    }
+    return res.status(500).json({
+      success: false,
+      message: '服务器错误',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+exports.updateRatePostCategory = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, description, display_order, is_active } = req.body;
+    
+    // 检查分类是否存在
+    const [category] = await db.execute(
+      'SELECT * FROM rate_post_categories WHERE id = ?',
+      [id]
+    );
+    
+    if (category.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: '评分贴分类不存在'
+      });
+    }
+    
+    // 更新分类
+    await db.execute(
+      `UPDATE rate_post_categories 
+       SET name = ?, description = ?, display_order = ?, is_active = ?
+       WHERE id = ?`,
+      [
+        name || category[0].name,
+        description !== undefined ? description : category[0].description,
+        display_order !== undefined ? display_order : category[0].display_order,
+        is_active !== undefined ? is_active : category[0].is_active,
+        id
+      ]
+    );
+    
+    return res.status(200).json({
+      success: true,
+      message: '评分贴分类更新成功'
+    });
+  } catch (error) {
+    console.error('更新评分贴分类失败:', error);
+    return res.status(500).json({
+      success: false,
+      message: '服务器错误',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+exports.deleteRatePostCategory = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // 检查分类是否存在
+    const [category] = await db.execute(
+      'SELECT * FROM rate_post_categories WHERE id = ?',
+      [id]
+    );
+    
+    if (category.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: '评分贴分类不存在'
+      });
+    }
+    
+    // 检查该分类下是否有评分贴
+    const [posts] = await db.execute(
+      'SELECT COUNT(*) as count FROM rate_posts WHERE category = ?',
+      [id]
+    );
+    
+    if (posts[0].count > 0) {
+      return res.status(400).json({
+        success: false,
+        message: '该分类下存在评分贴，无法删除'
+      });
+    }
+    
+    // 删除分类
+    await db.execute(
+      'DELETE FROM rate_post_categories WHERE id = ?',
+      [id]
+    );
+    
+    return res.status(200).json({
+      success: true,
+      message: '评分贴分类删除成功'
+    });
+  } catch (error) {
+    console.error('删除评分贴分类失败:', error);
+    return res.status(500).json({
+      success: false,
+      message: '服务器错误',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+// 评分贴管理
+exports.getRatePosts = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+    const search = req.query.search || '';
+    const category = req.query.category || '';
+    
+    console.log('评分贴查询参数:', {
+      page,
+      limit,
+      offset,
+      search,
+      category
+    });
+    
+    let query = `
+      SELECT 
+        p.id, p.title, p.description, p.category, p.total_ratings, p.created_at,
+        u.id as user_id, u.username as author_name,
+        c.name as category_name
+      FROM rate_posts p
+      JOIN users u ON p.user_id = u.id
+      JOIN rate_post_categories c ON p.category = c.id
+      WHERE 1=1
+    `;
+    
+    const params = [];
+    
+    if (search) {
+      query += ' AND (p.title LIKE ? OR p.description LIKE ?)';
+      params.push(`%${search}%`, `%${search}%`);
+    }
+    
+    if (category && category !== 'all') {
+      query += ' AND p.category = ?';
+      params.push(category);
+    }
+    
+    query += ' ORDER BY p.created_at DESC LIMIT ? OFFSET ?';
+    params.push(limit, offset);
+    
+    console.log('评分贴SQL查询:', query);
+    console.log('评分贴查询参数:', params);
+    
+    // 获取评分贴列表
+    const [posts] = await db.execute(query, params);
+    
+    console.log('评分贴查询结果:', posts);
+    
+    // 获取总数
+    let countQuery = `
+      SELECT COUNT(*) as total
+      FROM rate_posts p
+      WHERE 1=1
+    `;
+    
+    const countParams = [];
+    
+    if (search) {
+      countQuery += ' AND (p.title LIKE ? OR p.description LIKE ?)';
+      countParams.push(`%${search}%`, `%${search}%`);
+    }
+    
+    if (category && category !== 'all') {
+      countQuery += ' AND p.category = ?';
+      countParams.push(category);
+    }
+    
+    console.log('评分贴总数查询:', countQuery);
+    console.log('评分贴总数查询参数:', countParams);
+    
+    const [countResult] = await db.execute(countQuery, countParams);
+    const total = countResult[0].total;
+    
+    console.log('评分贴总数:', total);
+    
+    return res.status(200).json({
+      success: true,
+      data: {
+        posts,
+        pagination: {
+          total,
+          page,
+          totalPages: Math.ceil(total / limit)
+        }
+      }
+    });
+  } catch (error) {
+    console.error('获取评分贴列表失败:', error);
+    return res.status(500).json({
+      success: false,
+      message: '服务器错误',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+exports.getRatePostDetail = async (req, res) => {
+  try {
+    const postId = req.params.id;
+    
+    // 获取评分贴基本信息
+    const [postResult] = await db.execute(
+      `SELECT 
+        p.id, p.title, p.description, p.category, p.total_ratings, p.created_at,
+        u.id as user_id, u.username as author_name,
+        c.name as category_name
+      FROM rate_posts p
+      JOIN users u ON p.user_id = u.id
+      JOIN rate_post_categories c ON p.category = c.id
+      WHERE p.id = ?`,
+      [postId]
+    );
+    
+    if (postResult.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: '评分贴不存在'
+      });
+    }
+    
+    const post = postResult[0];
+    
+    // 获取评分选项
+    const [options] = await db.execute(
+      `SELECT 
+        id, name, avatar, avg_score, ratings_count, created_at
+      FROM rate_options
+      WHERE post_id = ?
+      ORDER BY id ASC`,
+      [postId]
+    );
+    
+    // 获取每个选项的评论
+    for (const option of options) {
+      const [comments] = await db.execute(
+        `SELECT 
+          rc.id, rc.content, rc.likes, rc.created_at,
+          u.id as user_id, u.username, u.avatar as user_avatar,
+          rr.score as rating
+        FROM rate_comments rc
+        JOIN users u ON rc.user_id = u.id
+        LEFT JOIN rate_ratings rr ON rc.rating_id = rr.id
+        WHERE rc.option_id = ?
+        ORDER BY rc.created_at DESC`,
+        [option.id]
+      );
+      
+      option.comments = comments;
+    }
+    
+    post.options = options;
+    
+    return res.status(200).json({
+      success: true,
+      data: post
+    });
+  } catch (error) {
+    console.error('获取评分贴详情失败:', error);
+    return res.status(500).json({
+      success: false,
+      message: '服务器错误',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+exports.createRatePost = async (req, res) => {
+  try {
+    const { title, description, category, options } = req.body;
+    
+    // 验证参数
+    if (!title || !category || !options || !Array.isArray(options) || options.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: '标题、分类和选项为必填项'
+      });
+    }
+    
+    // 检查分类是否存在
+    const [categoryExists] = await db.execute(
+      'SELECT * FROM rate_post_categories WHERE id = ?',
+      [category]
+    );
+    
+    if (categoryExists.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: '评分贴分类不存在'
+      });
+    }
+    
+    // 创建评分贴
+    await db.execute('START TRANSACTION');
+    
+    try {
+      // 插入评分贴
+      const [postResult] = await db.execute(
+        `INSERT INTO rate_posts (title, description, category, user_id)
+         VALUES (?, ?, ?, ?)`,
+        [title, description || null, category, req.admin.id]
+      );
+      
+      const postId = postResult.insertId;
+      
+      // 插入评分选项
+      for (const option of options) {
+        if (!option.name) {
+          throw new Error('选项名称不能为空');
+        }
+        
+        await db.execute(
+          `INSERT INTO rate_options (post_id, name, avatar)
+           VALUES (?, ?, ?)`,
+          [postId, option.name, option.avatar || null]
+        );
+      }
+      
+      await db.execute('COMMIT');
+      
+      return res.status(201).json({
+        success: true,
+        data: {
+          id: postId,
+          message: '评分贴创建成功'
+        }
+      });
+    } catch (error) {
+      await db.execute('ROLLBACK');
+      throw error;
+    }
+  } catch (error) {
+    console.error('创建评分贴失败:', error);
+    return res.status(500).json({
+      success: false,
+      message: '创建评分贴失败',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+exports.updateRatePost = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, description } = req.body;
+    
+    // 检查评分贴是否存在
+    const [postExists] = await db.execute(
+      'SELECT * FROM rate_posts WHERE id = ?',
+      [id]
+    );
+    
+    if (postExists.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: '评分贴不存在'
+      });
+    }
+    
+    // 更新评分贴
+    await db.execute(
+      `UPDATE rate_posts 
+       SET title = ?, description = ?
+       WHERE id = ?`,
+      [
+        title || postExists[0].title,
+        description !== undefined ? description : postExists[0].description,
+        id
+      ]
+    );
+    
+    return res.status(200).json({
+      success: true,
+      message: '评分贴更新成功'
+    });
+  } catch (error) {
+    console.error('更新评分贴失败:', error);
+    return res.status(500).json({
+      success: false,
+      message: '服务器错误',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+exports.deleteRatePost = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // 检查评分贴是否存在
+    const [postExists] = await db.execute(
+      'SELECT * FROM rate_posts WHERE id = ?',
+      [id]
+    );
+    
+    if (postExists.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: '评分贴不存在'
+      });
+    }
+    
+    // 删除评分贴（会级联删除选项、评分和评论）
+    await db.execute(
+      'DELETE FROM rate_posts WHERE id = ?',
+      [id]
+    );
+    
+    return res.status(200).json({
+      success: true,
+      message: '评分贴删除成功'
+    });
+  } catch (error) {
+    console.error('删除评分贴失败:', error);
+    return res.status(500).json({
+      success: false,
+      message: '服务器错误',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+exports.deleteRateOption = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // 检查选项是否存在
+    const [optionExists] = await db.execute(
+      'SELECT * FROM rate_options WHERE id = ?',
+      [id]
+    );
+    
+    if (optionExists.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: '评分选项不存在'
+      });
+    }
+    
+    // 删除选项（会级联删除评分和评论）
+    await db.execute(
+      'DELETE FROM rate_options WHERE id = ?',
+      [id]
+    );
+    
+    return res.status(200).json({
+      success: true,
+      message: '评分选项删除成功'
+    });
+  } catch (error) {
+    console.error('删除评分选项失败:', error);
+    return res.status(500).json({
+      success: false,
+      message: '服务器错误',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+exports.deleteRateComment = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // 检查评论是否存在
+    const [commentExists] = await db.execute(
+      'SELECT * FROM rate_comments WHERE id = ?',
+      [id]
+    );
+    
+    if (commentExists.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: '评论不存在'
+      });
+    }
+    
+    // 删除评论
+    await db.execute(
+      'DELETE FROM rate_comments WHERE id = ?',
+      [id]
+    );
+    
+    return res.status(200).json({
+      success: true,
+      message: '评论删除成功'
+    });
+  } catch (error) {
+    console.error('删除评论失败:', error);
+    return res.status(500).json({
+      success: false,
+      message: '服务器错误',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
 module.exports = {
   login: exports.login,
   getProfile: exports.getProfile,
@@ -2575,5 +3108,15 @@ module.exports = {
   updatePointsProduct: exports.updatePointsProduct,
   deletePointsProduct: exports.deletePointsProduct,
   getAllPointsExchanges: exports.getAllPointsExchanges,
-  updatePointsExchangeStatus: exports.updatePointsExchangeStatus
+  updatePointsExchangeStatus: exports.updatePointsExchangeStatus,
+  createRatePostCategory: exports.createRatePostCategory,
+  updateRatePostCategory: exports.updateRatePostCategory,
+  deleteRatePostCategory: exports.deleteRatePostCategory,
+  getRatePosts: exports.getRatePosts,
+  getRatePostDetail: exports.getRatePostDetail,
+  createRatePost: exports.createRatePost,
+  updateRatePost: exports.updateRatePost,
+  deleteRatePost: exports.deleteRatePost,
+  deleteRateOption: exports.deleteRateOption,
+  deleteRateComment: exports.deleteRateComment
 }; 

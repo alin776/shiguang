@@ -121,6 +121,20 @@ router.put('/points/exchanges/:id', [
   check('status').isIn(['pending', 'completed', 'failed']).withMessage('状态值无效')
 ], adminController.updatePointsExchangeStatus);
 
+// 评分贴分类管理路由
+router.post('/rate-post-categories', adminController.createRatePostCategory);
+router.put('/rate-post-categories/:id', adminController.updateRatePostCategory);
+router.delete('/rate-post-categories/:id', adminController.deleteRatePostCategory);
+
+// 评分贴管理路由
+router.get('/rate-posts', adminController.getRatePosts);
+router.get('/rate-posts/:id', adminController.getRatePostDetail);
+router.post('/rate-posts', adminController.createRatePost);
+router.put('/rate-posts/:id', adminController.updateRatePost);
+router.delete('/rate-posts/:id', adminController.deleteRatePost);
+router.delete('/rate-options/:id', adminController.deleteRateOption);
+router.delete('/rate-comments/:id', adminController.deleteRateComment);
+
 // 管理员设置
 // router.put("/settings", adminController.updateAdminSettings);
 

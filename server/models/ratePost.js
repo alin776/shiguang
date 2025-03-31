@@ -69,43 +69,78 @@ class RatePost {
     return post;
   }
   
+  // 获取选项的所有评分详情
+  static async getOptionRatingsDetail(optionId) {
+    const [ratings] = await db.query(
+      `SELECT rr.id, rr.user_id, u.username, rr.score, rr.created_at
+       FROM rate_ratings rr
+       LEFT JOIN users u ON rr.user_id = u.id
+       WHERE rr.option_id = ?
+       ORDER BY rr.created_at DESC`,
+      [optionId]
+    );
+    
+    return ratings;
+  }
+  
   // 获取评分贴的所有选项
   static async getOptions(postId) {
     const [options] = await db.query(
       `SELECT ro.*, 
-       (SELECT COUNT(*) FROM rate_ratings WHERE option_id = ro.id) as ratings_count,
-       (SELECT AVG(score) FROM rate_ratings WHERE option_id = ro.id) as calculated_score
+       (SELECT COUNT(*) FROM rate_ratings WHERE option_id = ro.id) as ratings_count
        FROM rate_options ro 
        WHERE ro.post_id = ? 
        ORDER BY ro.avg_score DESC`,
       [postId]
     );
     
-    // 获取每个选项的评论
+    // 获取每个选项的评论和评分详情
     for (const option of options) {
       option.comments = await this.getOptionComments(option.id);
       
       // 确保评分人数为数字
       option.ratings = parseInt(option.ratings_count || 0);
       
-      // 确保选项有评分值，防止undefined
-      if (option.avg_score === undefined || option.avg_score === null) {
-        // 如果数据库中的avg_score为空，使用查询计算的分数
-        if (option.calculated_score !== undefined && option.calculated_score !== null) {
-          option.score = parseFloat(option.calculated_score).toFixed(1);
-          console.log(`选项${option.id}使用计算的评分: ${option.score}`);
-        } else if (option.ratings > 0) {
-          // 如果有评分人数但没有评分，设置默认值
-          option.score = "8.0"; // 设置一个默认值
-          console.log(`选项${option.id}有${option.ratings}人评分但无评分值，设置默认分数: 8.0`);
-        } else {
-          option.score = "0.0";
-          console.log(`选项${option.id}无评分，设置为0`);
+      // 获取详细评分数据并精确计算平均分
+      const ratingsDetail = await this.getOptionRatingsDetail(option.id);
+      
+      // 不直接将所有评分详情附加到选项对象上，而是预先计算好评分分布
+      // 创建评分分布对象
+      const ratingDistribution = {
+        1: 0, 2: 0, 3: 0, 4: 0, 5: 0
+      };
+      
+      if (ratingsDetail.length > 0) {
+        // 计算精确的平均分
+        const totalScore = ratingsDetail.reduce((sum, rating) => sum + parseFloat(rating.score), 0);
+        const avgScore = totalScore / ratingsDetail.length;
+        option.score = avgScore.toFixed(1);
+        console.log(`选项${option.id}基于${ratingsDetail.length}个用户评分计算得分: ${option.score}`);
+        
+        // 计算评分分布
+        ratingsDetail.forEach(rating => {
+          // 将10分制转换为5星制
+          const stars = Math.min(5, Math.max(1, Math.ceil(parseFloat(rating.score) / 2)));
+          ratingDistribution[stars]++;
+        });
+        
+        // 转换为百分比
+        for (let i = 1; i <= 5; i++) {
+          ratingDistribution[i] = parseFloat(((ratingDistribution[i] / ratingsDetail.length) * 100).toFixed(1));
         }
       } else {
-        // 数据库中有avg_score，直接使用
-        option.score = parseFloat(option.avg_score).toFixed(1);
-        console.log(`选项${option.id}使用数据库评分: ${option.score}`);
+        option.score = "0.0";
+        console.log(`选项${option.id}无评分，设置为0`);
+      }
+      
+      // 将评分分布添加到选项
+      option.ratingDistribution = ratingDistribution;
+      
+      // 只保留少量用户评分详情用于显示
+      if (ratingsDetail.length > 0) {
+        option.ratingsDetail = ratingsDetail.slice(0, 20); // 只保留最新的20条评分记录
+      } else {
+        option.ratingsDetail = [];
       }
     }
     
@@ -121,7 +156,7 @@ class RatePost {
         WHERE rc.option_id = ro.id 
         ORDER BY rr.score DESC, rc.likes DESC, rc.created_at DESC 
         LIMIT 1) as topComment,
-       (SELECT AVG(score) FROM rate_ratings WHERE option_id = ro.id) as calculated_score
+       (SELECT COUNT(*) FROM rate_ratings WHERE option_id = ro.id) as ratings_count
        FROM rate_options ro
        WHERE ro.post_id = ?
        ORDER BY ro.avg_score DESC
@@ -129,31 +164,33 @@ class RatePost {
       [postId, limit]
     );
     
-    return options.map(option => {
-      // 确保有评分值
-      let finalScore = option.avg_score;
-      if (finalScore === undefined || finalScore === null) {
-        if (option.calculated_score !== undefined && option.calculated_score !== null) {
-          finalScore = parseFloat(option.calculated_score);
-          console.log(`顶部选项${option.id}使用计算的评分: ${finalScore}`);
-        } else if (option.ratings_count > 0) {
-          finalScore = 8.0; // 设置默认值
-          console.log(`顶部选项${option.id}有评分但无评分值，设置默认分数: 8.0`);
-        } else {
-          finalScore = 0;
-          console.log(`顶部选项${option.id}无评分，设置为0`);
-        }
+    // 对所有顶部选项进行处理，包括评分重计算
+    const processedOptions = [];
+    for (const option of options) {
+      // 获取详细评分数据并精确计算平均分
+      const ratingsDetail = await this.getOptionRatingsDetail(option.id);
+      let finalScore = 0;
+      
+      if (ratingsDetail.length > 0) {
+        // 计算精确的平均分
+        const totalScore = ratingsDetail.reduce((sum, rating) => sum + parseFloat(rating.score), 0);
+        finalScore = (totalScore / ratingsDetail.length).toFixed(1);
+        console.log(`顶部选项${option.id}基于${ratingsDetail.length}个用户评分计算得分: ${finalScore}`);
+      } else {
+        console.log(`顶部选项${option.id}无评分，设置为0`);
       }
       
-      return {
+      processedOptions.push({
         id: option.id,
         name: option.name,
         avatar: option.avatar,
-        score: finalScore, // 确保有评分
-        ratings: parseInt(option.ratings_count || 0), // 直接使用原始评分人数，不再除以10000
+        score: finalScore,
+        ratings: parseInt(option.ratings_count || 0),
         topComment: option.topComment
-      };
-    });
+      });
+    }
+    
+    return processedOptions;
   }
   
   // 获取选项的评论
@@ -436,6 +473,37 @@ class RatePost {
     );
     
     return result[0].count > 0;
+  }
+  
+  // 获取选项的评分分布
+  static async getRatingDistribution(optionId) {
+    const [ratings] = await db.query(
+      `SELECT score FROM rate_ratings WHERE option_id = ?`,
+      [optionId]
+    );
+    
+    // 创建评分分布对象
+    const distribution = {
+      1: 0, 2: 0, 3: 0, 4: 0, 5: 0
+    };
+    
+    if (ratings.length === 0) {
+      return distribution;
+    }
+    
+    // 计算评分分布
+    ratings.forEach(rating => {
+      // 将10分制转换为5星制
+      const stars = Math.min(5, Math.max(1, Math.ceil(parseFloat(rating.score) / 2)));
+      distribution[stars]++;
+    });
+    
+    // 转换为百分比
+    for (let i = 1; i <= 5; i++) {
+      distribution[i] = parseFloat(((distribution[i] / ratings.length) * 100).toFixed(1));
+    }
+    
+    return distribution;
   }
 }
 

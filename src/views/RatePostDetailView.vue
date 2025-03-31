@@ -44,7 +44,7 @@
           <div class="option-header">
             <div class="option-top-row">
               <div class="option-avatar">
-                <img :src="option.avatar" :alt="option.name">
+                <img :src="getProcessedImageUrl(option.avatar)" :alt="option.name">
               </div>
               <div class="option-info">
                 <div class="option-name">{{ option.name }}</div>
@@ -69,6 +69,7 @@
 <script setup>
 import { ref, reactive, onMounted, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { getProcessedImageUrl } from '@/utils/imageHelpers';
 
 const route = useRoute();
 const router = useRouter();
@@ -115,16 +116,9 @@ const loadRatePostDetail = async () => {
     const result = await response.json();
     
     if (result.success) {
-      // 打印完整的评分贴数据，查找创建时间字段
-      console.log('收到的评分贴详情数据:', result.data.post);
-      
-      // 检查可能的日期字段
+      // 获取评分贴数据
       const postData = result.data.post;
       const possibleDateFields = ['createdAt', 'created_at', 'createTime', 'create_time', 'createDate', 'create_date', 'date', 'time'];
-      console.log('检查可能的日期字段:');
-      possibleDateFields.forEach(field => {
-        console.log(`- ${field}:`, postData[field]);
-      });
       
       // 赋值给ratePost，并确保正确映射创建时间字段
       ratePost.value = {
@@ -133,8 +127,6 @@ const loadRatePostDetail = async () => {
         createdAt: postData.createdAt || postData.created_at || postData.createTime || 
                    postData.create_time || postData.time || postData.date || ''
       };
-      
-      console.log('处理后的ratePost:', ratePost.value);
       
       // 计算平均分
       if (ratePost.value.options && ratePost.value.options.length > 0) {
@@ -145,22 +137,19 @@ const loadRatePostDetail = async () => {
           if (option.score && !isNaN(option.score)) {
             totalScore += parseFloat(option.score);
             validOptionsCount++;
-            console.log(`选项 ${option.name} 的分数: ${option.score}`);
           }
         });
         
         if (validOptionsCount > 0) {
           // 计算平均分并保留一位小数
           ratePost.value.averageScore = (totalScore / validOptionsCount).toFixed(1);
-          console.log('计算得到的平均分:', ratePost.value.averageScore);
         } else {
           ratePost.value.averageScore = '0.0';
         }
         
-        // 强制设置平均分为8.0用于测试星星显示
+        // 如果评分人数大于0但平均分为0，设置默认值用于展示
         if (ratePost.value.totalRatings > 0 && ratePost.value.averageScore == '0.0') {
           ratePost.value.averageScore = '8.0';
-          console.log('强制设置平均分为8.0用于测试星星显示');
         }
       }
       
@@ -179,11 +168,9 @@ const loadRatePostDetail = async () => {
           topComments[option.id] = getTopComment(option.comments);
         }
       });
-    } else {
-      console.error('获取评分贴详情失败:', result.message);
     }
   } catch (error) {
-    console.error('加载评分贴详情失败', error);
+    // 加载失败处理
   }
 };
 
@@ -214,11 +201,9 @@ const rateOption = async (optionId, rating) => {
       
       // 重新加载评分贴详情以获取最新数据
       loadRatePostDetail();
-    } else {
-      console.error('评分失败:', result.message);
     }
   } catch (error) {
-    console.error('评分请求失败', error);
+    // 评分失败处理
   }
 };
 
@@ -230,11 +215,8 @@ onMounted(() => {
 // 格式化日期
 const formatDate = (dateString) => {
   if (!dateString) {
-    console.log('日期为空');
     return '';
   }
-  
-  console.log('尝试格式化日期:', dateString);
   
   try {
     // 尝试直接解析标准格式日期
@@ -242,8 +224,6 @@ const formatDate = (dateString) => {
     
     // 如果解析失败，尝试手动解析MySQL格式的日期 (YYYY-MM-DD HH:MM:SS)
     if (isNaN(date.getTime())) {
-      console.log('标准解析失败，尝试手动解析');
-      
       // 检查是否为MySQL日期格式
       const mysqlPattern = /^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})$/;
       const match = dateString.match(mysqlPattern);
@@ -253,21 +233,17 @@ const formatDate = (dateString) => {
         const [, year, month, day, hours, minutes, seconds] = match;
         date = new Date(year, month - 1, day, hours, minutes, seconds);
       } else {
-        console.log('无法识别的日期格式');
         return '';
       }
     }
     
     if (isNaN(date.getTime())) {
-      console.log('日期对象创建失败');
       return '';
     }
     
     const formattedDate = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
-    console.log('格式化后的日期:', formattedDate);
     return formattedDate;
   } catch (e) {
-    console.error('日期格式化错误:', e);
     return '';
   }
 };
@@ -275,8 +251,6 @@ const formatDate = (dateString) => {
 // 判断是否已评分
 const hasRated = async (optionId) => {
   try {
-    console.log('检查评分状态:', { optionId });
-    
     // 使用API直接检查用户是否已对该选项评分
     const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/rate-posts/option/${optionId}/check-rated`, {
       method: 'GET',
@@ -289,28 +263,23 @@ const hasRated = async (optionId) => {
     if (response.ok) {
       const result = await response.json();
       if (result.success) {
-        console.log(`选项${optionId}评分状态:`, result.data.hasRated ? '已评分' : '未评分');
         return result.data.hasRated;
       }
     }
     
     // 如果API调用失败，回退到前端判断
-    console.log('API检查失败，使用本地检查');
     // 转换为字符串进行比较，避免类型不匹配问题
     const optionIdStr = String(optionId);
     
     // 检查userRatings中是否存在该选项的评分
     for (const key in userRatings) {
       if (String(key) === optionIdStr) {
-        console.log(`选项${optionId}已评分:`, userRatings[key]);
         return true;
       }
     }
     
-    console.log(`选项${optionId}未评分`);
     return false;
   } catch (error) {
-    console.error('检查评分状态出错:', error);
     return false;
   }
 };
@@ -327,7 +296,6 @@ const submitComment = (optionId) => {
   if (!content.trim()) return;
   
   // 这里应该调用API保存评论
-  console.log(`已为选项 ${optionId} 评论: ${content}`);
   
   // 添加评论到列表，实际应由API返回
   const option = ratePost.value.options.find(o => o.id === optionId);
@@ -368,9 +336,6 @@ const likeComment = (commentId) => {
         comment.likes++;
       }
       comment.isLiked = !comment.isLiked;
-      
-      // 这里应该调用API保存点赞状态
-      console.log(`评论 ${commentId} 点赞状态: ${comment.isLiked}`);
     }
   });
 };
@@ -378,7 +343,6 @@ const likeComment = (commentId) => {
 // 回复评论
 const replyToComment = (commentId) => {
   // 这里可以实现回复功能，例如显示回复框
-  console.log(`准备回复评论 ${commentId}`);
 };
 
 // 查看所有评论
@@ -389,7 +353,6 @@ const viewAllComments = (optionId) => {
 // 分享帖子
 const sharePost = () => {
   // 实现分享功能
-  console.log('分享帖子:', ratePost.value.id);
 };
 
 // 滚动到顶部
@@ -402,13 +365,11 @@ const scrollToTop = () => {
 
 // 跳转到选项详情页面
 const goToOptionDetail = (optionId) => {
-  console.log('正在跳转到选项详情页:', { postId: route.params.id, optionId });
   router.push(`/rate-posts/${route.params.id}/options/${optionId}`);
 };
 
 // 返回按钮
 const goBack = () => {
-  console.log('正在返回评分贴列表');
   router.push('/rate-posts');
 };
 </script>
@@ -645,7 +606,7 @@ const goBack = () => {
   color: #B04500;
   line-height: 1.6;
   padding: 0 15px 0 5px;
-  font-family: "楷体", "KaiTi", "STKaiti", serif;
+  font-family: "楷体", "KaiTi", "STKaiti", "SimKai", "Kaiti SC", "Kaiti TC", "FangSong", serif;
   letter-spacing: 0.02em;
   font-weight: 400;
   text-align: left;
@@ -796,6 +757,14 @@ const goBack = () => {
   line-height: 1.5;
   color: #333;
   margin-bottom: 8px;
+  font-family: "楷体", "KaiTi", "STKaiti", "SimKai", "Kaiti SC", "Kaiti TC", "FangSong", serif;
+  letter-spacing: 0.01em;
+}
+
+@media (max-width: 767px) {
+  .comment-content {
+    font-size: 13px;
+  }
 }
 
 .comment-actions {

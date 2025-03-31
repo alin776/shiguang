@@ -34,6 +34,8 @@ exports.getRatePostDetail = async (req, res) => {
     const postId = req.params.id;
     const userId = req.user.id;
     
+    console.log(`获取评分贴详情: 帖子ID=${postId}, 用户ID=${userId}`);
+    
     const post = await RatePost.getById(postId);
     
     if (!post) {
@@ -64,6 +66,18 @@ exports.getRatePostDetail = async (req, res) => {
         option.comments.forEach(comment => {
           comment.isLiked = !!userLikes[comment.id];
         });
+      }
+      
+      // 检查评分分布数据并记录日志
+      if (option.ratingDistribution) {
+        console.log(`选项 ${option.name} 的评分分布:`, option.ratingDistribution);
+      } else {
+        console.log(`警告: 选项 ${option.name} 缺少评分分布数据`);
+      }
+      
+      // 检查评分详情数据
+      if (option.ratingsDetail && option.ratingsDetail.length > 0) {
+        console.log(`选项 ${option.name} 有 ${option.ratingsDetail.length} 条评分记录`);
       }
     });
     
@@ -254,6 +268,78 @@ exports.likeComment = async (req, res) => {
     res.status(500).json({
       success: false,
       message: '点赞评论失败'
+    });
+  }
+};
+
+// 获取选项评分详情
+exports.getOptionRatings = async (req, res) => {
+  try {
+    const optionId = req.params.optionId;
+    const userId = req.user.id;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    
+    if (!optionId) {
+      return res.status(400).json({
+        success: false,
+        message: '选项ID为必填项'
+      });
+    }
+    
+    // 查询该选项是否存在
+    const [options] = await db.query(
+      `SELECT * FROM rate_options WHERE id = ?`,
+      [optionId]
+    );
+    
+    if (options.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: '选项不存在'
+      });
+    }
+    
+    // 获取评分详情，带分页
+    const offset = (page - 1) * limit;
+    const [ratings] = await db.query(
+      `SELECT rr.id, rr.user_id, u.username, rr.score, rr.created_at
+       FROM rate_ratings rr
+       LEFT JOIN users u ON rr.user_id = u.id
+       WHERE rr.option_id = ?
+       ORDER BY rr.created_at DESC
+       LIMIT ? OFFSET ?`,
+      [optionId, limit, offset]
+    );
+    
+    // 获取总评分数用于分页
+    const [countResult] = await db.query(
+      `SELECT COUNT(*) AS total FROM rate_ratings WHERE option_id = ?`,
+      [optionId]
+    );
+    
+    const total = countResult[0].total;
+    const hasMore = offset + limit < total;
+    
+    // 获取评分分布
+    const distribution = await RatePost.getRatingDistribution(optionId);
+    
+    res.json({
+      success: true,
+      data: {
+        ratings,
+        distribution,
+        page,
+        limit,
+        total,
+        hasMore
+      }
+    });
+  } catch (error) {
+    console.error('获取评分详情错误:', error);
+    res.status(500).json({
+      success: false,
+      message: '获取评分详情失败'
     });
   }
 };

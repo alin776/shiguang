@@ -66,7 +66,9 @@
                   <div class="upload-placeholder" v-if="!option.avatar">
                     <i class="fas fa-image"></i>
                   </div>
-                  <img v-else :src="option.avatar" class="option-image">
+                  <div v-else-if="option.avatar">
+                    <img :src="getProcessedImageUrl(option.avatar)" class="option-image">
+                  </div>
                 </div>
               </div>
             </div>
@@ -99,6 +101,7 @@
 import { ref, reactive, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import PageHeader from '../components/PageHeader.vue';
+import { getProcessedImageUrl } from '@/utils/imageHelpers';
 
 const router = useRouter();
 const isSubmitting = ref(false);
@@ -257,7 +260,7 @@ const uploadOptionImage = async (index) => {
         const result = await response.json();
         
         if (result.success && result.data && result.data.url) {
-          currentOption.avatar = result.data.url;
+          currentOption.avatar = getProcessedImageUrl(result.data.url);
         } else {
           throw new Error(result.message || '上传图片失败');
         }

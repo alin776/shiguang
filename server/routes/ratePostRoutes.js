@@ -182,4 +182,37 @@ router.get('/:id', authenticate, ratePostController.getRatePostDetail);
  */
 router.get('/option/:optionId/check-rated', authenticate, ratePostController.checkRatedStatus);
 
+/**
+ * @swagger
+ * /api/rate-posts/option/{optionId}/ratings:
+ *   get:
+ *     summary: 获取选项评分详情
+ *     description: 分页获取选项的所有评分详情
+ *     parameters:
+ *       - in: path
+ *         name: optionId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: 选项ID
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *         description: 页码，默认为1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *         description: 每页数量，默认为20
+ *     responses:
+ *       200:
+ *         description: 返回评分详情
+ *       400:
+ *         description: 参数错误
+ *       404:
+ *         description: 选项不存在
+ */
+router.get('/option/:optionId/ratings', authenticate, ratePostController.getOptionRatings);
+
 module.exports = router; 

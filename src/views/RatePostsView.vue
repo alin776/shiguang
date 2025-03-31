@@ -36,7 +36,7 @@
             <div v-for="option in post.topOptions" :key="option.id" class="rate-option-item">
               <div class="option-info-row">
                 <div class="option-avatar">
-                  <img :src="option.avatar" :alt="option.name">
+                  <img :src="getProcessedImageUrl(option.avatar)" :alt="option.name">
                 </div>
                 <div class="option-info">
                   <div class="option-name">{{ option.name }}</div>
@@ -83,6 +83,7 @@ import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import PageHeader from '../components/PageHeader.vue';
 import BottomNavBar from '../components/BottomNavBar.vue';
+import { getProcessedImageUrl } from '@/utils/imageHelpers';
 
 const router = useRouter();
 const isLoading = ref(false);
@@ -211,12 +212,12 @@ const loadMore = async () => {
       ratePosts.value = [...ratePosts.value, ...result.data];
       hasMorePosts.value = result.hasMore;
     } else {
-      console.error('获取更多评分贴失败:', result.message);
+      // 获取更多评分贴失败
     }
     
     isLoading.value = false;
   } catch (error) {
-    console.error('加载更多评分贴失败', error);
+    // 加载更多评分贴失败
     isLoading.value = false;
   }
 };
@@ -264,14 +265,13 @@ const loadRatePosts = async () => {
       }
       hasMorePosts.value = result.hasMore;
     } else {
-      console.error('获取评分贴列表失败:', result.message);
+      // 获取评分贴列表失败
       // 使用模拟数据作为备份
-      console.log('使用模拟数据代替');
     }
     
     isLoading.value = false;
   } catch (error) {
-    console.error('加载评分贴失败', error);
+    // 加载评分贴失败
     isLoading.value = false;
   }
 };
@@ -551,9 +551,17 @@ onMounted(() => {
   color: #B04500;
   line-height: 1.6;
   padding: 0 15px 0 5px;
-  font-family: "楷体", "KaiTi", "STKaiti", serif;
+  font-family: "楷体", "KaiTi", "STKaiti", "SimKai", "Kaiti SC", "Kaiti TC", "FangSong", serif;
   letter-spacing: 0.02em;
   font-weight: 400;
   text-align: left;
+}
+
+@media (max-width: 767px) {
+  .top-comment-content {
+    /* 在移动设备上调整字体大小和行距 */
+    font-size: 15px;
+    line-height: 1.5;
+  }
 }
 </style> 

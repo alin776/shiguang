@@ -13,11 +13,14 @@ export const getAvatarUrl = (avatar) => {
   // 添加错误处理和平台兼容日志
   try {
     console.log("原始头像URL:", avatar, "平台:", navigator.userAgent);
-
+    
+    // 检测是否为评分选项头像
+    const isRatingOption = avatar.includes('rate_option') || avatar.includes('options/');
+    
     // 修复重复域名问题 - 检测多个http://或https://
     if (avatar.includes("http://") || avatar.includes("https://")) {
       // 清理URL - 提取最后一个完整URL或路径部分
-      const urlRegex = /(https?:\/\/[^\/]+)?(\/?uploads\/avatars\/[^\/]+)$/;
+      const urlRegex = /(https?:\/\/[^\/]+)?(\/?uploads\/(?:avatars|options|rate_option)\/[^\/]+)$/;
       const matches = avatar.match(urlRegex);
       
       if (matches) {
@@ -30,12 +33,14 @@ export const getAvatarUrl = (avatar) => {
         
         // 添加缓存破坏参数，确保Android端不使用缓存
         const cacheBuster = `?t=${Date.now()}`;
-        return resultUrl + cacheBuster;
+        const mobileIndicator = isRatingOption ? "&mobile=1" : "";
+        return resultUrl + cacheBuster + mobileIndicator;
       }
       
       // 如果无法提取，但确实是HTTP URL，返回原始URL并添加缓存破坏参数
       const cacheBuster = avatar.includes('?') ? `&t=${Date.now()}` : `?t=${Date.now()}`;
-      return avatar + cacheBuster;
+      const mobileIndicator = isRatingOption ? "&mobile=1" : "";
+      return avatar + cacheBuster + mobileIndicator;
     }
 
     // 处理相对路径
@@ -45,21 +50,32 @@ export const getAvatarUrl = (avatar) => {
       
       // 添加缓存破坏参数
       const cacheBuster = `?t=${Date.now()}`;
-      return resultUrl + cacheBuster;
+      const mobileIndicator = isRatingOption ? "&mobile=1" : "";
+      return resultUrl + cacheBuster + mobileIndicator;
     }
 
     // 确保API_BASE_URL末尾有斜杠
     const baseUrl = API_BASE_URL.endsWith('/') ? API_BASE_URL : `${API_BASE_URL}/`;
-    const avatarPath = UPLOAD_PATHS.AVATARS.startsWith('/') ? 
-      UPLOAD_PATHS.AVATARS.substring(1) : UPLOAD_PATHS.AVATARS;
+    
+    // 确定上传路径
+    let avatarPath = UPLOAD_PATHS.AVATARS;
+    // 如果是评分选项图片，使用正确的路径
+    if (isRatingOption) {
+      avatarPath = "/uploads/options/";
+    }
+    
+    // 确保路径正确格式化
+    avatarPath = avatarPath.startsWith('/') ? 
+      avatarPath.substring(1) : avatarPath;
 
     // 组合URL
     const resultUrl = `${baseUrl}${avatarPath}${avatar}`;
     console.log("处理后的头像URL:", resultUrl);
     
-    // 添加缓存破坏参数
+    // 添加缓存破坏参数和移动端标识
     const cacheBuster = `?t=${Date.now()}`;
-    return resultUrl + cacheBuster;
+    const mobileIndicator = isRatingOption ? "&mobile=1" : "";
+    return resultUrl + cacheBuster + mobileIndicator;
   } catch (error) {
     console.error("头像URL处理出错:", error);
     // 错误恢复 - 返回默认头像
@@ -78,6 +94,10 @@ export const getImageUrl = (url) => {
   try {
     console.log("getImageUrl - 原始URL:", url);
     
+    // 检查是否是评分选项图片
+    const isRatingOption = url.includes('rate_option') || url.includes('/options/');
+    console.log("是否是评分选项图片:", isRatingOption);
+    
     // 检查是否是封面图片
     const isCoverImage = url.includes('cover-') || url.includes('/covers/');
     console.log("是否是封面图片:", isCoverImage);
@@ -92,10 +112,11 @@ export const getImageUrl = (url) => {
     if (url.startsWith('http')) {
       console.log("已是绝对URL,直接返回:", url);
       
-      // 为封面图片添加缓存破坏参数
-      if (isCoverImage) {
+      // 为评分选项或封面图片添加缓存破坏参数和移动端标识
+      if (isRatingOption || isCoverImage) {
         const cacheBuster = url.includes('?') ? `&t=${Date.now()}` : `?t=${Date.now()}`;
-        const resultUrl = url + cacheBuster;
+        const mobileIndicator = isRatingOption ? "&mobile=1" : "";
+        const resultUrl = url + cacheBuster + mobileIndicator;
         console.log("添加缓存破坏参数后:", resultUrl);
         return resultUrl;
       }
@@ -108,15 +129,34 @@ export const getImageUrl = (url) => {
       const resultUrl = `${API_BASE_URL}${url}`;
       console.log("添加API_BASE_URL前缀:", resultUrl);
       
-      // 为封面图片添加缓存破坏参数
-      if (isCoverImage) {
+      // 为评分选项或封面图片添加缓存破坏参数和移动端标识
+      if (isRatingOption || isCoverImage) {
         const cacheBuster = `?t=${Date.now()}`;
-        const finalUrl = resultUrl + cacheBuster;
+        const mobileIndicator = isRatingOption ? "&mobile=1" : "";
+        const finalUrl = resultUrl + cacheBuster + mobileIndicator;
         console.log("添加缓存破坏参数后:", finalUrl);
         return finalUrl;
       }
       
       return resultUrl;
+    }
+    
+    // 如果是评分选项图片，但只有文件名，需要添加正确的路径前缀
+    if (isRatingOption && !url.includes('/')) {
+      const baseUrl = API_BASE_URL.endsWith('/') ? API_BASE_URL : `${API_BASE_URL}/`;
+      const optionPath = "/uploads/options/";
+      const normalizedPath = optionPath.startsWith('/') ? 
+        optionPath.substring(1) : optionPath;
+      
+      const resultUrl = `${baseUrl}${normalizedPath}${url}`;
+      console.log("评分选项图片添加完整路径:", resultUrl);
+      
+      // 添加缓存破坏参数和移动端标识
+      const cacheBuster = `?t=${Date.now()}`;
+      const mobileIndicator = "&mobile=1";
+      const finalUrl = resultUrl + cacheBuster + mobileIndicator;
+      console.log("添加缓存破坏参数后:", finalUrl);
+      return finalUrl;
     }
     
     // 如果是封面图片，但只有文件名，需要添加正确的路径前缀

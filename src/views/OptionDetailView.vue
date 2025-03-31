@@ -39,7 +39,7 @@
           <!-- 选项信息 -->
           <div class="option-info">
             <div class="option-image">
-              <img :src="option.avatar" :alt="option.name">
+              <img :src="getProcessedImageUrl(option.avatar)" :alt="option.name">
             </div>
             <div class="option-data">
               <div class="rating-display">
@@ -78,6 +78,33 @@
                 </div>
                 <div class="dist-percentage">{{ getDistribution(6-i) }}%</div>
               </div>
+            </div>
+          </div>
+          
+          <!-- 评分详情 -->
+          <div class="rating-details" v-if="option.ratingsDetail && option.ratingsDetail.length > 0">
+            <h3 class="section-title">
+              评分详情
+              <span v-if="!showRatingDetails" @click="toggleRatingDetails" class="toggle-link">(展开)</span>
+              <span v-else @click="toggleRatingDetails" class="toggle-link">(收起)</span>
+            </h3>
+            <div class="ratings-table-container" v-if="showRatingDetails">
+              <table class="ratings-table">
+                <thead>
+                  <tr>
+                    <th>用户</th>
+                    <th>评分</th>
+                    <th>时间</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(rating, index) in option.ratingsDetail" :key="index">
+                    <td>{{ rating.username || '匿名用户' }}</td>
+                    <td>{{ rating.score }}</td>
+                    <td>{{ formatDate(rating.created_at) }}</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
           
@@ -129,8 +156,8 @@
               </div>
               
               <button class="submit-rating-btn" 
-                      @click="submitRatingAndComment(option.id, tempRating || 10)"
-                      :disabled="commentSubmitting">
+                      @click="submitRatingAndComment(option.id, tempRating)"
+                      :disabled="commentSubmitting || tempRating === 0">
                 提交评分
               </button>
             </div>
@@ -200,7 +227,7 @@
 <script setup>
 import { ref, reactive, onMounted, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { getAvatarUrl, getDefaultAvatarUrl } from '@/utils/imageHelpers';
+import { getAvatarUrl, getDefaultAvatarUrl, getProcessedImageUrl } from '@/utils/imageHelpers';
 
 const route = useRoute();
 const router = useRouter();
@@ -233,6 +260,8 @@ const toastMessage = ref('');
 const toastType = ref('success');
 
 const commentSortBy = ref('hot'); // 默认按热门排序
+
+const showRatingDetails = ref(false);
 
 // 判断是否为有效选项
 const isValidOption = computed(() => {
@@ -270,8 +299,6 @@ const loadOptionDetail = async () => {
     const postId = route.params.id;
     const optionId = route.params.optionId;
     
-    console.log('正在加载选项详情:', { postId, optionId });
-    
     // 首先直接检查用户是否已对该选项评分
     const ratedCheckResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/rate-posts/option/${optionId}/check-rated`, {
       method: 'GET',
@@ -287,15 +314,11 @@ const loadOptionDetail = async () => {
       const ratedResult = await ratedCheckResponse.json();
       if (ratedResult.success && ratedResult.data.hasRated) {
         // 如果用户已评分，直接更新状态
-        console.log('用户已对该选项评分');
         hasUserRated = true;
         // 如果API返回了评分值，先记录下来
         if (ratedResult.data.rating) {
           userRatingValue = ratedResult.data.rating;
-          console.log('API返回的用户评分:', userRatingValue);
         }
-      } else {
-        console.log('用户未对该选项评分');
       }
     }
     
@@ -320,18 +343,12 @@ const loadOptionDetail = async () => {
       const post = result.data.post;
       ratePost.value = post;
       
-      console.log('获取到评分贴数据:', post.title);
-      console.log('选项列表:', post.options.map(o => ({ id: o.id, name: o.name })));
-      
       // 查找当前选项 - 确保类型一致进行比较
       const currentOption = post.options.find(opt => String(opt.id) === String(optionId));
-      
-      console.log('查找选项结果:', currentOption ? '找到选项' : '未找到选项');
       
       if (currentOption) {
         // 处理评分为undefined的情况
         if (currentOption.score === undefined || currentOption.score === null) {
-          console.log('选项评分为undefined，需要修正');
           // 先查找用户评分
           let foundUserRating = 0;
           
@@ -340,7 +357,6 @@ const loadOptionDetail = async () => {
             for (const key in result.data.userRatings) {
               if (String(key) === String(optionId)) {
                 foundUserRating = result.data.userRatings[key];
-                console.log(`从userRatings中找到评分:`, foundUserRating);
                 break;
               }
             }
@@ -349,47 +365,29 @@ const loadOptionDetail = async () => {
           // 如果前面的API调用已经返回了评分，优先使用那个
           if (userRatingValue > 0) {
             foundUserRating = userRatingValue;
-            console.log('使用API返回的评分:', foundUserRating);
           }
           
           // 如果选项有ratings(评分人数)但score是undefined，则使用找到的用户评分
           if (currentOption.ratings && currentOption.ratings > 0 && foundUserRating > 0) {
             currentOption.score = foundUserRating;
-            console.log(`选项有${currentOption.ratings}人评分，将score设置为用户评分:`, foundUserRating);
           } else {
             currentOption.score = 0;
-            console.log('无法确定实际评分，设置默认值为0');
           }
         }
         
         option.value = currentOption;
         
-        // 打印选项评分信息用于调试
-        console.log('当前选项评分详情：', {
-          name: option.value.name,
-          score: option.value.score,
-          ratings: option.value.ratings,
-          scoreType: typeof option.value.score
-        });
-        
-        // 在评分贴详情加载完成后，添加调试代码
+        // 在评分贴详情加载完成后
         if (currentOption.comments && currentOption.comments.length > 0) {
-          // 打印第一条评论的全部属性，帮助分析数据结构
-          console.log('第一条评论数据:', JSON.stringify(currentOption.comments[0]));
-          
           // 检查可能的日期字段
           currentOption.comments.forEach(comment => {
             // 尝试查找和规范化日期字段
             if (!comment.createdAt && (comment.created_at || comment.createTime || comment.time)) {
               comment.createdAt = comment.created_at || comment.createTime || comment.time;
-              console.log('使用替代日期字段:', comment.createdAt);
             }
           });
           
           topComment.value = [...currentOption.comments].sort((a, b) => b.likes - a.likes)[0];
-          
-          // 计算评分分布
-          calculateRatingDistribution();
         }
         
         // 检查用户是否已评分
@@ -402,7 +400,6 @@ const loadOptionDetail = async () => {
             for (const key in result.data.userRatings) {
               if (String(key) === String(optionId)) {
                 userRating.value = result.data.userRatings[key];
-                console.log(`找到用户对选项${optionId}的评分:`, userRating.value);
                 break;
               }
             }
@@ -410,45 +407,28 @@ const loadOptionDetail = async () => {
             // 如果没有找到评分记录但API之前确认了用户已评分，则记录这种不一致的情况
             if (userRating.value === 0 && userRatingValue > 0) {
               userRating.value = userRatingValue;
-              console.log('使用API直接返回的评分:', userRating.value);
-            } else if (userRating.value === 0) {
-              console.warn('警告：API确认用户已评分，但未找到评分记录，可能存在数据不一致');
             }
           } else if (userRatingValue > 0) {
             userRating.value = userRatingValue;
-            console.log('userRatings不存在，使用API直接返回的评分:', userRating.value);
           }
         } else {
           // 使用传统方式检查评分记录
           if (result.data.userRatings) {
-            console.log('用户评分记录:', result.data.userRatings);
             // 遍历用户评分记录
             for (const key in result.data.userRatings) {
               if (String(key) === String(optionId)) {
                 userRating.value = result.data.userRatings[key];
-                console.log(`找到用户对选项${optionId}的评分:`, userRating.value);
                 break;
               }
             }
           }
         }
         
-        console.log('当前选项评分状态:', { 
-          optionId, 
-          userRating: userRating.value, 
-          hasRated: userRating.value > 0,
-          optionScore: option.value.score
-        });
-        
         // 最后一次检查：如果用户已评分，但选项评分仍为0，则使用用户评分作为选项评分
         if (userRating.value > 0 && option.value.score === 0 && option.value.ratings > 0) {
           option.value.score = userRating.value;
-          console.log('最终修正：使用用户评分作为选项评分:', option.value.score);
         }
       } else {
-        console.error('未找到指定选项:', optionId);
-        console.log('可用选项ID:', post.options.map(o => o.id));
-        
         // 设置为无效选项状态，但不自动返回
         option.value = {
           id: optionId,
@@ -460,23 +440,12 @@ const loadOptionDetail = async () => {
         };
       }
     } else {
-      console.error('获取评分贴详情失败:', result.message);
       loadError.value = true;
     }
   } catch (error) {
-    console.error('加载评分贴详情失败', error);
     loadError.value = true;
   } finally {
     isLoading.value = false;
-    console.log('加载完成，状态:', { 
-      isLoading: isLoading.value, 
-      loadError: loadError.value, 
-      isValidOption: option.value && option.value.name !== '未找到选项',
-      score: option.value.score,
-      scoreDisplayed: option.value.score || 0,
-      userRating: userRating.value,
-      activeStars: Math.round((option.value.score || 0)/2)
-    });
   }
 };
 
@@ -487,6 +456,12 @@ const submitRatingAndComment = async (optionId, rating) => {
   // 如果用户已经评分过，则不允许再次评分
   if (hasRated.value) {
     showToastMessage('您已经对该选项评分过了', 'error');
+    return;
+  }
+  
+  // 添加评分检查
+  if (!rating || rating === 0) {
+    showToastMessage('请先选择评分星级', 'error');
     return;
   }
   
@@ -545,9 +520,8 @@ const submitRatingAndComment = async (optionId, rating) => {
             option.value.comments = [];
           }
           
-          // 确保创建一个有效的日期
+          // 创建一个有效的日期
           const currentDate = new Date().toISOString();
-          console.log('新评论日期:', currentDate);
           
           const newComment = {
             id: Date.now(),
@@ -575,7 +549,6 @@ const submitRatingAndComment = async (optionId, rating) => {
       showToastMessage(ratingResult.message || '评分失败', 'error');
     }
   } catch (error) {
-    console.error('评分或评论提交失败', error);
     showToastMessage('操作失败，请检查网络连接', 'error');
   } finally {
     commentSubmitting.value = false;
@@ -608,12 +581,8 @@ const likeComment = async (commentId) => {
       comment.isLiked = originalLikeStatus;
       comment.likes = originalLikeStatus ? comment.likes + 1 : comment.likes - 1;
       
-      console.error(`点赞请求失败: ${response.status} ${response.statusText}`);
-      
-      // 显示错误提示
+      // API不存在，使用本地模拟，不回滚状态
       if (response.status === 404) {
-        // API不存在，使用本地模拟，不回滚状态
-        console.log('使用本地模拟点赞功能');
         showToastMessage(comment.isLiked ? '点赞成功' : '已取消点赞', 'success');
         return;
       }
@@ -627,14 +596,12 @@ const likeComment = async (commentId) => {
       // 如果服务器处理失败，恢复原状态
       comment.isLiked = originalLikeStatus;
       comment.likes = originalLikeStatus ? comment.likes + 1 : comment.likes - 1;
-      console.error('点赞失败:', result.message);
       showToastMessage(result.message || '操作失败', 'error');
     } else {
       // 显示成功消息
       showToastMessage(comment.isLiked ? '点赞成功' : '已取消点赞', 'success');
     }
   } catch (error) {
-    console.error('点赞请求失败', error);
     // 出错时也显示提示
     showToastMessage('网络错误，请稍后重试', 'error');
   }
@@ -642,46 +609,41 @@ const likeComment = async (commentId) => {
 
 // 获取评分分布
 const getDistribution = (stars) => {
-  // 从选项数据中获取评分分布
-  if (!option.value || !option.value.ratingDistribution) {
-    // 如果没有分布数据，返回默认值0
+  // 首先尝试使用预计算的评分分布
+  if (option.value && option.value.ratingDistribution) {
+    return option.value.ratingDistribution[stars] || 0;
+  }
+  
+  // 如果没有预计算的分布数据，尝试使用评分详情计算
+  if (!option.value || !option.value.ratingsDetail || option.value.ratingsDetail.length === 0) {
+    // 如果没有评分详情数据，返回默认值0
     return 0;
   }
   
-  // 从评分分布数据中获取指定星级的百分比
-  const distribution = option.value.ratingDistribution;
-  return distribution[stars] || 0;
-};
-
-// 计算评分分布
-const calculateRatingDistribution = () => {
-  if (!option.value || !option.value.comments || option.value.comments.length === 0) {
-    return;
-  }
+  // 将10分制评分转换为5星制并计算分布
+  const totalRatings = option.value.ratingsDetail.length;
+  const starsCount = {};
   
-  // 初始化评分分布对象
-  const distribution = {
-    1: 0, 2: 0, 3: 0, 4: 0, 5: 0
-  };
+  // 初始化各星级计数
+  for (let i = 1; i <= 5; i++) {
+    starsCount[i] = 0;
+  }
   
   // 统计各星级评分数量
-  let totalRatings = 0;
-  option.value.comments.forEach(comment => {
-    // 评论中的评分可能是1-10分制，转换为1-5星
-    const stars = Math.min(5, Math.max(1, Math.ceil(comment.rating / 2)));
-    distribution[stars]++;
-    totalRatings++;
+  option.value.ratingsDetail.forEach(rating => {
+    // 评分通常是1-10分制，转换为1-5星级
+    const starRating = Math.min(5, Math.max(1, Math.ceil(rating.score / 2)));
+    starsCount[starRating]++;
   });
   
-  // 计算百分比
-  if (totalRatings > 0) {
-    Object.keys(distribution).forEach(star => {
-      distribution[star] = parseFloat(((distribution[star] / totalRatings) * 100).toFixed(1));
-    });
-  }
-  
-  // 将分布数据保存到选项对象中
-  option.value.ratingDistribution = distribution;
+  // 计算指定星级的百分比
+  const percentage = (starsCount[stars] / totalRatings) * 100;
+  return percentage.toFixed(1);
+};
+
+// 计算评分分布 - 仅用于初始化，已通过上面的getDistribution方法替代
+const calculateRatingDistribution = () => {
+  // 使用评分详情数据计算分布
 };
 
 // 显示Toast消息
@@ -697,24 +659,28 @@ const showToastMessage = (message, type = 'success') => {
 
 // 格式化日期
 const formatDate = (dateString) => {
-  if (!dateString) return '无日期';
+  if (!dateString) return '';
   
   try {
-    // 先打印出原始日期字符串，用于调试
-    console.log('原始日期字符串:', dateString, typeof dateString);
+    let date;
     
-    const date = new Date(dateString);
-    
-    // 检查日期是否有效
-    if (isNaN(date.getTime())) {
-      console.warn('无效的日期格式:', dateString);
-      return '格式错误';
+    // 判断输入类型
+    if (typeof dateString === 'string') {
+      date = new Date(dateString);
+    } else if (dateString instanceof Date) {
+      date = dateString;
+    } else {
+      return '';
     }
     
+    if (isNaN(date.getTime())) {
+      return '';
+    }
+    
+    // 格式化为 YYYY-MM-DD
     return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
   } catch (e) {
-    console.error('日期格式化错误:', e);
-    return '格式错误';
+    return '';
   }
 };
 
@@ -726,6 +692,11 @@ const goBack = () => {
 // 更改评论排序方式
 const changeCommentSort = (sortBy) => {
   commentSortBy.value = sortBy;
+};
+
+// 切换评分详情显示状态
+const toggleRatingDetails = () => {
+  showRatingDetails.value = !showRatingDetails.value;
 };
 
 // 初始化
@@ -1470,5 +1441,78 @@ onMounted(() => {
   font-size: 11px;
   color: #999;
   margin-left: auto; /* 使其靠右显示 */
+}
+
+.rating-details {
+  margin-top: 15px;
+  background-color: white;
+  padding: 12px;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.ratings-table-container {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.ratings-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.ratings-table th,
+.ratings-table td {
+  padding: 8px;
+  text-align: left;
+}
+
+.ratings-table th {
+  background-color: #f8f9fa;
+}
+
+.toggle-link {
+  color: #26c9dc;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.ratings-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.ratings-table th,
+.ratings-table td {
+  padding: 10px;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+.ratings-table th {
+  background-color: #f8f9fa;
+  font-weight: 600;
+  color: #333;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.ratings-table tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.ratings-table tr:hover {
+  background-color: #f0f7ff;
+}
+
+.ratings-table-container {
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid #eee;
+  border-radius: 4px;
+  margin-top: 10px;
 }
 </style> 
