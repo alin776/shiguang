@@ -311,9 +311,11 @@
               class="post-images"
               v-if="post.images && post.images.length > 0"
             >
-              <!-- 单图显示 -->
-              <div v-if="post.images.length === 1" class="single-image">
-                <img :src="post.images[0]" :alt="post.title" loading="lazy" />
+              <!-- 单图显示 - 改为与多图相同的网格样式 -->
+              <div v-if="post.images.length === 1" class="image-grid grid-1">
+                <div class="image-item">
+                  <img :src="post.images[0]" :alt="post.title" loading="lazy" />
+                </div>
               </div>
               
               <!-- 两图并排显示 -->
@@ -884,15 +886,38 @@ const loadCategories = async () => {
 };
 
 // 初始化时移除通知相关代码
-onMounted(() => {
+onMounted(async () => {
   console.log("当前用户头像URL:", authStore.user?.avatar);
   console.log("当前用户ID:", authStore.user?.id);
   
   // 加载用户点赞状态
   loadLikedPosts();
   
-  // 加载分类数据
-  loadCategories();
+  // 检查URL中是否有分类ID参数
+  const categoryFromQuery = router.currentRoute.value.query.category;
+  console.log("URL中的分类参数:", categoryFromQuery);
+  
+  // 先加载分类数据
+  await loadCategories();
+  
+  // 然后设置分类ID（如果URL中有的话）
+  if (categoryFromQuery) {
+    // 将查询参数转换为数值类型（如果是数字类型的ID）
+    const categoryId = parseInt(categoryFromQuery, 10);
+    console.log("解析后的分类ID:", categoryId);
+    
+    // 检查是否为有效的数字，并确认该分类存在
+    if (!isNaN(categoryId) && categories.value.some(c => c.id === categoryId)) {
+      console.log("设置分类ID为:", categoryId);
+      selectedCategoryId.value = categoryId;
+    } else {
+      // 如果不是数字ID，可能是字符串标识符，直接使用
+      console.log("使用字符串分类ID:", categoryFromQuery);
+      if (categories.value.some(c => c.id === categoryFromQuery)) {
+        selectedCategoryId.value = categoryFromQuery;
+      }
+    }
+  }
   
   // 从本地存储加载视图样式
   const savedViewStyle = localStorage.getItem('communityViewStyle');
@@ -900,6 +925,7 @@ onMounted(() => {
     viewStyle.value = savedViewStyle;
   }
   
+  // 加载帖子（放在最后，确保分类ID已设置）
   loadPosts();
   
   // 测试URL处理
@@ -1312,37 +1338,21 @@ const getTitleClass = (title) => {
 .post-stats {
   display: flex;
   align-items: center;
-  margin-right: 20px !important; /* 向左移动一点点 */
-  gap: 6px; /* 减小瀑布流视图中图标之间的距离 */
+  width: 100%;
+  justify-content: space-between;
+  gap: 0;
+  margin-right: 0 !important;
 }
 
-.stat-item {
+.post-card .stat-item {
   display: flex;
   flex-direction: row;
   align-items: center;
+  justify-content: center;
   gap: 4px;
-  font-size: 13px;
-  color: #666;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.stat-item:hover {
-  color: #1677ff;
-}
-
-.stat-number {
-  font-size: 13px;
-  display: inline-block;
-  vertical-align: middle;
-}
-
-.post-meta {
-  display: flex;
-  align-items: center;
-  color: #666;
-  font-size: 12px;
-  gap: 10px;
+  padding: 3px 0;
+  flex: 1;
+  text-align: center;
 }
 
 .post-time {
@@ -1363,6 +1373,9 @@ const getTitleClass = (title) => {
 
 .grid-1 {
   grid-template-columns: 1fr;
+  width: 33.33%; /* 设置宽度为三分之一，与grid-3中单个图片宽度相同 */
+  max-width: 120px; /* 设置最大宽度限制 */
+  margin-left: 0; /* 确保左对齐 */
 }
 
 .grid-2 {
@@ -1420,8 +1433,9 @@ const getTitleClass = (title) => {
     max-width: 70px;
   }
   
-  .grid-1 .image-item {
-    padding-bottom: 70%; /* 在小屏幕上单图时不那么高 */
+  .grid-1 {
+    width: 40%; /* 小屏幕上稍微调整宽度 */
+    max-width: 100px;
   }
   
   .grid-3 .image-item {
@@ -1539,114 +1553,63 @@ const getTitleClass = (title) => {
 .post-list-item .post-stats {
   display: flex;
   align-items: center;
-  gap: 16px;
-  margin-left: auto; /* 将统计项靠右显示 */
+  width: 100%;
+  justify-content: space-between;
+  gap: 0;
+  margin-left: 0;
 }
 
-.post-list-item .stat-item {
+.post-list-item .post-list-footer {
   display: flex;
-  flex-direction: row; /* 确保水平排列 */
+  justify-content: space-between;
   align-items: center;
+  margin-top: 10px;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.post-list-item .post-list-footer .post-meta {
+  margin-bottom: 8px;
+}
+
+.post-list-item .post-list-footer .post-stats {
+  flex: 1;
+  width: 100%;
+}
+
+.post-list-item .post-list-footer .stat-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
   gap: 4px;
   font-size: 13px;
   color: #666;
   cursor: pointer;
   transition: all 0.2s ease;
+  padding: 4px 0;
+  flex: 1;
+  text-align: center;
 }
 
-.post-list-item .stat-item:hover {
-  color: #1677ff;
-}
-
-.post-list-item .stat-number {
-  font-size: 13px;
-  display: inline-block; /* 确保作为行内块元素 */
-  vertical-align: middle;
-}
-
-.post-list-item .like-icon.liked {
-  color: #1677ff;
+.post-card .post-stats {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  justify-content: space-between;
+  gap: 0;
+  margin-right: 0 !important;
 }
 
 .post-card .stat-item {
   display: flex;
-  flex-direction: row; /* 确保水平排列 */
-  align-items: center;
-  gap: 4px;
-  min-width: auto; /* 覆盖全局样式中的min-width: 60px */
-}
-
-.post-card .stat-number {
-  display: inline-block;
-  vertical-align: middle;
-}
-
-.post-list-item .post-images {
-  margin-top: 12px;
-  width: 100%;
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.post-list-item .single-image {
-  width: 100%;
-  border-radius: 8px;
-  overflow: hidden;
-  position: relative;
-  padding-bottom: 56.25%; /* 16:9 比例 */
-}
-
-.post-list-item .single-image img {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.post-list-item .image-grid {
-  display: grid;
-  grid-gap: 4px;
-}
-
-.post-list-item .grid-2 {
-  grid-template-columns: 1fr 1fr;
-}
-
-.post-list-item .grid-3 {
-  grid-template-columns: 1fr 1fr 1fr;
-}
-
-.post-list-item .image-item {
-  position: relative;
-  padding-bottom: 100%; /* 1:1 比例，正方形 */
-  height: 0;
-  overflow: hidden;
-}
-
-.post-list-item .image-item img {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.post-list-item .image-count {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.4);
-  color: white;
-  display: flex;
+  flex-direction: row;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
-  font-weight: 500;
+  gap: 4px;
+  padding: 3px 0;
+  flex: 1;
+  text-align: center;
 }
 
 .post-card-header, .post-list-header {

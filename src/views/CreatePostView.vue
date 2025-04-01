@@ -23,10 +23,10 @@
             <input 
               v-model="postForm.title"
               class="simple-input" 
-              placeholder="请输入标题（最多10字）"
-              maxlength="10"
+              placeholder="请输入标题（最多25字）"
+              maxlength="25"
             />
-            <div class="word-counter">{{ postForm.title.length }}/10</div>
+            <div class="word-counter">{{ postForm.title.length }}/25</div>
           </div>
         </el-form-item>
 
@@ -36,18 +36,18 @@
               v-model="postForm.content"
               class="simple-textarea" 
               placeholder="分享你的故事..."
-              maxlength="1000"
+              maxlength="3000"
               rows="6"
             ></textarea>
-            <div class="word-counter">{{ postForm.content.length }}/1000</div>
+            <div class="word-counter">{{ postForm.content.length }}/3000</div>
           </div>
         </el-form-item>
 
-        <el-form-item label="分类">
+        <el-form-item label="分类" prop="category_id">
           <div class="select-container">
             <el-select 
               v-model="postForm.category_id" 
-              placeholder="选择分类" 
+              placeholder="选择分类（必选）" 
               clearable
               class="post-select custom-select bright-select"
               popper-class="bright-dropdown"
@@ -136,6 +136,7 @@ const categories = ref([]);
 const submitting = ref(false);
 const previewVisible = ref(false);
 const previewImage = ref("");
+const postFormRef = ref(null);
 
 // 表单数据
 const postForm = ref({
@@ -150,12 +151,15 @@ const postForm = ref({
 const postRules = {
   title: [
     { required: true, message: "请输入标题", trigger: "blur" },
-    { min: 1, max: 10, message: "标题长度应在1-10个字符之间", trigger: "blur" },
+    { min: 1, max: 25, message: "标题长度应在1-25个字符之间", trigger: "blur" },
   ],
   content: [
     { required: true, message: "请输入内容", trigger: "blur" },
-    { min: 1, max: 1000, message: "内容长度应在1-1000个字符之间", trigger: "blur" },
+    { min: 1, max: 3000, message: "内容长度应在1-3000个字符之间", trigger: "blur" },
   ],
+  category_id: [
+    { required: true, message: "请选择分类", trigger: "change" }
+  ]
 };
 
 // 加载分类数据
@@ -200,6 +204,22 @@ const handleRemove = (file, fileList) => {
 // 提交帖子
 const submitPost = async () => {
   try {
+    // 表单验证
+    if (!postFormRef.value) {
+      console.error("表单引用不存在");
+      return;
+    }
+    
+    const valid = await postFormRef.value.validate().catch(err => {
+      console.error("表单验证出错:", err);
+      return false;
+    });
+    
+    if (!valid) {
+      ElMessage.warning("请完善表单信息");
+      return;
+    }
+    
     submitting.value = true;
     await communityStore.createPost(postForm.value);
     ElMessage.success("发布成功");

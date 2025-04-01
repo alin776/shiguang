@@ -983,5 +983,24 @@ export const useCommunityStore = defineStore("community", {
         throw error.response?.data || error;
       }
     },
+
+    // 获取分类统计信息
+    async getCategoryStats() {
+      try {
+        const authStore = useAuthStore();
+        const response = await axios.get(
+          `${API_BASE_URL}/api/categories/stats`,
+          {
+            headers: { Authorization: `Bearer ${authStore.token}` }
+          }
+        );
+        
+        return response.data;
+      } catch (error) {
+        console.error("获取分类统计数据失败:", error);
+        // 如果API不存在，返回空数据
+        return [];
+      }
+    },
   },
 });

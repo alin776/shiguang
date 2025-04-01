@@ -18,7 +18,7 @@
       <div class="date-display">
         <div class="date-number">{{ currentDay }}</div>
         <div class="date-info">
-          Mar.{{ currentYear }}
+          {{ currentMonth }}.{{ currentYear }}
           <div class="location-weather">
             <span class="city-name">{{ city }}</span>·<span class="weather-status">{{ weather }}</span> {{ temperature }}
           </div>
@@ -104,7 +104,7 @@
             <!-- 顶部信息条 -->
             <div class="share-header">
               <div class="share-date">{{ formatDate }}</div>
-              <div class="share-location">{{ city }}{{ weather.value ? ' · ' + weather.value : '' }} {{ temperature }}</div>
+              <div class="share-location">{{ city }}{{ weather ? ' · ' + weather : '' }} {{ temperature }}</div>
             </div>
             
             <!-- 主要内容区域 -->
@@ -621,6 +621,11 @@ const cancelTouch = () => {
 const now = new Date();
 const currentDay = computed(() => now.getDate());
 const currentYear = computed(() => now.getFullYear());
+// 动态获取当前月份简写
+const currentMonth = computed(() => {
+  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return monthNames[now.getMonth()];
+});
 const city = ref("获取中...");
 const weather = ref("");
 const temperature = ref("");
@@ -883,7 +888,7 @@ const saveShareImage = async () => {
 const formatDate = computed(() => {
   const now = new Date();
   const year = now.getFullYear();
-  const month = (now.getMonth() + 1).toString().padStart(2, '0');
+  const month = (now.getMonth() + 1).toString().padStart(2, '0'); // 获取当前月份(0-11)+1
   const day = now.getDate().toString().padStart(2, '0');
   return `${year} / ${month} / ${day}`;
 });

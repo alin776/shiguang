@@ -66,7 +66,7 @@
       <!-- 论坛区域 -->
       <div class="forum-section">
         <!-- 论坛渐变背景头部 -->
-        <div class="section-banner forum-gradient" @click="router.push('/community')">
+        <div class="section-banner forum-gradient" @click="router.push('/community/categories')">
           <div class="section-banner-content">
             <div class="banner-left">
               <h3 class="section-banner-title">论坛</h3>

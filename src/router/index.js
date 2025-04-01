@@ -30,6 +30,7 @@ import RatePostsView from "../views/RatePostsView.vue";
 import RatePostDetailView from "../views/RatePostDetailView.vue";
 import OptionDetailView from "../views/OptionDetailView.vue"; // 添加选项详情页面组件导入
 import CreateRatePostView from "../views/CreateRatePostView.vue";
+import ForumCategoriesView from "../views/ForumCategoriesView.vue"; // 添加论坛板块页面组件导入
 import { ref } from "vue";
 
 const routes = [
@@ -120,6 +121,15 @@ const routes = [
     name: "Community",
     component: CommunityView,
     meta: { requiresAuth: true },
+  },
+  {
+    path: "/community/categories",
+    name: "ForumCategories",
+    component: ForumCategoriesView,
+    meta: { 
+      requiresAuth: true,
+      title: "论坛板块"
+    },
   },
   {
     path: "/community/create",
