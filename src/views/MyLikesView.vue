@@ -155,7 +155,7 @@ onMounted(() => {
 }
 
 .my-likes-page {
-  padding-bottom: 0;
+  padding-bottom: 55px;
   position: relative;
   min-height: 100vh;
 }

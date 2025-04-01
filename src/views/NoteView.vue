@@ -274,7 +274,7 @@ const notes = ref([]);
 // 从后端获取小记列表
 const fetchNotes = async (forceRefresh = false) => {
   // 如果不是强制刷新且notes已有数据，则直接返回
-  if (!forceRefresh && notes.value.length > 0 && !notes.value[0].isDefault) {
+  if (!forceRefresh && notes.value.length > 0) {
     console.log('已有小记数据，不重新获取');
     return;
   }
@@ -326,8 +326,7 @@ const fetchNotes = async (forceRefresh = false) => {
           avatar: avatarUrl || defaultAvatar,
           likes: note.likes,
           timestamp: note.createdAt,
-          image: imageUrl,
-          isDefault: false // 标记为非默认数据
+          image: imageUrl
         };
       });
       
@@ -359,9 +358,9 @@ const fetchNotes = async (forceRefresh = false) => {
         }
       }
       
-      // 无本地缓存或非移动环境，使用默认数据
-      console.log('后端没有返回小记数据，使用默认数据');
-      useDefaultNotes();
+      // 无数据时显示空列表
+      notes.value = [];
+      console.log('后端没有返回小记数据，显示空列表');
     }
   } catch (error) {
     console.error('获取小记失败:', error);
@@ -382,48 +381,11 @@ const fetchNotes = async (forceRefresh = false) => {
       }
     }
     
-    // 使用默认数据作为后备
-    useDefaultNotes();
+    // 无法获取数据时显示空列表
+    notes.value = [];
   } finally {
     isLoading.value = false;
   }
-};
-
-// 使用默认的小记数据
-const useDefaultNotes = () => {
-  notes.value = shuffleArray([
-    {
-      id: 1,
-      content: "怀着床榻的萌晖看下一张小记，我每时每刻都在填平希望的湖泊。",
-      author: "阿多尼斯",
-      avatar: "https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png",
-      likes: 5108,
-      timestamp: "2025-03-16T10:30:00",
-      image: "https://images.unsplash.com/photo-1502082553048-f009c37129b9?w=800&auto=format",
-      isDefault: true // 标记为默认数据
-    },
-    {
-      id: 2,
-      content: "今天天气真好，阳光明媚，一起出去走走吧。",
-      author: "alin",
-      avatar: "https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png",
-      likes: 423,
-      timestamp: "2025-03-16T09:15:00",
-      image: "https://images.unsplash.com/photo-1494500764479-0c8f2919a3d8?w=800&auto=format",
-      isDefault: true // 标记为默认数据
-    },
-    {
-      id: 3,
-      content: "写代码写到凌晨三点，终于解决了那个bug。成就感满满！",
-      author: "alin",
-      avatar: "https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png",
-      likes: 256,
-      timestamp: "2025-03-15T03:10:00",
-      image: null,
-      isDefault: true // 标记为默认数据
-    }
-  ]);
-  console.log('已加载默认小记');
 };
 
 // 检查并初始化页面数据
@@ -464,13 +426,15 @@ const initPageData = async () => {
       // 服务器连接成功，获取数据
       await fetchNotes(true);
     } else {
-      // 服务器连接失败，使用默认数据
-      console.log('服务器连接测试失败，使用默认数据');
-      useDefaultNotes();
+      // 服务器连接失败，显示错误信息
+      console.log('服务器连接测试失败，无法获取数据');
+      errorMessage.value = "无法连接到服务器，请检查网络连接";
+      notes.value = [];
     }
   } catch (error) {
     console.error('服务器连接测试失败:', error);
-    useDefaultNotes();
+    errorMessage.value = "服务器连接失败，请稍后再试";
+    notes.value = [];
   } finally {
     // 确保无论如何都关闭加载状态
     isLoading.value = false;
@@ -977,8 +941,8 @@ const handleAppResume = () => {
 // 添加页面返回时的处理
 const handlePageReturn = () => {
   // 检查数据是否需要刷新
-  if (notes.value.length === 0 || notes.value[0].isDefault) {
-    console.log('检测到返回页面且无有效数据，强制刷新');
+  if (notes.value.length === 0) {
+    console.log('检测到返回页面且无数据，强制刷新');
     initPageData();
   }
 };

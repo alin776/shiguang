@@ -102,14 +102,10 @@
         <!-- 页面标题 -->
         <div class="page-title">社区</div>
         
-        <!-- 空白占位 -->
-        <div class="header-spacer"></div>
-      </div>
-
-      <!-- 悬浮发帖按钮 -->
-      <div class="floating-button pulse-on-click" @click="router.push('/community/create')">
-        <el-icon><Plus /></el-icon>
-        <span>发帖</span>
+        <!-- 发帖按钮 -->
+        <div class="post-button" @click="router.push('/community/create')">
+          <img src="/write.svg" alt="发帖" class="post-icon" />
+        </div>
       </div>
 
       <!-- 帖子列表 -->
@@ -416,7 +412,7 @@ const noMoreData = ref(false);
 const currentSort = ref("latest");
 const likedPostIds = ref(new Set());
 const drawerVisible = ref(false);
-const viewStyle = ref('grid');
+const viewStyle = ref('list');
 
 // 排序选项
 const sortTabs = [
@@ -1003,7 +999,7 @@ const getTitleClass = (title) => {
   padding-top: 86px; /* 增加顶部padding，从原来的56px增加到86px */
   position: relative;
   width: 100%;
-  padding-bottom: 70px; /* 为底部导航栏留出空间 */
+  padding-bottom: 55px; /* 为底部导航栏留出空间 */
   z-index: 2; /* 确保内容在装饰条之上 */
 }
 
@@ -1055,9 +1051,36 @@ const getTitleClass = (title) => {
   color: #333;
 }
 
-/* 头部占位元素 */
-.header-spacer {
+/* 发帖按钮 */
+.post-button {
   width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #1677ff;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.post-button:hover {
+  background-color: rgba(22, 119, 255, 0.1);
+}
+
+.post-button:active {
+  transform: scale(0.95);
+}
+
+.post-icon {
+  width: 24px;
+  height: 24px;
+  transition: transform 0.3s ease;
+}
+
+.post-button:hover .post-icon {
+  transform: rotate(15deg);
 }
 
 /* 侧边抽屉样式 */
@@ -1161,29 +1184,6 @@ const getTitleClass = (title) => {
 :deep(.el-drawer__body) {
   padding: 0;
   overflow-y: auto;
-}
-
-/* 悬浮发帖按钮 */
-.floating-button {
-  position: fixed;
-  bottom: 80px;
-  right: 20px;
-  width: auto;
-  height: 48px; /* 稍微增加高度 */
-  padding: 0 20px;
-  border-radius: 24px;
-  background: #1677ff;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  box-shadow: 0 4px 16px rgba(22, 119, 255, 0.3);
-  transition: all 0.3s ease;
-  cursor: pointer;
-  z-index: 30; /* 提高z-index确保在最上层 */
-  font-weight: 500;
-  font-size: 15px;
 }
 
 .page-container {
@@ -1745,23 +1745,6 @@ const getTitleClass = (title) => {
   font-weight: 700 !important;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
   letter-spacing: 0.6px !important;
-}
-
-/* 悬浮按钮动画 */
-.pulse-on-click:active {
-  animation: pulse 0.3s ease-in-out;
-}
-
-@keyframes pulse {
-  0% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(0.95);
-  }
-  100% {
-    transform: scale(1);
-  }
 }
 
 /* 帖子列表 */

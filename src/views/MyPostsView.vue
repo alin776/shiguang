@@ -144,7 +144,7 @@ onMounted(() => {
 .my-posts-page {
   flex: 1;
   min-height: 100vh;
-  padding-bottom: 0;
+  padding-bottom: 55px;
   margin: 0 auto;
   overflow-y: auto;
   width: 100%;
@@ -181,7 +181,7 @@ onMounted(() => {
 
 .post-list {
   padding: 12px;
-  padding-bottom: 70px;
+  padding-bottom: 60px;
   display: block;
   width: 100%;
   box-sizing: border-box;

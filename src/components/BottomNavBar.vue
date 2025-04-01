@@ -137,7 +137,7 @@ onMounted(() => {
   bottom: 0;
   left: 0;
   right: 0;
-  height: 60px;
+  height: 45px;
   padding-bottom: env(safe-area-inset-bottom, 0px); /* 添加底部安全区域 */
   background: #ffffff;
   display: flex;
@@ -146,9 +146,9 @@ onMounted(() => {
   z-index: 100;
   max-width: inherit;
   margin: 0 auto;
-  border-radius: 20px 20px 0 0;
-  padding-left: 10px;
-  padding-right: 10px;
+  border-radius: 16px 16px 0 0;
+  padding-left: 8px;
+  padding-right: 8px;
   padding-top: 0;
   box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
   border-top: 1px solid #f5f5f5;
@@ -159,11 +159,11 @@ onMounted(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  padding: 6px 0;
-  min-width: 70px;
+  gap: 1px;
+  padding: 3px 0;
+  min-width: 50px;
   color: #a0a0a0;
-  font-size: 12px;
+  font-size: 9px;
   cursor: pointer;
   transition: all 0.3s ease;
 }
@@ -172,11 +172,11 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   transition: all 0.3s ease;
-  margin-bottom: 2px;
+  margin-bottom: 1px;
 }
 
 .icon-container.active {
@@ -197,8 +197,8 @@ onMounted(() => {
 }
 
 .nav-icon {
-  width: 24px;
-  height: 24px;
+  width: 16px;
+  height: 16px;
   transition: all 0.3s ease;
 }
 
@@ -228,7 +228,7 @@ onMounted(() => {
 
 /* 底部导航栏占位元素 */
 .bottom-nav-placeholder {
-  height: 60px;
+  height: 45px;
   width: 100%;
   margin-bottom: 0;
   padding-bottom: env(safe-area-inset-bottom, 0px); /* 添加底部安全区域 */

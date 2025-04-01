@@ -330,6 +330,14 @@ const handleNotificationClick = async (notification) => {
     } else if (sourceType === "system") {
       // 系统通知不跳转
       return;
+    } else if (sourceType === "announcement") {
+      // 公告类型通知，跳转到公告详情页
+      if (sourceId) {
+        router.push(`/announcements/${sourceId}`);
+      } else {
+        // 如果没有sourceId，跳转到公告列表页
+        router.push('/announcements');
+      }
     } else {
       // 其他类型，如果有sourceId尝试跳转到帖子详情
       if (sourceId) {
@@ -368,7 +376,7 @@ onMounted(() => {
 .page-container {
   min-height: 100vh;
   background: #f8f9fa;
-  padding-bottom: 70px; /* 为底部导航栏留出空间 */
+  padding-bottom: 55px; /* 为底部导航栏留出空间 */
   /* 全局样式中已经定义了padding-top */
 }
 

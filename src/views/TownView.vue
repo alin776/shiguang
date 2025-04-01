@@ -421,7 +421,7 @@ onMounted(async () => {
 .page-container {
   min-height: 100vh;
   background: #f8f9fa;
-  padding-bottom: 70px; /* 为底部导航栏留出空间 */
+  padding-bottom: 55px; /* 为底部导航栏留出空间 */
   padding-top: var(--safe-area-top); /* 添加顶部安全区域 */
 }
 
