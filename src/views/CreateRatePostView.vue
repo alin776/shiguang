@@ -221,6 +221,13 @@ const uploadOptionImage = async (index) => {
       const file = e.target.files[0];
       if (!file) return;
       
+      // 检查文件类型
+      const isAllowedFormat = file.type === "image/jpeg" || file.type === "image/png" || file.type === "image/gif" || file.type === "image/webp";
+      if (!isAllowedFormat) {
+        alert('图片只能是 JPG、PNG、GIF 或 WEBP 格式!');
+        return;
+      }
+      
       // 检查文件大小（限制为2MB）
       if (file.size > 2 * 1024 * 1024) {
         alert('图片大小不能超过2MB');

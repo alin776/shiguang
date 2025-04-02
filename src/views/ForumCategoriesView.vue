@@ -53,7 +53,7 @@
             @click="navigateToCommunity(category.id)"
           >
             <div class="category-icon" :class="getCategoryIconClass(index)">
-              <el-icon><Collection /></el-icon>
+              <span class="category-first-letter">{{ category.name.charAt(0) }}</span>
             </div>
             <div class="category-content">
               <div class="category-info">
@@ -332,29 +332,42 @@ onMounted(() => {
   margin-right: 10px;
 }
 
+.category-first-letter {
+  font-size: 20px;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-family: "PingFang SC", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, sans-serif;
+  letter-spacing: 1px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  background: linear-gradient(to bottom, #ffffff, rgba(255, 255, 255, 0.8));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.1));
+}
+
 /* 不同分类的图标颜色 */
 .all-posts {
-  background-color: #52c41a;
+  background: linear-gradient(135deg, #52c41a, #73d13d);
 }
 
 .icon-tech {
-  background-color: #1677ff;
+  background: linear-gradient(135deg, #1677ff, #36a9e1);
 }
 
 .icon-help {
-  background-color: #fa541c;
+  background: linear-gradient(135deg, #fa541c, #ff7a59);
 }
 
 .icon-game {
-  background-color: #722ed1;
+  background: linear-gradient(135deg, #722ed1, #b37feb);
 }
 
 .icon-life {
-  background-color: #eb2f96;
+  background: linear-gradient(135deg, #eb2f96, #ff85c0);
 }
 
 .icon-design {
-  background-color: #faad14;
+  background: linear-gradient(135deg, #faad14, #ffc53d);
 }
 
 /* 分类内容包装器 */

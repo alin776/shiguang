@@ -244,19 +244,19 @@ const saveProfile = async () => {
 
 const beforeUpload = (file, type = 'image') => {
   console.log(`验证${type}上传:`, file);
-  const isJpgOrPng = file.type === "image/jpeg" || file.type === "image/png";
+  const isAllowedFormat = file.type === "image/jpeg" || file.type === "image/png" || file.type === "image/webp";
   
   // 根据类型确定大小限制
   const sizeLimit = type === 'cover' ? 5 : 2; // 封面图5MB，头像2MB
   const isUnderSizeLimit = file.size / 1024 / 1024 < sizeLimit;
 
-  if (!isJpgOrPng) {
-    ElMessage.error("图片只能是 JPG 或 PNG 格式!");
+  if (!isAllowedFormat) {
+    ElMessage.error("图片只能是 JPG、PNG 或 WEBP 格式!");
   }
   if (!isUnderSizeLimit) {
     ElMessage.error(`图片大小不能超过 ${sizeLimit}MB!`);
   }
-  return isJpgOrPng && isUnderSizeLimit;
+  return isAllowedFormat && isUnderSizeLimit;
 };
 
 const handleCoverSuccess = (res) => {
