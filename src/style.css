@@ -241,15 +241,6 @@ button:focus-visible {
   z-index: 20;
 }
 
-/* 卡片悬浮效果 */
-.hover-lift {
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.hover-lift:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 16px var(--shadow-color);
-}
 
 /* 按钮点击效果 */
 .pulse-on-click {

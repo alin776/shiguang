@@ -148,133 +148,9 @@
         </div>
       </template>
       <template v-else>
+        <!-- 帖子列表 -->
         <div class="post-grid" v-if="activeTab === 'posts' && posts.length > 0">
-          <div class="virtual-list" :style="{ height: totalHeight + 'px' }">
-            <div
-              class="post-item"
-              v-for="post in visiblePosts"
-              :key="post.id"
-              :style="{ transform: `translateY(${Math.floor(scrollTop / itemHeight) * itemHeight}px)` }"
-              @click="router.push(`/community/post/${post.id}`)"
-            >
-              <!-- 有图片的帖子 -->
-              <div
-                v-if="post.images && post.images.length > 0"
-                class="post-item-with-image"
-              >
-                <div class="post-image-container">
-                  <img
-                    class="post-image"
-                    :src="post.images[0]"
-                    :alt="post.title || '无标题'"
-                    loading="lazy"
-                  />
-                  <div v-if="post.images.length > 1" class="image-count-badge">
-                    <el-icon><Picture /></el-icon>
-                    <span>{{ post.images.length }}</span>
-                  </div>
-                </div>
-                <div class="post-title">{{ post.title || "无标题" }}</div>
-              </div>
-              <!-- 无图片的帖子 -->
-              <div v-else class="post-item-text-only">
-                <div class="post-title-large">{{ post.title || "无标题" }}</div>
-                <div class="post-content">
-                  {{
-                    post.content
-                      ? post.content.length > 50
-                        ? post.content.substring(0, 50) + "..."
-                        : post.content
-                      : ""
-                  }}
-                </div>
-              </div>
-              <div class="post-footer">
-                <div class="user-info">
-                  <el-avatar
-                    :size="24"
-                    :src="post.user?.avatar"
-                    @error="() => true"
-                    class="user-avatar"
-                  >
-                    {{ post.user?.username?.charAt(0) || "?" }}
-                  </el-avatar>
-                  <span class="username">{{ post.user?.username || "匿名用户" }}</span>
-                </div>
-                <div class="like-area">
-                  <el-icon class="like-icon"><Star /></el-icon>
-                  <span class="like-count">{{ post.likes_count || post.likesCount || 0 }}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div
-          class="post-grid"
-          v-if="activeTab === 'likes' && likedPosts.length > 0"
-        >
-          <div class="virtual-list" :style="{ height: totalHeight + 'px' }">
-            <div
-              class="post-item"
-              v-for="post in visiblePosts"
-              :key="post.id"
-              :style="{ transform: `translateY(${Math.floor(scrollTop / itemHeight) * itemHeight}px)` }"
-              @click="router.push(`/community/post/${post.id}`)"
-            >
-              <!-- 有图片的帖子 -->
-              <div
-                v-if="post.images && post.images.length > 0"
-                class="post-item-with-image"
-              >
-                <div class="post-image-container">
-                  <img
-                    class="post-image"
-                    :src="post.images[0]"
-                    :alt="post.title || '无标题'"
-                    loading="lazy"
-                  />
-                  <div v-if="post.images.length > 1" class="image-count-badge">
-                    <el-icon><Picture /></el-icon>
-                    <span>{{ post.images.length }}</span>
-                  </div>
-                </div>
-                <div class="post-title">{{ post.title || "无标题" }}</div>
-              </div>
-              <!-- 无图片的帖子 -->
-              <div v-else class="post-item-text-only">
-                <div class="post-title-large">{{ post.title || "无标题" }}</div>
-                <div class="post-content">
-                  {{
-                    post.content
-                      ? post.content.length > 50
-                        ? post.content.substring(0, 50) + "..."
-                        : post.content
-                      : ""
-                  }}
-                </div>
-              </div>
-              <div class="post-footer">
-                <div class="user-info">
-                  <el-avatar
-                    :size="24"
-                    :src="post.user?.avatar"
-                    @error="() => true"
-                    class="user-avatar"
-                  >
-                    {{ post.user?.username?.charAt(0) || "?" }}
-                  </el-avatar>
-                  <span class="username">{{ post.user?.username || "匿名用户" }}</span>
-                </div>
-                <div class="like-area">
-                  <el-icon class="like-icon"><Star /></el-icon>
-                  <span class="like-count">{{ post.likes_count || post.likesCount || 0 }}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="empty-state" v-if="activeTab === 'posts' && !posts.length">
-          <div
+          <div 
             class="post-item"
             v-for="post in posts"
             :key="post.id"
@@ -331,6 +207,8 @@
             </div>
           </div>
         </div>
+
+        <!-- 喜欢的帖子 -->
         <div
           class="post-grid"
           v-if="activeTab === 'likes' && likedPosts.length > 0"
@@ -392,6 +270,8 @@
             </div>
           </div>
         </div>
+
+        <!-- 空状态 -->
         <div class="empty-state" v-if="activeTab === 'posts' && !posts.length">
           <el-icon><Picture /></el-icon>
           <p>暂无帖子</p>
@@ -431,7 +311,7 @@ import BottomNavBar from "../components/BottomNavBar.vue";
 import useProfileLogic from "../mine/js/profile.js";
 import "../mine/css/profile.css";
 import { useRouter } from "vue-router";
-import { onMounted, ref } from "vue";
+import { onMounted, ref, computed } from "vue";
 
 // 使用抽取的逻辑
 const {
@@ -462,6 +342,15 @@ const {
 } = useProfileLogic();
 
 const router = useRouter();
+
+// 处理滚动事件
+const handleScroll = (e) => {
+  // 可以用于实现上拉加载更多
+  const { scrollHeight, scrollTop, clientHeight } = e.target;
+  if (scrollHeight - scrollTop - clientHeight < 50) {
+    // 在这里可以添加加载更多的逻辑
+  }
+};
 
 // 预加载背景图片
 const preloadCoverImage = () => {
@@ -1104,5 +993,152 @@ const navigateToPoints = () => {
   object-fit: cover;
   will-change: transform;
   transform: translateZ(0);
+}
+
+.content-area {
+  background-color: transparent;
+  min-height: 300px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  max-height: calc(100vh - 350px);
+  flex: 1;
+  -webkit-overflow-scrolling: touch;
+  padding: 0;
+  padding-bottom: 70px; /* 添加下方内边距，为底部导航栏留出空间 */
+}
+
+.post-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  padding: 0;
+  width: 100%;
+}
+
+.post-item {
+  background-color: rgba(255, 255, 255, 0.95);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  height: auto;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  border: none;
+  margin-bottom: 0;
+}
+
+.post-item:active {
+  transform: scale(0.98);
+}
+
+.post-image-container {
+  position: relative;
+  width: 100%;
+  height: 0;
+  padding-bottom: 70%;
+  background-color: #f5f7fa;
+  overflow: hidden;
+}
+
+.post-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.post-item:hover .post-image {
+  transform: scale(1.08);
+}
+
+.image-count-badge {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  background-color: rgba(0, 0, 0, 0.6);
+  color: white;
+  padding: 4px 6px;
+  border-radius: 12px;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.post-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.like-area {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #ff6b6b;
+}
+
+.post-title {
+  padding: 8px 12px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #2c3e50;
+  text-align: left;
+}
+
+.post-title-large {
+  padding: 12px 12px 6px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #2c3e50;
+  text-align: left;
+}
+
+.post-content {
+  padding: 0 12px 12px;
+  font-size: 14px;
+  color: #7f8c8d;
+  line-height: 1.5;
+  text-align: left;
+}
+
+.username {
+  font-size: 12px;
+  color: #2c3e50;
+  font-weight: 500;
+  max-width: 100px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (prefers-color-scheme: dark) {
+  .post-item {
+    background-color: rgba(30, 30, 30, 0.95);
+  }
+  
+  .post-title, .post-title-large {
+    color: #f5f5f5;
+  }
+  
+  .post-content {
+    color: #aaa;
+  }
+  
+  .username {
+    color: #ddd;
+  }
 }
 </style>

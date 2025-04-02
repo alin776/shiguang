@@ -17,14 +17,6 @@
       <span>{{ post.comment_count || post.comments_count || 0 }}</span>
     </div>
     <div
-      class="action-item follow-action"
-      v-if="post.user?.id !== userId && post.user?.id"
-      :class="{ following: post.user?.is_following }"
-      @click="$emit('follow')"
-    >
-      <span>{{ post.user?.is_following ? "已关注" : "关注" }}</span>
-    </div>
-    <div
       class="action-item report-action"
       v-if="post.user?.id !== userId"
       @click="$emit('report')"
@@ -77,21 +69,6 @@ defineEmits(["like", "follow", "report"]);
 
 .action-item.active {
   color: #ffaa00;
-}
-
-.follow-action {
-  margin-left: auto;
-  margin-right: 0;
-  background: #4A90E2;
-  color: white;
-  padding: 4px 12px;
-  border-radius: 16px;
-  font-size: 12px;
-}
-
-.follow-action.following {
-  background: #e0e0e0;
-  color: #666666;
 }
 
 .report-action {

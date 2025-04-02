@@ -5,8 +5,10 @@
     <PostHeader
       :post="post"
       :isOwnPost="isOwnPost"
+      :userId="currentUserId"
       @user-click="navigateToUserProfile"
       @post-command="handlePostCommand"
+      @follow="toggleFollow"
     />
 
     <div v-if="loading" class="loading-container">
@@ -21,7 +23,6 @@
         :post="post"
         :userId="currentUserId"
         @like="toggleLike"
-        @follow="toggleFollow"
         @report="openReportDialog"
       />
 

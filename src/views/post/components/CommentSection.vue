@@ -118,7 +118,14 @@
             @touchstart="handleEmojiTouchStart($event, emoji)"
             @touchend="handleEmojiTouchEnd"
           >
+            <div v-if="emoji.loading" class="emoji-loading">
+              <el-icon><Loading /></el-icon>
+            </div>
+            <div v-else-if="emoji.error" class="emoji-error">
+              <el-icon><Warning /></el-icon>
+            </div>
             <img 
+              v-else
               :src="emoji.url" 
               alt="表情包"
               class="emoji-image"
@@ -169,7 +176,7 @@
 import { ref, computed, nextTick, watch, onMounted } from "vue";
 import CommentItem from "./CommentItem.vue";
 import AudioRecorder from "../../../components/AudioRecorder.vue";
-import { Plus, Close, Microphone, Picture, ChatDotRound } from '@element-plus/icons-vue';
+import { Plus, Close, Microphone, Picture, ChatDotRound, Loading, Warning } from '@element-plus/icons-vue';
 import axios from 'axios';
 import { ElMessage } from 'element-plus';
 import { API_BASE_URL } from "@/config";
@@ -320,9 +327,20 @@ const preloadEmojis = async () => {
   for (const emoji of myEmojis.value) {
     if (emoji.url) {
       try {
-        await preloadImage(emoji.url);
+        // 检查是否为GIF图片
+        const isGif = emoji.url.toLowerCase().endsWith('.gif');
+        if (isGif) {
+          // 对于GIF图片，添加加载状态
+          emoji.loading = true;
+          await preloadImage(emoji.url);
+          emoji.loading = false;
+        } else {
+          await preloadImage(emoji.url);
+        }
       } catch (err) {
         console.error('预加载表情包图片失败:', emoji.url, err);
+        emoji.loading = false;
+        emoji.error = true;
       }
     }
   }
@@ -343,6 +361,13 @@ const handleImageSelected = async (file) => {
   if (file.raw.size > 5 * 1024 * 1024) {
     ElMessage.error('图片不能超过5MB');
     return;
+  }
+
+  // 检查是否为GIF图片
+  const isGif = file.raw.type === 'image/gif';
+  if (isGif) {
+    // 对于GIF图片，显示加载提示
+    ElMessage.info('正在处理GIF图片，请稍候...');
   }
 
   try {
@@ -368,6 +393,10 @@ const handleImageSelected = async (file) => {
       const processedUrl = getProcessedImageUrl(response.data.url);
       console.log('添加上传图片:', processedUrl);
       commentImages.value.push(processedUrl);
+      
+      if (isGif) {
+        ElMessage.success('GIF图片上传成功');
+      }
     } else {
       ElMessage.error('图片上传失败');
     }
@@ -1058,5 +1087,26 @@ const handleReplyToReply = (reply) => {
   to {
     opacity: 1;
   }
+}
+
+.emoji-loading,
+.emoji-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.05);
+  border-radius: 4px;
+}
+
+.emoji-loading .el-icon,
+.emoji-error .el-icon {
+  font-size: 20px;
+  color: #909399;
+}
+
+.emoji-error .el-icon {
+  color: #f56c6c;
 }
 </style>

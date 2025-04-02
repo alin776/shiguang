@@ -1,50 +1,13 @@
 <template>
   <div class="post-container">
-    <!-- 图片轮播 -->
-    <div class="post-images" v-if="post.images?.length">
-      <div class="image-slider">
-        <div class="slider-arrows">
-          <div
-            class="arrow left"
-            @click="prevImage"
-            v-if="post.images.length > 1"
-          >
-            <el-icon><ArrowLeft /></el-icon>
-          </div>
-          <div
-            class="arrow right"
-            @click="nextImage"
-            v-if="post.images.length > 1"
-          >
-            <el-icon><ArrowRight /></el-icon>
-          </div>
-        </div>
-        <img
-          :src="post.images[currentImageIndex]"
-          :alt="post.title"
-          class="main-image"
-          @touchstart.prevent="handleTouchStart($event, post.images[currentImageIndex])"
-          @touchend.prevent="handleTouchEnd"
-          @touchmove.prevent
-          @contextmenu.prevent="showImageMenu($event, post.images[currentImageIndex])"
-          @click="previewImage(post.images[currentImageIndex])"
-          crossorigin="anonymous"
-          loading="lazy"
-          referrerpolicy="no-referrer"
-        />
-        <div class="image-indicator" v-if="post.images.length > 1">
-          {{ currentImageIndex + 1 }}/{{ post.images.length }}
-        </div>
-      </div>
-    </div>
-
-    <!-- 帖子内容 -->
+    <!-- 帖子内容 - 移到最上方 -->
     <div class="post-content">
       <h3 class="post-title" v-if="post.title">{{ post.title }}</h3>
       <h3 class="post-title" v-else>无标题</h3>
       <p class="post-text" 
          @touchstart="handleTextTouchStart($event)" 
-         @touchend="handleTextTouchEnd">{{ post.content }}</p>
+         @touchend="handleTextTouchEnd"
+         v-html="formatContentWithLinks(post.content)"></p>
       
       <!-- 音频播放器 - 改进设计 -->
       <div v-if="post.audio" class="audio-container">
@@ -106,6 +69,84 @@
         ></audio>
       </div>
     </div>
+
+    <!-- 修改图片展示方式为网格布局，移到内容下方 -->
+    <div class="post-images" v-if="post.images?.length">
+      <!-- 单图显示 -->
+      <div v-if="post.images.length === 1" class="image-grid grid-1">
+        <div class="image-item" @click="previewImage(post.images[0], 0)">
+          <div class="image-loading" v-if="!imageLoadStatus[0]">
+            <div class="loading-spinner"></div>
+          </div>
+          <img 
+            :src="post.images[0]" 
+            :alt="post.title" 
+            loading="lazy"
+            crossorigin="anonymous"
+            referrerpolicy="no-referrer"
+            @load="imageLoaded(0)"
+            @error="imageError(0)"
+            :class="{ 'image-loaded': imageLoadStatus[0] === 'loaded' }"
+          />
+        </div>
+      </div>
+      
+      <!-- 两图并排显示 -->
+      <div v-else-if="post.images.length === 2" class="image-grid grid-2">
+        <div 
+          class="image-item" 
+          v-for="(img, index) in post.images.slice(0, 2)" 
+          :key="index"
+          @click="previewImage(img, index)"
+        >
+          <div class="image-loading" v-if="!imageLoadStatus[index]">
+            <div class="loading-spinner"></div>
+          </div>
+          <img 
+            :src="img" 
+            :alt="`${post.title} - ${index + 1}`" 
+            loading="lazy"
+            crossorigin="anonymous"
+            referrerpolicy="no-referrer"
+            @load="imageLoaded(index)"
+            @error="imageError(index)" 
+            :class="{ 'image-loaded': imageLoadStatus[index] === 'loaded' }"
+          />
+        </div>
+      </div>
+      
+      <!-- 三图及以上使用多行网格显示 -->
+      <div v-else class="image-grid-multi">
+        <div 
+          class="image-item" 
+          v-for="(img, index) in post.images" 
+          :key="index"
+          @click="previewImage(img, index)"
+        >
+          <div class="image-loading" v-if="!imageLoadStatus[index]">
+            <div class="loading-spinner"></div>
+          </div>
+          <img 
+            :src="img" 
+            :alt="`${post.title} - ${index + 1}`" 
+            loading="lazy"
+            crossorigin="anonymous"
+            referrerpolicy="no-referrer" 
+            @load="imageLoaded(index)"
+            @error="imageError(index)"
+            :class="{ 'image-loaded': imageLoadStatus[index] === 'loaded' }"
+          />
+        </div>
+      </div>
+    </div>
+    
+    <!-- 图片预览 -->
+    <el-image-viewer
+      v-if="showViewer"
+      :url-list="post.images"
+      :initial-index="currentPreviewIndex"
+      @close="showViewer = false"
+    />
   </div>
 </template>
 
@@ -113,7 +154,7 @@
 import { ref, computed, onMounted, onUpdated, watch } from "vue";
 import { ArrowLeft, ArrowRight, VideoPlay, VideoPause } from "@element-plus/icons-vue";
 import { API_BASE_URL } from "@/config";
-import { ElMessage } from "element-plus";
+import { ElMessage, ElImageViewer } from "element-plus";
 
 const props = defineProps({
   post: {
@@ -142,6 +183,7 @@ onMounted(() => {
       }, 100);
     }
   }
+  initImageLoadStatus();
 });
 
 // 监听props.post的变化
@@ -540,58 +582,68 @@ const fallbackCopyTextToClipboard = (text) => {
   document.body.removeChild(textArea);
 };
 
-// 预览图片
-const previewImage = (url) => {
-  const previewDialog = document.createElement('div');
-  previewDialog.className = 'image-preview-dialog';
+// 图片预览相关
+const showViewer = ref(false);
+const currentPreviewIndex = ref(0);
+
+// 图片加载状态跟踪
+const imageLoadStatus = ref([]);
+
+// 初始化图片加载状态
+const initImageLoadStatus = () => {
+  if (props.post?.images && Array.isArray(props.post.images)) {
+    imageLoadStatus.value = Array(props.post.images.length).fill(null);
+  }
+};
+
+// 监听post变化，初始化图片加载状态
+watch(() => props.post, (newPost) => {
+  if (newPost?.images && Array.isArray(newPost.images)) {
+    initImageLoadStatus();
+  }
+}, { immediate: true });
+
+// 图片加载完成
+const imageLoaded = (index) => {
+  if (index >= 0 && index < imageLoadStatus.value.length) {
+    imageLoadStatus.value[index] = 'loaded';
+  }
+};
+
+// 图片加载失败
+const imageError = (index) => {
+  if (index >= 0 && index < imageLoadStatus.value.length) {
+    imageLoadStatus.value[index] = 'error';
+  }
+};
+
+// 格式化帖子内容，自动将URL转换为可点击的链接
+const formatContentWithLinks = (content) => {
+  if (!content) return '';
   
-  const previewImg = document.createElement('img');
-  previewImg.src = url;
-  previewImg.className = 'preview-image';
+  // URL正则表达式，匹配http, https和www开头的URL
+  const urlRegex = /(https?:\/\/(?:www\.|(?!www))[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|www\.[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|https?:\/\/(?:www\.|(?!www))[a-zA-Z0-9]+\.[^\s]{2,}|www\.[a-zA-Z0-9]+\.[^\s]{2,})/gi;
   
-  // 添加关闭按钮
-  const closeButton = document.createElement('div');
-  closeButton.className = 'preview-close-btn';
-  closeButton.innerHTML = '×';
-  closeButton.addEventListener('click', (e) => {
-    e.stopPropagation();
-    document.body.removeChild(previewDialog);
-    // 恢复页面滚动
-    document.body.style.overflow = '';
+  // 替换URL为HTML链接，并转义其他HTML字符
+  const escapedContent = content
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+  
+  // 将链接转换为可点击的HTML
+  return escapedContent.replace(urlRegex, function(url) {
+    // 确保链接有http前缀
+    const href = url.startsWith('www.') ? 'http://' + url : url;
+    return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="post-link">${url}</a>`;
   });
-  
-  previewDialog.appendChild(previewImg);
-  previewDialog.appendChild(closeButton);
-  document.body.appendChild(previewDialog);
-  
-  // 禁止页面滚动
-  document.body.style.overflow = 'hidden';
-  
-  previewDialog.addEventListener('click', () => {
-    document.body.removeChild(previewDialog);
-    // 恢复页面滚动
-    document.body.style.overflow = '';
-  });
-  
-  // 处理移动设备上的滑动手势
-  let startY = 0;
-  let startX = 0;
-  
-  previewDialog.addEventListener('touchstart', (e) => {
-    startY = e.touches[0].clientY;
-    startX = e.touches[0].clientX;
-  });
-  
-  previewDialog.addEventListener('touchmove', (e) => {
-    const currentY = e.touches[0].clientY;
-    const currentX = e.touches[0].clientX;
-    
-    // 垂直滑动超过50px或水平滑动超过100px时关闭预览
-    if (Math.abs(currentY - startY) > 50 || Math.abs(currentX - startX) > 100) {
-      document.body.removeChild(previewDialog);
-      document.body.style.overflow = '';
-    }
-  });
+};
+
+// 预览图片 - 修改后的方法
+const previewImage = (url, index) => {
+  currentPreviewIndex.value = index;
+  showViewer.value = true;
 };
 
 // 显示保存图片确认对话框
@@ -687,65 +739,116 @@ const showSaveImageConfirm = (imageUrl) => {
 </script>
 
 <style scoped>
-.post-container {
-  margin-bottom: 16px;
-}
 
 .post-images {
-  overflow: hidden;
-  background: #f0f0f0;
-  max-height: 50vh;
+  margin-top: 15px;
+  width: 100%;
+  margin-bottom: 0;
 }
 
-.image-slider {
-  width: 100%;
+.image-grid {
+  display: grid;
+  grid-gap: 4px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.image-grid-multi {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-gap: 4px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.grid-1 {
+  grid-template-columns: 1fr;
+  width: 33.33%; /* 设置宽度为三分之一，与grid-3中单个图片宽度相同 */
+  max-width: 120px; /* 设置最大宽度限制 */
+  margin-left: 0; /* 确保左对齐 */
+}
+
+.grid-2 {
+  grid-template-columns: 1fr 1fr;
+}
+
+.grid-3 {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
+.image-item {
   position: relative;
+  padding-bottom: 100%; /* 1:1 比例，正方形 */
+  height: 0;
   overflow: hidden;
+  cursor: pointer;
+  background-color: #f5f5f5;
 }
 
-.main-image {
+.image-item img {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
-  display: block;
-  object-fit: contain;
-  background: #000;
-  max-height: 50vh;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease, opacity 0.2s ease;
+  opacity: 0;
 }
 
-.slider-arrows {
+.image-item img.image-loaded {
+  opacity: 1;
+}
+
+.image-item:hover img.image-loaded {
+  transform: scale(1.05);
+}
+
+/* 图片加载中动画 */
+.image-loading {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f0f0f0;
+  z-index: 1;
+}
+
+.loading-spinner {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 3px solid rgba(0, 0, 0, 0.1);
+  border-top-color: #4A90E2;
+  animation: spin 1s infinite linear;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.image-count {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  pointer-events: none;
-}
-
-.arrow {
-  width: 40px;
-  height: 40px;
-  background: rgba(0, 0, 0, 0.5);
+  background-color: rgba(0, 0, 0, 0.4);
   color: white;
-  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  pointer-events: auto;
-  margin: 0 12px;
-}
-
-.image-indicator {
-  position: absolute;
-  bottom: 10px;
-  right: 10px;
-  background: rgba(0, 0, 0, 0.5);
-  color: white;
-  padding: 4px 8px;
-  border-radius: 12px;
-  font-size: 12px;
+  font-size: 18px;
+  font-weight: 600;
 }
 
 .post-content {
@@ -758,14 +861,12 @@ const showSaveImageConfirm = (imageUrl) => {
   font-size: 20px;
   font-weight: 600;
   color: #333;
-  margin: 10px 0 15px;
   line-height: 1.4;
   text-align: left;
   /* 增强标题的视觉效果 */
   border-left: 4px solid #1677ff;
   padding-left: 12px;
   background-color: #f8f9fa;
-  padding: 10px 12px;
   border-radius: 4px;
 }
 
@@ -960,50 +1061,36 @@ const showSaveImageConfirm = (imageUrl) => {
   margin: 0;
 }
 
+/* 帖子链接样式 */
+:deep(.post-link) {
+  color: #4A90E2;
+  text-decoration: none;
+  word-break: break-all;
+  border-bottom: 1px dashed #4A90E2;
+  transition: all 0.2s ease;
+}
+
+:deep(.post-link:hover) {
+  color: #1677ff;
+  border-bottom: 1px solid #1677ff;
+}
+
+:deep(.post-link:visited) {
+  color: #7e57c2;
+  border-bottom: 1px dashed #7e57c2;
+}
+
+/* 允许在嵌套的组件中使用深度选择器 */
+:deep(.post-text) {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 /* 图片预览对话框样式 */
-.image-preview-dialog {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.8);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 9999;
-  flex-direction: column;
-  touch-action: none;
-}
-
-.preview-image {
-  max-width: 90%;
-  max-height: 90%;
-  object-fit: contain;
-  border-radius: 8px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-}
-
-.preview-close-btn {
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  width: 40px;
-  height: 40px;
-  background-color: rgba(0, 0, 0, 0.6);
-  color: white;
-  border-radius: 50%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  cursor: pointer;
-  font-size: 24px;
-  line-height: 1;
-  z-index: 10000;
-}
+/* .image-preview-dialog, .preview-image, .preview-close-btn 相关样式可删除 */
 
 @media screen and (max-width: 480px) {
-  .preview-image {
+  /* .preview-image {
     max-width: 95%;
     max-height: 80%;
   }
@@ -1013,6 +1100,6 @@ const showSaveImageConfirm = (imageUrl) => {
     right: 15px;
     width: 36px;
     height: 36px;
-  }
+  } */
 }
 </style>

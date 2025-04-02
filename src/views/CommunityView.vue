@@ -93,7 +93,7 @@
       </el-drawer>
 
       <!-- 顶部标题栏 -->
-      <div class="page-header">
+      <div class="page-header" :class="{ 'header-hidden': isHeaderHidden }">
         <!-- 菜单按钮 -->
         <div class="menu-button" @click="drawerVisible = true">
           <el-icon><Menu /></el-icon>
@@ -385,7 +385,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, nextTick } from "vue";
+import { ref, onMounted, computed, nextTick, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { Search, Plus, Picture, View, ChatDotRound, Star, StarFilled, VideoPlay, VideoPause, Filter, Grid, List, Top, HotWater, Menu } from "@element-plus/icons-vue";
@@ -415,6 +415,12 @@ const currentSort = ref("latest");
 const likedPostIds = ref(new Set());
 const drawerVisible = ref(false);
 const viewStyle = ref('list');
+
+// 添加头部显示控制相关变量
+const isHeaderHidden = ref(false);
+const lastScrollTop = ref(0);
+const scrollThreshold = 50; // 滚动阈值
+let scrollTimer = null;
 
 // 排序选项
 const sortTabs = [
@@ -648,11 +654,26 @@ const loadMorePosts = async () => {
   }
 };
 
-const handleScroll = async (e) => {
-  const { scrollHeight, scrollTop, clientHeight } = e.target;
-  if (scrollHeight - scrollTop - clientHeight < 50) {
-    await loadMorePosts();
+const handleScroll = () => {
+  if (scrollTimer) {
+    return;
   }
+  
+  scrollTimer = setTimeout(() => {
+    const currentScrollTop = window.pageYOffset || document.documentElement.scrollTop;
+    
+    // 判断滚动方向和距离
+    if (currentScrollTop > lastScrollTop.value && currentScrollTop > scrollThreshold) {
+      // 向下滚动且超过阈值，隐藏头部
+      isHeaderHidden.value = true;
+    } else if (currentScrollTop < lastScrollTop.value || currentScrollTop <= scrollThreshold) {
+      // 向上滚动或回到顶部，显示头部
+      isHeaderHidden.value = false;
+    }
+    
+    lastScrollTop.value = currentScrollTop;
+    scrollTimer = null;
+  }, 10); // 节流时间间隔
 };
 
 // 左列帖子
@@ -946,6 +967,17 @@ onMounted(async () => {
   if (communityPage) {
     communityPage.addEventListener("scroll", handleScroll);
   }
+
+  // 在组件挂载时添加滚动监听
+  window.addEventListener('scroll', handleScroll, { passive: true });
+});
+
+// 在组件卸载时移除滚动监听
+onUnmounted(() => {
+  if (scrollTimer) {
+    clearTimeout(scrollTimer);
+  }
+  window.removeEventListener('scroll', handleScroll);
 });
 
 const changeCategory = (categoryId) => {
@@ -1019,17 +1051,17 @@ const getTitleClass = (title) => {
   flex-shrink: 0;
 }
 .community-page {
+  padding-top: 96px; /* 56px(头部高度) + 40px(顶部间距) */
   display: flex;
   flex-direction: column;
   min-height: 100%;
-  padding-top: 86px; /* 增加顶部padding，从原来的56px增加到86px */
   position: relative;
   width: 100%;
-  padding-bottom: 55px; /* 为底部导航栏留出空间 */
-  z-index: 2; /* 确保内容在装饰条之上 */
+  padding-bottom: 55px;
+  z-index: 2;
 }
 
-/* 顶部标题栏 - 新设计 */
+/* 顶部标题栏 */
 .page-header {
   position: fixed;
   top: 40px;
@@ -1041,12 +1073,18 @@ const getTitleClass = (title) => {
   display: flex;
   align-items: center;
   padding: 0 16px;
-  z-index: 20;
-  width: 100%;
-  box-sizing: border-box;
-  border-radius: 8px;
+  z-index: 1000;
+  transform: translateY(0);
+  transition: transform 0.3s ease-out;
+  will-change: transform;
+  width: 95%;
   margin: 0 auto;
-  max-width: 95%;
+  border-radius: 8px;
+}
+
+/* 头部隐藏时的样式 */
+.header-hidden {
+  transform: translateY(-200%);
 }
 
 /* 菜单按钮 */
@@ -1109,7 +1147,6 @@ const getTitleClass = (title) => {
   transform: rotate(15deg);
 }
 
-/* 侧边抽屉样式 */
 .drawer-content {
   padding: 20px;
   display: flex;
@@ -1248,6 +1285,12 @@ const getTitleClass = (title) => {
 .post-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.post-card:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  transition: transform 0.1s, box-shadow 0.1s;
 }
 
 .post-card .post-cover {
@@ -1458,6 +1501,7 @@ const getTitleClass = (title) => {
 @media screen and (max-width: 480px) {
   .post-list-item {
     padding: 8px;
+    border-bottom: 1px solid #f0f0f0;
   }
   
   .post-list-item .post-cover {
@@ -1783,4 +1827,5 @@ const getTitleClass = (title) => {
   font-size: 12px;
   color: #999;
 }
+
 </style>
