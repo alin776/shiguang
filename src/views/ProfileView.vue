@@ -141,7 +141,7 @@
         <span>喜欢</span>
       </div>
     </div>
-    <div class="content-area">
+    <div class="content-area" @scroll="handleScroll">
       <template v-if="loading">
         <div class="loading-state">
           <el-skeleton :rows="3" animated />
@@ -149,6 +149,131 @@
       </template>
       <template v-else>
         <div class="post-grid" v-if="activeTab === 'posts' && posts.length > 0">
+          <div class="virtual-list" :style="{ height: totalHeight + 'px' }">
+            <div
+              class="post-item"
+              v-for="post in visiblePosts"
+              :key="post.id"
+              :style="{ transform: `translateY(${Math.floor(scrollTop / itemHeight) * itemHeight}px)` }"
+              @click="router.push(`/community/post/${post.id}`)"
+            >
+              <!-- 有图片的帖子 -->
+              <div
+                v-if="post.images && post.images.length > 0"
+                class="post-item-with-image"
+              >
+                <div class="post-image-container">
+                  <img
+                    class="post-image"
+                    :src="post.images[0]"
+                    :alt="post.title || '无标题'"
+                    loading="lazy"
+                  />
+                  <div v-if="post.images.length > 1" class="image-count-badge">
+                    <el-icon><Picture /></el-icon>
+                    <span>{{ post.images.length }}</span>
+                  </div>
+                </div>
+                <div class="post-title">{{ post.title || "无标题" }}</div>
+              </div>
+              <!-- 无图片的帖子 -->
+              <div v-else class="post-item-text-only">
+                <div class="post-title-large">{{ post.title || "无标题" }}</div>
+                <div class="post-content">
+                  {{
+                    post.content
+                      ? post.content.length > 50
+                        ? post.content.substring(0, 50) + "..."
+                        : post.content
+                      : ""
+                  }}
+                </div>
+              </div>
+              <div class="post-footer">
+                <div class="user-info">
+                  <el-avatar
+                    :size="24"
+                    :src="post.user?.avatar"
+                    @error="() => true"
+                    class="user-avatar"
+                  >
+                    {{ post.user?.username?.charAt(0) || "?" }}
+                  </el-avatar>
+                  <span class="username">{{ post.user?.username || "匿名用户" }}</span>
+                </div>
+                <div class="like-area">
+                  <el-icon class="like-icon"><Star /></el-icon>
+                  <span class="like-count">{{ post.likes_count || post.likesCount || 0 }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div
+          class="post-grid"
+          v-if="activeTab === 'likes' && likedPosts.length > 0"
+        >
+          <div class="virtual-list" :style="{ height: totalHeight + 'px' }">
+            <div
+              class="post-item"
+              v-for="post in visiblePosts"
+              :key="post.id"
+              :style="{ transform: `translateY(${Math.floor(scrollTop / itemHeight) * itemHeight}px)` }"
+              @click="router.push(`/community/post/${post.id}`)"
+            >
+              <!-- 有图片的帖子 -->
+              <div
+                v-if="post.images && post.images.length > 0"
+                class="post-item-with-image"
+              >
+                <div class="post-image-container">
+                  <img
+                    class="post-image"
+                    :src="post.images[0]"
+                    :alt="post.title || '无标题'"
+                    loading="lazy"
+                  />
+                  <div v-if="post.images.length > 1" class="image-count-badge">
+                    <el-icon><Picture /></el-icon>
+                    <span>{{ post.images.length }}</span>
+                  </div>
+                </div>
+                <div class="post-title">{{ post.title || "无标题" }}</div>
+              </div>
+              <!-- 无图片的帖子 -->
+              <div v-else class="post-item-text-only">
+                <div class="post-title-large">{{ post.title || "无标题" }}</div>
+                <div class="post-content">
+                  {{
+                    post.content
+                      ? post.content.length > 50
+                        ? post.content.substring(0, 50) + "..."
+                        : post.content
+                      : ""
+                  }}
+                </div>
+              </div>
+              <div class="post-footer">
+                <div class="user-info">
+                  <el-avatar
+                    :size="24"
+                    :src="post.user?.avatar"
+                    @error="() => true"
+                    class="user-avatar"
+                  >
+                    {{ post.user?.username?.charAt(0) || "?" }}
+                  </el-avatar>
+                  <span class="username">{{ post.user?.username || "匿名用户" }}</span>
+                </div>
+                <div class="like-area">
+                  <el-icon class="like-icon"><Star /></el-icon>
+                  <span class="like-count">{{ post.likes_count || post.likesCount || 0 }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="empty-state" v-if="activeTab === 'posts' && !posts.length">
           <div
             class="post-item"
             v-for="post in posts"
@@ -165,6 +290,7 @@
                   class="post-image"
                   :src="post.images[0]"
                   :alt="post.title || '无标题'"
+                  loading="lazy"
                 />
                 <div v-if="post.images.length > 1" class="image-count-badge">
                   <el-icon><Picture /></el-icon>
@@ -225,6 +351,7 @@
                   class="post-image"
                   :src="post.images[0]"
                   :alt="post.title || '无标题'"
+                  loading="lazy"
                 />
                 <div v-if="post.images.length > 1" class="image-count-badge">
                   <el-icon><Picture /></el-icon>
@@ -304,6 +431,7 @@ import BottomNavBar from "../components/BottomNavBar.vue";
 import useProfileLogic from "../mine/js/profile.js";
 import "../mine/css/profile.css";
 import { useRouter } from "vue-router";
+import { onMounted, ref } from "vue";
 
 // 使用抽取的逻辑
 const {
@@ -334,6 +462,18 @@ const {
 } = useProfileLogic();
 
 const router = useRouter();
+
+// 预加载背景图片
+const preloadCoverImage = () => {
+  if (userCoverStyle?.backgroundImage) {
+    const img = new Image();
+    img.src = userCoverStyle.backgroundImage.replace(/url\(['"]?(.*?)['"]?\)/, '$1');
+  }
+};
+
+onMounted(() => {
+  preloadCoverImage();
+});
 
 // 根据称号名称返回对应的样式类
 const getTitleClass = (title) => {
@@ -526,10 +666,9 @@ const navigateToPoints = () => {
   display: flex;
   justify-content: space-around;
   margin-bottom: 16px;
-  background-color: rgba(0, 0, 0, 0.15);
+  background-color: rgba(0, 0, 0, 0.3);
   border-radius: 12px;
   padding: 12px 8px;
-  backdrop-filter: blur(8px);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   z-index: 2;
 }
@@ -557,9 +696,8 @@ const navigateToPoints = () => {
 .user-bio {
   margin-bottom: 16px;
   padding: 12px;
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: rgba(0, 0, 0, 0.3);
   border-radius: 12px;
-  backdrop-filter: blur(8px);
   color: white;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   z-index: 2;
@@ -572,10 +710,9 @@ const navigateToPoints = () => {
 
 .user-experience {
   margin-bottom: 16px;
-  background-color: rgba(0, 0, 0, 0.15);
+  background-color: rgba(0, 0, 0, 0.3);
   border-radius: 12px;
   padding: 10px;
-  backdrop-filter: blur(8px);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   z-index: 2;
 }
@@ -630,14 +767,16 @@ const navigateToPoints = () => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background-color: #f8f8f8;
-  color: #555;
+  background-color: rgba(255, 255, 255, 0.9);
+  color: #333;
   border-radius: 8px;
   padding: 8px 0;
   cursor: pointer;
   transition: all 0.2s ease;
   font-size: 0.85rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  will-change: transform;
+  transform: translateZ(0);
 }
 
 .user-actions-row .action-btn .el-icon {
@@ -646,19 +785,19 @@ const navigateToPoints = () => {
 }
 
 .user-actions-row .action-btn:hover {
-  background-color: #eee;
+  background-color: rgba(255, 255, 255, 0.9);
   transform: translateY(-2px);
-  box-shadow: 0 3px 5px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 @media (prefers-color-scheme: dark) {
   .user-actions-row .action-btn {
-    background-color: #2a2a2a;
+    background-color: rgba(40, 40, 40, 0.75);
     color: #e0e0e0;
   }
   
   .user-actions-row .action-btn:hover {
-    background-color: #333;
+    background-color: rgba(50, 50, 50, 0.9);
   }
 }
 
@@ -671,6 +810,10 @@ const navigateToPoints = () => {
   overflow: hidden;
   min-height: 350px;
   background-color: transparent !important;
+  will-change: transform;
+  transform: translateZ(0);
+  contain: paint;
+  content-visibility: auto;
 }
 
 .header-content {
@@ -711,10 +854,9 @@ const navigateToPoints = () => {
   display: flex;
   justify-content: space-around;
   margin-bottom: 16px;
-  background-color: rgba(0, 0, 0, 0.15);
+  background-color: rgba(0, 0, 0, 0.3);
   border-radius: 12px;
   padding: 12px 8px;
-  backdrop-filter: blur(8px);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   z-index: 2;
 }
@@ -722,9 +864,8 @@ const navigateToPoints = () => {
 .user-bio {
   margin-bottom: 16px;
   padding: 12px;
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: rgba(0, 0, 0, 0.3);
   border-radius: 12px;
-  backdrop-filter: blur(8px);
   color: white;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   z-index: 2;
@@ -732,10 +873,9 @@ const navigateToPoints = () => {
 
 .user-experience {
   margin-bottom: 16px;
-  background-color: rgba(0, 0, 0, 0.15);
+  background-color: rgba(0, 0, 0, 0.3);
   border-radius: 12px;
   padding: 10px;
-  backdrop-filter: blur(8px);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   z-index: 2;
 }
@@ -791,7 +931,7 @@ const navigateToPoints = () => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background-color: rgba(255, 255, 255, 0.75);
+  background-color: rgba(255, 255, 255, 0.9);
   color: #333;
   border-radius: 8px;
   padding: 8px 0;
@@ -799,7 +939,8 @@ const navigateToPoints = () => {
   transition: all 0.2s ease;
   font-size: 0.85rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  backdrop-filter: blur(5px);
+  will-change: transform;
+  transform: translateZ(0);
 }
 
 .user-actions-row .action-btn .el-icon {
@@ -877,6 +1018,8 @@ const navigateToPoints = () => {
   min-height: 100vh;
   background-color: #f5f7fa;
   padding-top: var(--safe-area-top);
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 
 .post-title {
@@ -953,5 +1096,13 @@ const navigateToPoints = () => {
   .feature-button:hover {
     background-color: #333;
   }
+}
+
+.post-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  will-change: transform;
+  transform: translateZ(0);
 }
 </style>
