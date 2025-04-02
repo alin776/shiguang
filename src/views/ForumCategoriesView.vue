@@ -420,7 +420,7 @@ onMounted(() => {
 }
 
 /* 适配小屏幕的响应式设计 */
-@media screen and (max-width: 360px) {
+@media screen and (max-width: 100px) {
   .categories-grid {
     grid-template-columns: 1fr;
   }

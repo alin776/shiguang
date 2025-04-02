@@ -236,10 +236,141 @@ const onSlideChange = (swiper) => {
   }
 };
 
+// 从后端获取小记列表
+const fetchNotes = async (forceRefresh = false) => {
+  try {
+    console.log('开始获取小记数据...');
+    isLoading.value = true;
+    errorMessage.value = "";
+    
+    // 使用Date.now()作为参数防止缓存
+    const timestamp = Date.now();
+    
+    // 判断是否为移动设备
+    const isMobileApp = window.Capacitor && window.Capacitor.isNativePlatform();
+    
+    // 先检查本地缓存，但始终触发服务器请求
+    try {
+      const cachedData = localStorage.getItem('cachedNotes');
+      if (cachedData && !forceRefresh) {
+        const cachedNotes = JSON.parse(cachedData);
+        if (cachedNotes.length > 0) {
+          notes.value = cachedNotes;
+          console.log('已从本地缓存加载小记数据，数量:', notes.value.length);
+          // 不提前返回，继续请求新数据
+        }
+      }
+    } catch (e) {
+      console.error('读取本地缓存失败:', e);
+    }
+    
+    // 在移动设备上，增加请求超时设置
+    let response;
+    try {
+      if (isMobileApp) {
+        // 移动设备上使用更长的超时时间，对于网络请求更宽容
+        response = await axios.get(`/api/notes?t=${timestamp}`, {
+          timeout: 15000 // 15秒超时，增加容忍度
+        });
+      } else {
+        // 浏览器环境使用默认超时
+        response = await axios.get(`/api/notes?t=${timestamp}`);
+      }
+      
+      if (response.data.success && response.data.notes.length > 0) {
+        console.log('后端返回的小记数据:', response.data.notes);
+        
+        // 将后端数据格式转换为前端需要的格式
+        const formattedNotes = response.data.notes.map(note => {
+          // 处理头像URL
+          let avatarUrl = note.avatar;
+          
+          // 使用getImageUrl处理头像URL
+          avatarUrl = avatarUrl ? getImageUrl(avatarUrl) : null;
+          
+          // 处理图片URL
+          let imageUrl = note.image ? getImageUrl(note.image) : null;
+          
+          // 如果URL仍然无效或为空，使用默认头像
+          const defaultAvatar = "https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png";
+          
+          return {
+            id: note._id,
+            content: note.content,
+            author: note.authorName,
+            avatar: avatarUrl || defaultAvatar,
+            likes: note.likes,
+            timestamp: note.createdAt,
+            image: imageUrl
+          };
+        });
+        
+        // 随机打乱笔记顺序
+        notes.value = shuffleArray(formattedNotes);
+        console.log('成功加载数据库小记，数量:', notes.value.length);
+        
+        // 保存到本地缓存
+        try {
+          localStorage.setItem('cachedNotes', JSON.stringify(notes.value));
+          console.log('已将小记数据缓存到本地存储');
+        } catch (e) {
+          console.error('本地缓存小记失败:', e);
+        }
+      } else if (response.data.notes && response.data.notes.length === 0) {
+        // 明确检查空数组
+        console.log('后端返回了空的小记列表');
+        // 如果当前没有本地缓存数据，则显示空列表
+        if (notes.value.length === 0) {
+          notes.value = [];
+        }
+      }
+    } catch (apiError) {
+      console.error('API请求失败:', apiError);
+      
+      // 显示错误提示，但仍保留现有数据
+      if (isMobileApp) {
+        ElMessage.warning('网络连接不稳定，显示本地缓存内容');
+      } else {
+        ElMessage.warning('获取最新数据失败，显示缓存内容');
+      }
+      
+      // 如果当前没有数据，尝试从缓存加载
+      if (notes.value.length === 0) {
+        try {
+          const cachedData = localStorage.getItem('cachedNotes');
+          if (cachedData) {
+            notes.value = JSON.parse(cachedData);
+            console.log('API请求失败，使用本地缓存的小记数据，数量:', notes.value.length);
+          }
+        } catch (e) {
+          console.error('读取本地缓存失败:', e);
+        }
+      }
+    }
+  } catch (error) {
+    console.error('获取小记失败:', error);
+    errorMessage.value = "获取小记失败，请稍后再试";
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+// 简化页面数据初始化逻辑
+const initPageData = async () => {
+  console.log('初始化页面数据...');
+  // 直接获取小记数据
+  await fetchNotes();
+  // 获取位置和天气信息
+  getLocationAndWeather();
+};
+
 // 页面加载时，设置整个文档背景为白色并只禁止水平滚动
 onMounted(async () => {
   // 初始化页面
   currentView.value = "note";
+  
+  // 设置全局API基础URL
+  axios.defaults.baseURL = API_BASE_URL;
   
   // 设置html和body为白色背景，但只禁止水平滚动
   document.documentElement.style.backgroundColor = '#ffffff';
@@ -256,10 +387,9 @@ onMounted(async () => {
   // 加载已点赞的小记ID
   loadLikedNotes();
 
-  // 添加额外的延迟初始化，确保在移动设备上有足够时间完成初始化
-  setTimeout(() => {
-    initPageData();
-  }, 100);
+  // 直接初始化页面数据，使用forceRefresh确保获取最新数据
+  await fetchNotes(true);
+  getLocationAndWeather();
 
   // 在Capacitor环境中添加应用进入前台的监听
   if (window.Capacitor && window.Capacitor.isNativePlatform()) {
@@ -271,183 +401,12 @@ onMounted(async () => {
 // 小记数据
 const notes = ref([]);
 
-// 从后端获取小记列表
-const fetchNotes = async (forceRefresh = false) => {
-  // 如果不是强制刷新且notes已有数据，则直接返回
-  if (!forceRefresh && notes.value.length > 0) {
-    console.log('已有小记数据，不重新获取');
-    return;
-  }
-
-  try {
-    console.log('开始获取小记数据...');
-    isLoading.value = true;
-    errorMessage.value = "";
-    
-    // 使用Date.now()作为参数防止缓存
-    const timestamp = Date.now();
-    
-    // 判断是否为移动设备
-    const isMobileApp = window.Capacitor && window.Capacitor.isNativePlatform();
-    
-    // 在移动设备上，增加请求超时设置
-    let response;
-    if (isMobileApp) {
-      // 移动设备上使用更长的超时时间，对于网络请求更宽容
-      response = await axios.get(`/api/notes?t=${timestamp}`, {
-        timeout: 10000 // 10秒超时
-      });
-    } else {
-      // 浏览器环境使用默认超时
-      response = await axios.get(`/api/notes?t=${timestamp}`);
-    }
-    
-    if (response.data.success && response.data.notes.length > 0) {
-      console.log('后端返回的小记数据:', response.data.notes);
-      
-      // 将后端数据格式转换为前端需要的格式
-      const formattedNotes = response.data.notes.map(note => {
-        // 处理头像URL
-        let avatarUrl = note.avatar;
-        
-        // 使用getImageUrl处理头像URL
-        avatarUrl = avatarUrl ? getImageUrl(avatarUrl) : null;
-        
-        // 处理图片URL
-        let imageUrl = note.image ? getImageUrl(note.image) : null;
-        
-        // 如果URL仍然无效或为空，使用默认头像
-        const defaultAvatar = "https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png";
-        
-        return {
-          id: note._id,
-          content: note.content,
-          author: note.authorName,
-          avatar: avatarUrl || defaultAvatar,
-          likes: note.likes,
-          timestamp: note.createdAt,
-          image: imageUrl
-        };
-      });
-      
-      // 随机打乱笔记顺序
-      notes.value = shuffleArray(formattedNotes);
-      console.log('成功加载数据库小记，数量:', notes.value.length);
-      
-      // 在移动设备上，将数据保存到localStorage作为备份
-      if (isMobileApp) {
-        try {
-          localStorage.setItem('cachedNotes', JSON.stringify(notes.value));
-          console.log('已将小记数据缓存到本地存储');
-        } catch (e) {
-          console.error('本地缓存小记失败:', e);
-        }
-      }
-    } else {
-      // 如果后端没有返回数据，检查是否有本地缓存
-      if (isMobileApp) {
-        try {
-          const cachedData = localStorage.getItem('cachedNotes');
-          if (cachedData) {
-            notes.value = JSON.parse(cachedData);
-            console.log('使用本地缓存的小记数据');
-            return;
-          }
-        } catch (e) {
-          console.error('读取本地缓存失败:', e);
-        }
-      }
-      
-      // 无数据时显示空列表
-      notes.value = [];
-      console.log('后端没有返回小记数据，显示空列表');
-    }
-  } catch (error) {
-    console.error('获取小记失败:', error);
-    errorMessage.value = "获取小记失败，请稍后再试";
-    
-    // 在移动设备上尝试使用本地缓存
-    const isMobileApp = window.Capacitor && window.Capacitor.isNativePlatform();
-    if (isMobileApp) {
-      try {
-        const cachedData = localStorage.getItem('cachedNotes');
-        if (cachedData) {
-          notes.value = JSON.parse(cachedData);
-          console.log('网络请求失败，使用本地缓存的小记数据');
-          return;
-        }
-      } catch (e) {
-        console.error('读取本地缓存失败:', e);
-      }
-    }
-    
-    // 无法获取数据时显示空列表
-    notes.value = [];
-  } finally {
-    isLoading.value = false;
-  }
-};
-
-// 检查并初始化页面数据
-const initPageData = async () => {
-  // 立即显示加载中状态，确保用户知道正在加载数据
-  isLoading.value = true;
-  
-  // 首先检查是否是Capacitor环境（移动设备）
-  const isMobileApp = window.Capacitor && window.Capacitor.isNativePlatform();
-  console.log('环境检测:', isMobileApp ? '移动应用' : '浏览器');
-  
-  // 检查服务器连接
-  try {
-    // 如果是移动设备，增加超时重试次数
-    let serverConnected = false;
-    let retryCount = 0;
-    const maxRetries = isMobileApp ? 2 : 1; // 移动设备多尝试一次
-    
-    while (!serverConnected && retryCount <= maxRetries) {
-      try {
-        console.log(`尝试连接服务器 (${retryCount + 1}/${maxRetries + 1})...`);
-        serverConnected = await testServerConnection();
-        if (serverConnected) {
-          console.log('服务器连接成功');
-          break;
-        }
-      } catch (error) {
-        console.error(`第${retryCount + 1}次连接尝试失败:`, error);
-      }
-      retryCount++;
-      if (retryCount <= maxRetries) {
-        // 等待一段时间后重试
-        await new Promise(resolve => setTimeout(resolve, 500));
-      }
-    }
-    
-    if (serverConnected) {
-      // 服务器连接成功，获取数据
-      await fetchNotes(true);
-    } else {
-      // 服务器连接失败，显示错误信息
-      console.log('服务器连接测试失败，无法获取数据');
-      errorMessage.value = "无法连接到服务器，请检查网络连接";
-      notes.value = [];
-    }
-  } catch (error) {
-    console.error('服务器连接测试失败:', error);
-    errorMessage.value = "服务器连接失败，请稍后再试";
-    notes.value = [];
-  } finally {
-    // 确保无论如何都关闭加载状态
-    isLoading.value = false;
-  }
-  
-  // 获取位置和天气信息
-  getLocationAndWeather();
-};
-
 // 添加onActivated生命周期钩子，确保从缓存激活时刷新数据
 onActivated(() => {
   console.log('NoteView组件激活');
-  initPageData();
+  // 确保每次激活时都获取最新数据
+  fetchNotes(true);
+  getLocationAndWeather();
 });
 
 // 添加单独的路由导航监听函数
@@ -936,11 +895,13 @@ onBeforeUnmount(() => {
   }
 });
 
-// 处理应用从后台恢复到前台的事件
+// 处理应用从后台恢复到前台
 const handleAppResume = () => {
-  console.log('应用从后台恢复，刷新小记数据');
+  console.log('应用从后台恢复运行');
   // 强制刷新数据
-  initPageData();
+  fetchNotes(true);
+  // 刷新位置和天气
+  getLocationAndWeather();
 };
 
 // 添加页面返回时的处理
