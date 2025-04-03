@@ -46,6 +46,23 @@
         </div>
       </div>
 
+      <!-- 总版主称号 -->
+      <div class="title-card">
+        <div class="title-card-header">
+          <span class="title-tag title-head-admin">总版主</span>
+        </div>
+        <div class="title-card-content">
+          <h3>获取方式</h3>
+          <p>由系统管理员授予社区核心版块管理者。</p>
+          <h3>权益</h3>
+          <ul>
+            <li>全站内容管理权限</li>
+            <li>帖子置顶与精华内容评选</li>
+            <li>专属紫粉渐变标识</li>
+          </ul>
+        </div>
+      </div>
+
       <!-- 持之以恒称号 -->
       <div class="title-card">
         <div class="title-card-header">
@@ -183,6 +200,14 @@ const router = useRouter();
   background-color: #e74c3c;
   border: 1px solid #c0392b;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.title-head-admin {
+  color: #ffffff;
+  background: linear-gradient(to right, #8e44ad, #ff79c6);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  font-weight: 600;
+  letter-spacing: 0.5px;
 }
 
 .title-persistent {

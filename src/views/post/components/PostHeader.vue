@@ -100,6 +100,8 @@ const getTitleClass = (title) => {
     return 'title-persistent';
   } else if (title === '巅峰大神') {
     return 'title-master';
+  } else if (title === '总版主') {
+    return 'title-head-admin';
   }
   
   return '';
@@ -280,6 +282,15 @@ const getTitleClass = (title) => {
   letter-spacing: 0.6px !important;
 }
 
+/* 总版主称号 - 紫色到粉色渐变 */
+.title-head-admin {
+  color: #ffffff !important;
+  background: linear-gradient(to right, #8e44ad, #ff79c6) !important;
+  font-weight: 600 !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+  letter-spacing: 0.5px !important;
+}
+
 .post-time {
   font-size: 12px;
   color: #999999;
@@ -370,6 +381,13 @@ const getTitleClass = (title) => {
     color: #ffffff !important;
     background-color: #7d2620 !important;
     border: 1px solid #b74138 !important;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5) !important;
+  }
+  
+  /* 暗黑模式下的总版主称号 - 紫色到粉色渐变 */
+  .title-head-admin {
+    color: #ffffff !important;
+    background: linear-gradient(to right, #6c2e85, #d66baf) !important;
     text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5) !important;
   }
 }

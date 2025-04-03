@@ -14,7 +14,7 @@
           <img src="../assets/logo.png" alt="时光" />
         </div>
         <h1 class="app-title">时光</h1>
-        <div class="app-version">版本 2.1.0</div>
+        <div class="app-version">版本 2.2.0</div>
         <div class="app-slogan">记录每一刻美好时光</div>
         <div class="brand-tag">云步出品</div>
       </div>

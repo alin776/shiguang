@@ -825,6 +825,8 @@ const getTitleClass = (title) => {
     return 'title-persistent';
   } else if (title === '巅峰大神') {
     return 'title-master';
+  } else if (title === '总版主') {
+    return 'title-head-admin';
   }
   
   return '';
@@ -1008,6 +1010,15 @@ const fallbackCopyTextToClipboard = (text) => {
   font-weight: 700 !important;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
   letter-spacing: 0.6px !important;
+}
+
+/* 总版主称号 - 紫色到粉色渐变 */
+.title-head-admin {
+  color: #ffffff !important;
+  background: linear-gradient(to right, #8e44ad, #ff79c6) !important;
+  font-weight: 600 !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+  letter-spacing: 0.5px !important;
 }
 
 @media (prefers-color-scheme: dark) {
