@@ -876,7 +876,7 @@ const getUserProfile = async (req, res) => {
     // 获取用户基本信息
     const [userResult] = await db.execute(
       `SELECT 
-        u.id, u.username, u.avatar, u.bio, u.cover_image, u.title,
+        u.id, u.username, u.avatar, u.bio, u.cover_image, u.title, u.experience, u.level,
         (SELECT COUNT(DISTINCT follower_id) FROM follows WHERE followed_id = ?) as followers_count,
         (SELECT COUNT(DISTINCT followed_id) FROM follows WHERE follower_id = ?) as following_count,
         (SELECT COUNT(*) FROM posts WHERE user_id = u.id) as posts_count,
