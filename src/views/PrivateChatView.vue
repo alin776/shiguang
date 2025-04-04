@@ -1,4 +1,5 @@
 <template>
+  <div class="top-spacing"></div>
   <div class="private-chat-view">
     <div class="header">
       <el-button @click="goBack" text :icon="ArrowLeft" />
@@ -735,7 +736,11 @@ const getLocalDefaultAvatarUrl = () => {
   height: 100vh;
   background-color: #f7f8fa;
 }
-
+.top-spacing {
+  height: 20px;
+  width: 100%;
+  background-color: #f8f9fa;
+}
 .header {
   display: flex;
   align-items: center;
