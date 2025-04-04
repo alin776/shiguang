@@ -63,54 +63,49 @@
         </div>
       </div>
       
-      <!-- 论坛区域 -->
-      <div class="forum-section">
-        <!-- 论坛渐变背景头部 -->
-        <div class="section-banner forum-gradient" @click="router.push('/community/categories')">
-          <div class="section-banner-content">
-            <div class="banner-left">
-              <h3 class="section-banner-title">论坛</h3>
-              <p class="section-banner-subtitle">分享观点，获取帮助，结交朋友</p>
+      <!-- 论坛区域替换为交错梯形设计 -->
+      <div class="interactive-features">
+        <!-- 论坛梯形 -->
+        <div class="feature-trapezoid forum-trapezoid" @click="router.push('/rate-posts')">
+          <div class="trapezoid-content">
+            <div class="feature-icon forum-icon">
+              <el-icon><Star /></el-icon>
             </div>
-            <div class="banner-stats">
-              <div class="banner-stat-item">
-                <div class="banner-stat-value">{{ forumStats.topics }}</div>
-                <div class="banner-stat-label">主题</div>
-              </div>
-              <div class="banner-stat-item">
-                <div class="banner-stat-value">{{ forumStats.posts }}</div>
-                <div class="banner-stat-label">帖子</div>
-              </div>
-              <div class="banner-stat-item">
-                <div class="banner-stat-value">{{ forumStats.daily }}</div>
-                <div class="banner-stat-label">今日</div>
-              </div>
+            <div class="feature-title">时光评分</div>
+            <div class="feature-description">为你喜爱的内容评分，发现高分佳作</div>
+            <div class="feature-action">
+              <span>开始评分</span>
+              <el-icon><ArrowRight /></el-icon>
             </div>
           </div>
         </div>
         
-        <div class="forum-posts">
-          <div v-if="hotPosts.length === 0" class="empty-state">
-            <el-empty description="暂无热门帖子" />
-          </div>
-          <div 
-            v-for="post in hotPosts.slice(0, 5)" 
-            :key="post.id"
-            class="forum-post-item"
-            @click.stop="router.push(`/community/post/${post.id}`)"
-          >
-            <div class="post-content">
-              <div class="post-title">{{ post.title }}</div>
-              <div class="post-meta">
-                <span class="post-author">作者: {{ post.user?.username || '匿名用户' }}</span>
-                <span class="post-stats">
-                  <span>{{ post.reply_count || post.comment_count || 0 }} 回复</span>
-                  <span>{{ post.views || 0 }} 浏览</span>
-                </span>
+        <!-- 评分梯形 -->
+        <div class="feature-trapezoid rating-trapezoid" @click="router.push('/community/categories')">
+          <div class="trapezoid-content">
+            <div class="feature-icon rating-icon">
+              <el-icon><ChatDotRound /></el-icon>
+            </div>
+            <div class="feature-title">时光论坛</div>
+            <div class="feature-description">分享观点，获取帮助，结交朋友</div>
+            <div class="feature-stats">
+              <div class="stat-item">
+                <div class="stat-value">{{ forumStats.topics }}</div>
+                <div class="stat-label">主题</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-value">{{ forumStats.posts }}</div>
+                <div class="stat-label">帖子</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-value">{{ forumStats.daily }}</div>
+                <div class="stat-label">今日</div>
               </div>
             </div>
-            <div class="hot-tag" v-if="post.is_hot">热门</div>
-            <div class="pin-tag" v-if="post.is_pinned">置顶</div>
+            <div class="feature-action">
+              <span>查看热门</span>
+              <el-icon><ArrowRight /></el-icon>
+            </div>
           </div>
         </div>
       </div>
@@ -123,7 +118,7 @@
 import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
-import { View, ChatDotRound, ArrowRight } from "@element-plus/icons-vue";
+import { View, ChatDotRound, ArrowRight, Star } from "@element-plus/icons-vue";
 import BottomNavBar from "@/components/BottomNavBar.vue";
 import { useCommunityStore } from "@/stores/community";
 import { API_BASE_URL } from "@/config";
@@ -147,6 +142,12 @@ const forumStats = ref({
   topics: 0,
   posts: 0,
   daily: 0
+});
+
+// 评分数据
+const ratingStats = ref({
+  items: '58',
+  users: '1.2k'
 });
 
 // 格式化时间
@@ -412,9 +413,38 @@ onMounted(async () => {
   await Promise.all([
     loadAnnouncements(),
     loadHotPosts(),
-    loadActivities()
+    loadActivities(),
+    loadRatingStats()
   ]);
 });
+
+// 加载评分统计数据
+const loadRatingStats = async () => {
+  try {
+    // 尝试获取评分统计数据
+    const response = await fetch(`${API_BASE_URL}/api/rating/stats`, {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      if (data && data.success) {
+        ratingStats.value = {
+          items: data.stats.items || '58',
+          users: data.stats.users || '1.2k'
+        };
+        console.log("加载评分统计数据成功:", ratingStats.value);
+      }
+    } else {
+      console.log("使用默认评分统计数据");
+    }
+  } catch (error) {
+    console.error("加载评分统计数据失败:", error);
+    // 使用默认数据
+  }
+};
 </script>
 
 <style scoped>
@@ -814,5 +844,221 @@ onMounted(async () => {
 
 :deep(.el-carousel__arrow--right) {
   right: 10px;
+}
+
+/* 论坛区域替换为交错梯形设计 */
+.interactive-features {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  margin: 0 16px 20px;
+  height: 380px;
+  overflow: visible;
+}
+
+/* 论坛梯形 */
+.feature-trapezoid {
+  position: absolute;
+  width: 90%;
+  height: 180px;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.feature-trapezoid:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+}
+
+.forum-trapezoid {
+  top: 0;
+  left: 0;
+  transform: perspective(800px) rotateX(5deg) skewY(-3deg);
+  background: linear-gradient(135deg, #1677ff, #0099ff, #00c4ff);
+  z-index: 1;
+}
+
+.forum-trapezoid:hover {
+  transform: perspective(800px) rotateX(5deg) skewY(-3deg) translateY(-5px);
+}
+
+.rating-trapezoid {
+  bottom: 20px;
+  right: 0;
+  transform: perspective(800px) rotateX(-5deg) skewY(3deg);
+  background: linear-gradient(135deg, #ff9f43, #ffbe76, #feca57);
+  z-index: 2;
+}
+
+.rating-trapezoid:hover {
+  transform: perspective(800px) rotateX(-5deg) skewY(3deg) translateY(-5px);
+}
+
+.trapezoid-content {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 20px;
+  transform: skewY(0deg); /* 内容不倾斜，保持正常显示 */
+}
+
+.feature-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.9);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.forum-icon :deep(i) {
+  font-size: 24px;
+  color: #1677ff;
+}
+
+.rating-icon :deep(i) {
+  font-size: 24px;
+  color: #ff9f43;
+}
+
+.feature-title {
+  margin: 0;
+  color: white;
+  font-size: 24px;
+  font-weight: 600;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.feature-description {
+  margin: 5px 0 10px 0;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 14px;
+  max-width: 240px;
+  line-height: 1.4;
+}
+
+.feature-stats {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 15px;
+}
+
+.stat-item {
+  text-align: center;
+}
+
+.stat-value {
+  color: white;
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 2px;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.stat-label {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 12px;
+}
+
+.feature-action {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 8px 16px;
+  border-radius: 20px;
+  background-color: rgba(255, 255, 255, 0.2);
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.feature-action:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+}
+
+.feature-action :deep(i) {
+  margin-left: 5px;
+}
+
+/* 添加响应式设计 */
+@media screen and (max-width: 375px) {
+  .interactive-features {
+    height: 340px;
+  }
+  
+  .feature-trapezoid {
+    width: 95%;
+    height: 170px;
+  }
+  
+  .feature-title {
+    font-size: 20px;
+  }
+  
+  .feature-description {
+    font-size: 12px;
+    max-width: 180px;
+  }
+  
+  .stat-value {
+    font-size: 20px;
+  }
+  
+  .stat-label {
+    font-size: 10px;
+  }
+  
+  .feature-stats {
+    gap: 12px;
+  }
+  
+  .rating-trapezoid {
+    bottom: 30px;
+  }
+}
+
+/* 中等屏幕设备 */
+@media screen and (min-width: 376px) and (max-width: 480px) {
+  .interactive-features {
+    height: 330px;
+  }
+  
+  .feature-trapezoid {
+    width: 92%;
+  }
+}
+
+/* 为更大屏幕优化布局 */
+@media screen and (min-width: 481px) {
+  .interactive-features {
+    max-width: 480px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  
+  .feature-trapezoid {
+    width: 85%;
+  }
+  
+  .forum-trapezoid {
+    left: 5px;
+  }
+  
+  .rating-trapezoid {
+    right: 5px;
+  }
 }
 </style> 

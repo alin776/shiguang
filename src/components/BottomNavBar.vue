@@ -62,12 +62,6 @@ const navItems = [
     activeIcon: "/icons/community-active.svg",
   },
   {
-    path: "/rate-posts",
-    label: "评分",
-    icon: "/icons/rating.svg",
-    activeIcon: "/icons/rating-active.svg",
-  },
-  {
     path: "/notifications",
     label: "通知",
     icon: "/icons/notification.svg",
@@ -95,7 +89,8 @@ const currentRoute = computed(() => {
   } else if (path.startsWith('/notifications/')) {
     return '/notifications';
   } else if (path.startsWith('/rate-posts/')) {
-    return '/rate-posts';
+    // 评分页面现在由小镇入口进入，不需要特殊处理
+    return path;
   }
   return path;
 });
