@@ -143,7 +143,7 @@ onMounted(async () => {
       console.log("提取的头像文件名:", avatarFileName);
     }
 
-    // 处理封面图路径 - 修复字段名：从cover_image获取而不是coverImage
+    // 处理封面图路径 - 统一使用cover_image字段
     const coverImage = authStore.user?.cover_image;
     console.log("用户原始封面图片路径:", coverImage);
     let coverFileName = "";
@@ -214,13 +214,13 @@ const saveProfile = async () => {
       return;
     }
     
-    // 构建要发送的数据 - 使用cover_image字段名而不是coverImage
+    // 构建要发送的数据 - 统一使用cover_image字段名
     const profileData = {
       username: form.value.username.trim(),
       bio: form.value.bio || "",  // 确保bio不为null或undefined
       email: form.value.email,
       avatar: form.value.avatar,  // 只发送文件名
-      cover_image: form.value.coverImage,  // 只发送文件名，但使用正确的字段名
+      cover_image: form.value.coverImage,  // 只发送文件名
     };
     
     console.log("发送的用户资料数据:", profileData);

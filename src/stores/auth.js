@@ -34,10 +34,10 @@ export const useAuthStore = defineStore("auth", {
     isAuthenticated: (state) => !!state.token,
     userAvatar: (state) => getAvatarUrl(state.user?.avatar),
     userCover: (state) => {
-      if (!state.user?.coverImage && !state.user?.cover_image) return '';
+      if (!state.user?.cover_image) return '';
       
-      // 使用cover_image或coverImage
-      const coverUrl = state.user.cover_image || state.user.coverImage;
+      // 使用cover_image
+      const coverUrl = state.user.cover_image;
       if (!coverUrl) return '';
       
       console.log("处理封面图URL (getter):", coverUrl);
@@ -118,9 +118,9 @@ export const useAuthStore = defineStore("auth", {
           avatar: profileData.avatar && profileData.avatar.includes("/")
             ? profileData.avatar.split("/").pop()
             : profileData.avatar,
-          coverImage: profileData.coverImage && profileData.coverImage.includes("/")
-            ? profileData.coverImage.split("/").pop()
-            : profileData.coverImage
+          cover_image: profileData.cover_image && profileData.cover_image.includes("/")
+            ? profileData.cover_image.split("/").pop()
+            : profileData.cover_image
         };
 
         console.log("处理后发送到后端的数据:", dataToSend);
@@ -144,12 +144,13 @@ export const useAuthStore = defineStore("auth", {
             : `${API_BASE_URL}/uploads/avatars/${avatar}`;
         }
 
-        let coverImage = response.data.user.coverImage;
-        if (coverImage && !coverImage.includes("http")) {
+        // 统一使用cover_image
+        let cover_image = response.data.user.cover_image;
+        if (cover_image && !cover_image.includes("http")) {
           // 确保路径格式正确
-          coverImage = coverImage.startsWith("/")
-            ? `${API_BASE_URL}${coverImage}`
-            : `${API_BASE_URL}/uploads/covers/${coverImage}`;
+          cover_image = cover_image.startsWith("/")
+            ? `${API_BASE_URL}${cover_image}`
+            : `${API_BASE_URL}/uploads/covers/${cover_image}`;
         }
 
         // 更新本地存储的用户信息
@@ -157,7 +158,7 @@ export const useAuthStore = defineStore("auth", {
           ...this.user,
           ...response.data.user,
           avatar,
-          coverImage
+          cover_image  // 使用cover_image而不是coverImage
         };
 
         // 更新 localStorage

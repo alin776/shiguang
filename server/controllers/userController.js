@@ -699,7 +699,7 @@ const updateProfile = async (req, res) => {
   try {
     console.log("收到的请求数据:", req.body); // 添加日志
 
-    const { username, bio, email, avatar, coverImage } = req.body;
+    const { username, bio, email, avatar, cover_image } = req.body;
 
     // 验证必要字段
     if (!username || !email) {
@@ -720,7 +720,7 @@ const updateProfile = async (req, res) => {
         bio || "",
         email,
         avatar || null,
-        coverImage || null,
+        cover_image || null,
         req.user.id,
       ]
     );
@@ -746,7 +746,7 @@ const updateProfile = async (req, res) => {
         avatar: updatedUser[0].avatar
           ? `/uploads/avatars/${updatedUser[0].avatar}`
           : null,
-        coverImage: updatedUser[0].cover_image
+        cover_image: updatedUser[0].cover_image
           ? `/uploads/covers/${updatedUser[0].cover_image}`
           : null,
       },
@@ -952,7 +952,7 @@ const getUserProfile = async (req, res) => {
             process.env.API_BASE_URL || "http://localhost:3000"
           }/uploads/avatars/${userResult[0].avatar}`
         : null,
-      coverImage: userResult[0].cover_image
+      cover_image: userResult[0].cover_image
         ? `${
             process.env.API_BASE_URL || "http://localhost:3000"
           }/uploads/covers/${userResult[0].cover_image}`
