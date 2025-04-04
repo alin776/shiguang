@@ -36,12 +36,13 @@ class TitleService {
         `UPDATE users SET title = NULL WHERE title = '巅峰大神'`
       );
 
-      // 查询发帖数量最多的用户
+      // 查询发帖数量最多的用户，排除总版主和云步官方称号
       const [topPosters] = await db.execute(
         `SELECT u.id, COUNT(p.id) as post_count
          FROM users u
          JOIN posts p ON u.id = p.user_id
-         WHERE p.status = 'approved'
+         WHERE p.status = 'approved' 
+         AND (u.title IS NULL OR u.title NOT IN ('总版主', '云步官方'))
          GROUP BY u.id
          ORDER BY post_count DESC
          LIMIT 1`
@@ -51,9 +52,9 @@ class TitleService {
         const topPoster = topPosters[0];
         console.log(`发帖数量最多的用户ID: ${topPoster.id}, 帖子数: ${topPoster.post_count}`);
 
-        // 更新该用户的称号
+        // 更新该用户的称号，确保不会覆盖总版主和云步官方称号
         await db.execute(
-          `UPDATE users SET title = '巅峰大神' WHERE id = ?`,
+          `UPDATE users SET title = '巅峰大神' WHERE id = ? AND (title IS NULL OR title NOT IN ('总版主', '云步官方'))`,
           [topPoster.id]
         );
         console.log(`已将用户 ${topPoster.id} 的称号更新为"巅峰大神"`);
