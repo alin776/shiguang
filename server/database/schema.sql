@@ -479,4 +479,55 @@ CREATE TABLE IF NOT EXISTS `card_game_bets` (
   KEY `fk_card_game_bets_result` (`result_id`),
   CONSTRAINT `fk_card_game_bets_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_card_game_bets_result` FOREIGN KEY (`result_id`) REFERENCES `card_game_results` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='卡片游戏投注记录'; 
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='卡片游戏投注记录';
+
+-- 私聊会话表
+CREATE TABLE IF NOT EXISTS `private_chats` (
+  `id` INT PRIMARY KEY AUTO_INCREMENT,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `last_message_preview` VARCHAR(100) NULL,
+  `is_ephemeral` BOOLEAN DEFAULT FALSE COMMENT '是否为无痕对话'
+);
+
+-- 私聊会话成员表
+CREATE TABLE IF NOT EXISTS `private_chat_members` (
+  `id` INT PRIMARY KEY AUTO_INCREMENT,
+  `chat_id` INT NOT NULL,
+  `user_id` INT NOT NULL,
+  `joined_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `last_read_at` TIMESTAMP NULL,
+  FOREIGN KEY (`chat_id`) REFERENCES `private_chats` (`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  UNIQUE KEY `uq_chat_user` (`chat_id`, `user_id`)
+);
+
+-- 无痕消息表
+CREATE TABLE IF NOT EXISTS `ephemeral_messages` (
+  `id` INT PRIMARY KEY AUTO_INCREMENT,
+  `chat_id` INT NOT NULL,
+  `sender_id` INT NOT NULL,
+  `content` TEXT NULL,
+  `content_type` ENUM('text', 'image', 'audio', 'video', 'file') DEFAULT 'text',
+  `media_url` VARCHAR(255) NULL,
+  `encryption_key` VARCHAR(255) NOT NULL COMMENT '端到端加密密钥',
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `expire_after` INT UNSIGNED NULL COMMENT '消息有效期(秒)',
+  `expire_after_read` BOOLEAN DEFAULT FALSE COMMENT '是否阅后即焚',
+  `is_read` BOOLEAN DEFAULT FALSE,
+  `read_at` TIMESTAMP NULL,
+  `is_deleted` BOOLEAN DEFAULT FALSE,
+  FOREIGN KEY (`chat_id`) REFERENCES `private_chats` (`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`sender_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+);
+
+-- 消息阅读状态表
+CREATE TABLE IF NOT EXISTS `ephemeral_message_reads` (
+  `id` INT PRIMARY KEY AUTO_INCREMENT,
+  `message_id` INT NOT NULL,
+  `user_id` INT NOT NULL,
+  `read_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `will_delete_at` TIMESTAMP NULL COMMENT '预计删除时间',
+  FOREIGN KEY (`message_id`) REFERENCES `ephemeral_messages` (`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+); 

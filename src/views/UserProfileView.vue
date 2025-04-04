@@ -61,6 +61,15 @@
                   >
                     {{ isFollowing ? "已关注" : "关注" }}
                   </el-button>
+                  <el-button
+                    class="message-btn"
+                    round
+                    type="info"
+                    @click="startPrivateChat"
+                  >
+                    <el-icon><ChatDotRound /></el-icon>
+                    私聊
+                  </el-button>
                 </div>
               </div>
             </div>
@@ -151,10 +160,12 @@ import {
   View,
   Star,
   Check,
-  Ticket
+  Ticket,
+  ChatDotRound
 } from "@element-plus/icons-vue";
 import { useAuthStore } from "@/stores/auth";
 import { useCommunityStore } from "@/stores/community";
+import { usePrivateChatStore } from "@/stores/privateChat";
 import BottomNavBar from "@/components/BottomNavBar.vue";
 import axios from "axios";
 import { getAvatarUrl, getImageUrl } from "@/utils/imageHelpers";
@@ -167,6 +178,7 @@ const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
 const communityStore = useCommunityStore();
+const privateChatStore = usePrivateChatStore();
 const { isMounted, checkMounted } = useUnmountDetection();
 
 const userProfile = ref({});
@@ -309,6 +321,19 @@ const getTitleClass = (title) => {
   }
   
   return '';
+};
+
+const startPrivateChat = async () => {
+  try {
+    const userId = route.params.id;
+    // 创建或获取与该用户的私聊会话
+    const chatId = await privateChatStore.createChat(userId);
+    // 跳转到私聊页面
+    router.push(`/private-chat/${chatId}`);
+  } catch (error) {
+    ElMessage.error('创建私聊失败');
+    console.error('创建私聊错误:', error);
+  }
 };
 
 onMounted(() => {
@@ -536,6 +561,21 @@ onMounted(() => {
 }
 
 .follow-btn:hover {
+  background-color: #059669;
+  border-color: #059669;
+}
+
+.message-btn {
+  min-width: 80px;
+  font-weight: 500;
+  border-radius: 30px;
+  font-size: 14px;
+  padding: 6px 12px;
+  background-color: #10b981;
+  border-color: #10b981;
+}
+
+.message-btn:hover {
   background-color: #059669;
   border-color: #059669;
 }

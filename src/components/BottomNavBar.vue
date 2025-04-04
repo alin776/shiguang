@@ -20,6 +20,15 @@
               />
             </el-badge>
           </template>
+          <template v-else-if="item.path === '/private-chats'">
+            <el-badge :value="unreadChatCount" :hidden="!unreadChatCount" :max="99" type="danger">
+              <img
+                :src="currentRoute === item.path ? item.activeIcon : item.icon"
+                class="nav-icon"
+                :alt="item.label"
+              />
+            </el-badge>
+          </template>
           <template v-else>
             <img
               :src="currentRoute === item.path ? item.activeIcon : item.icon"
@@ -42,11 +51,14 @@
 import { computed, ref, onMounted, onBeforeUnmount } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useNotificationStore } from "@/stores/notification";
+import { usePrivateChatStore } from "@/stores/privateChat";
 
 const router = useRouter();
 const route = useRoute();
 const notificationStore = useNotificationStore();
+const privateChatStore = usePrivateChatStore();
 const unreadNotificationCount = ref(0);
+const unreadChatCount = ref(0);
 
 const navItems = [
   {
@@ -60,6 +72,12 @@ const navItems = [
     label: "小镇",
     icon: "/icons/community.svg",
     activeIcon: "/icons/community-active.svg",
+  },
+  {
+    path: "/private-chats",
+    label: "私聊",
+    icon: "/icons/chat.svg",
+    activeIcon: "/icons/chat-active.svg",
   },
   {
     path: "/notifications",
@@ -88,6 +106,10 @@ const currentRoute = computed(() => {
     return '/note';
   } else if (path.startsWith('/notifications/')) {
     return '/notifications';
+  } else if (path.startsWith('/private-chat/')) {
+    return '/private-chats';
+  } else if (path.startsWith('/private-chats')) {
+    return '/private-chats';
   } else if (path.startsWith('/rate-posts/')) {
     // 评分页面现在由小镇入口进入，不需要特殊处理
     return path;
@@ -110,13 +132,25 @@ const loadUnreadNotificationCount = async () => {
   }
 };
 
+// 获取未读私聊消息数量
+const loadUnreadChatCount = async () => {
+  try {
+    await privateChatStore.getChats();
+    unreadChatCount.value = privateChatStore.unreadCount || 0;
+  } catch (error) {
+    console.error("获取未读私聊消息数量失败:", error);
+  }
+};
+
 // 组件挂载时加载未读通知数量
 onMounted(() => {
   loadUnreadNotificationCount();
+  loadUnreadChatCount();
   
-  // 定时刷新未读通知数量
+  // 定时刷新未读消息数量
   const refreshInterval = setInterval(() => {
     loadUnreadNotificationCount();
+    loadUnreadChatCount();
   }, 60000); // 每分钟刷新一次
   
   // 在组件卸载时清除定时器

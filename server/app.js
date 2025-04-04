@@ -32,9 +32,14 @@ const gameRoutes = require("./routes/gameRoutes");
 const emailService = require("./services/emailService");
 const titleService = require("./services/titleService");
 const gameService = require("./services/gameService");
+const scheduledTasks = require("./services/scheduledTasks");
 const authRoutes = require("./routes/authRoutes");
 const adViewRoutes = require("./routes/adViewRoutes");
 const ratePostRoutes = require("./routes/ratePostRoutes");
+const privateChatRoutes = require("./routes/privateChat");
+const { body, param } = require('express-validator');
+const schedule = require('node-schedule');
+const privateChatModel = require('./models/privateChat');
 
 const app = express();
 
@@ -127,7 +132,7 @@ app.get("/api/test", (req, res) => {
 });
 
 // 其他路由
-app.use("/api/users", userRoutes);
+app.use("/api/users", require("./routes/userRoutes"));
 app.use("/api/events", eventRoutes);
 app.use("/api/community", communityRoutes);
 app.use("/api/upload", uploadRoutes);
@@ -148,6 +153,7 @@ app.use("/api/games", gameRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/adview", adViewRoutes);
 app.use("/api/rate-posts", ratePostRoutes);
+app.use("/api/private-chats", privateChatRoutes);
 
 // 初始化邮件服务
 emailService.initMailer();
@@ -157,6 +163,63 @@ titleService.init();
 
 // 初始化游戏服务
 gameService.init();
+
+// 初始化定时任务
+scheduledTasks.init();
+
+// 设置定时任务：每小时清理一次过期消息
+const scheduledCleanup = schedule.scheduleJob('0 * * * *', async () => {
+  console.log('开始执行定期清理任务...');
+  try {
+    const result = await privateChatModel.cleanupExpiredMessages();
+    console.log('定期清理任务完成:', result);
+  } catch (error) {
+    console.error('定期清理任务失败:', error);
+  }
+});
+
+// 每天深夜执行一次数据库工件清理（3:30 AM）
+const databaseMaintenanceJob = schedule.scheduleJob('30 3 * * *', async () => {
+  console.log('开始执行数据库维护任务...');
+  try {
+    const result = await privateChatModel.cleanupDatabaseArtifacts();
+    console.log('数据库维护任务完成:', result);
+  } catch (error) {
+    console.error('数据库维护任务失败:', error);
+  }
+});
+
+// 添加一个立即清理的API端点（仅管理员可用）
+app.post('/api/admin/cleanup', async (req, res) => {
+  try {
+    if (!req.user || !req.user.is_admin) {
+      return res.status(403).json({ message: '无权访问' });
+    }
+    
+    const result = await privateChatModel.cleanupExpiredMessages();
+    return res.json({
+      message: '立即清理完成',
+      result
+    });
+  } catch (error) {
+    console.error('手动清理失败:', error);
+    return res.status(500).json({ message: '清理任务失败' });
+  }
+});
+
+// 优雅关闭：取消定时任务
+process.on('SIGTERM', () => {
+  console.log('正在关闭应用...');
+  if (scheduledCleanup) {
+    scheduledCleanup.cancel();
+    console.log('已取消定时清理任务');
+  }
+  if (databaseMaintenanceJob) {
+    databaseMaintenanceJob.cancel();
+    console.log('已取消数据库维护任务');
+  }
+  process.exit(0);
+});
 
 // 错误处理中间件
 app.use((err, req, res, next) => {
@@ -196,4 +259,5 @@ app.use((req, res) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`服务器运行在端口 ${PORT}`);
+  console.log('已设置每小时清理过期消息');
 });

@@ -1160,6 +1160,43 @@ const getUserStats = async (req, res) => {
   }
 };
 
+// 搜索用户
+const searchUsers = async (req, res) => {
+  try {
+    const query = req.query.query;
+    const type = req.query.type;
+    
+    if (!query || query.length < 2) {
+      return res.status(400).json({ 
+        message: "搜索关键词至少需要2个字符" 
+      });
+    }
+    
+    if (type !== 'search') {
+      return res.status(400).json({ 
+        message: "无效的搜索类型" 
+      });
+    }
+    
+    // 执行用户搜索
+    const [users] = await db.execute(
+      `SELECT id, username, avatar, bio 
+       FROM users 
+       WHERE username LIKE ?
+       LIMIT 20`,
+      [`%${query}%`]
+    );
+    
+    res.json({ 
+      users: users,
+      count: users.length
+    });
+  } catch (error) {
+    console.error("搜索用户失败:", error);
+    res.status(500).json({ message: "搜索用户时发生错误" });
+  }
+};
+
 // 统一导出所有方法
 module.exports = {
   register,
@@ -1184,5 +1221,6 @@ module.exports = {
   getUserPoints,
   getPointsHistory,
   addUserPoints,
-  getUserStats
+  getUserStats,
+  searchUsers
 };

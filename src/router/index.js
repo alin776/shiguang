@@ -31,6 +31,8 @@ import RatePostDetailView from "../views/RatePostDetailView.vue";
 import OptionDetailView from "../views/OptionDetailView.vue"; // 添加选项详情页面组件导入
 import CreateRatePostView from "../views/CreateRatePostView.vue";
 import ForumCategoriesView from "../views/ForumCategoriesView.vue"; // 添加论坛板块页面组件导入
+import PrivateChatListView from "../views/PrivateChatListView.vue"; // 添加私聊列表页面组件导入
+import PrivateChatView from "../views/PrivateChatView.vue"; // 添加私聊详情页面组件导入
 import { ref } from "vue";
 
 const routes = [
@@ -334,6 +336,24 @@ const routes = [
     meta: { 
       requiresAuth: true,
       title: "创建评分贴"
+    },
+  },
+  {
+    path: "/private-chats",
+    name: "PrivateChats",
+    component: PrivateChatListView,
+    meta: { 
+      requiresAuth: true, 
+      title: "私聊列表"
+    },
+  },
+  {
+    path: "/private-chat/:id",
+    name: "PrivateChat",
+    component: PrivateChatView,
+    meta: { 
+      requiresAuth: true, 
+      title: "私聊对话"
     },
   },
   {

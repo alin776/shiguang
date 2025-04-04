@@ -27,10 +27,10 @@ const avatarUpload = multer({
     fileSize: 2 * 1024 * 1024, // 2MB
   },
   fileFilter: (req, file, cb) => {
-    if (file.mimetype === "image/jpeg" || file.mimetype === "image/png") {
+    if (file.mimetype === "image/jpeg" || file.mimetype === "image/png" || file.mimetype === "image/webp" || file.mimetype === "image/gif") {
       cb(null, true);
     } else {
-      cb(new Error("只允许上传 JPG 或 PNG 格式的图片"), false);
+      cb(new Error("只允许上传 JPG, PNG, WebP 或 GIF 格式的图片"), false);
     }
   },
 });
@@ -54,10 +54,10 @@ const coverUpload = multer({
     fileSize: 5 * 1024 * 1024, // 5MB，封面图尺寸较大
   },
   fileFilter: (req, file, cb) => {
-    if (file.mimetype === "image/jpeg" || file.mimetype === "image/png") {
+    if (file.mimetype === "image/jpeg" || file.mimetype === "image/png" || file.mimetype === "image/webp" || file.mimetype === "image/gif") {
       cb(null, true);
     } else {
-      cb(new Error("只允许上传 JPG 或 PNG 格式的图片"), false);
+      cb(new Error("只允许上传 JPG, PNG, WebP 或 GIF 格式的图片"), false);
     }
   },
 });
@@ -241,5 +241,8 @@ router.get("/points/exchanges", auth, pointsProductController.getUserExchanges);
 
 // 获取用户积分历史记录
 router.get("/points-history", auth, userController.getPointsHistory);
+
+// 搜索用户路由
+router.get("/", auth, userController.searchUsers);
 
 module.exports = router;
