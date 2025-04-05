@@ -8,6 +8,12 @@ import App from "./App.vue";
 import router from "./router";
 import { setupAxios } from './utils/axios-interceptor';
 import networkMonitor from './utils/network-monitor';
+import zhCn from 'element-plus/dist/locale/zh-cn.mjs';
+import * as ElementPlusIconsVue from '@element-plus/icons-vue';
+
+// 引入Vant UI组件
+import { SwipeCell } from 'vant';
+import 'vant/lib/index.css';
 
 // 初始化网络监控器
 networkMonitor.init();
@@ -26,7 +32,17 @@ const pinia = createPinia();
 
 app.use(pinia);
 app.use(router);
-app.use(ElementPlus);
+app.use(ElementPlus, {
+  locale: zhCn,
+});
+
+// 注册Element Plus图标
+for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
+  app.component(key, component);
+}
+
+// 注册Vant组件
+app.use(SwipeCell);
 
 // 设置全局axios拦截器
 setupAxios(app);

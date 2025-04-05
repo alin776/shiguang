@@ -172,6 +172,9 @@ const screenshotNotification = ref(true);
 // 自动滚动到最新消息的标志
 const shouldScrollToBottom = ref(true);
 
+// 在script setup部分顶部声明变量区域添加
+const messagePollingTimer = ref(null);
+
 // 消息列表，按时间顺序排序
 const orderedMessages = computed(() => {
   if (!privateChatStore.messages || privateChatStore.messages.length === 0) {
@@ -286,6 +289,10 @@ onMounted(async () => {
   defaultExpireAfterRead.value = true;
   defaultExpireAfter.value = 30;
   screenshotNotification.value = true;
+  
+  // 启动消息自动轮询，每10秒刷新一次
+  messagePollingTimer.value = setInterval(refreshMessages, 10000);
+  console.log('已启动自动消息轮询');
 });
 
 onBeforeUnmount(() => {
@@ -297,6 +304,13 @@ onBeforeUnmount(() => {
   
   // 清理所有计时器
   clearAllMessageTimers();
+  
+  // 清理轮询定时器
+  if (messagePollingTimer.value) {
+    clearInterval(messagePollingTimer.value);
+    messagePollingTimer.value = null;
+    console.log('已停止消息轮询');
+  }
 });
 
 // 设置屏幕截图检测（全平台支持）
@@ -337,9 +351,11 @@ const setupScreenshotDetection = () => {
       // 当应用进入后台，记录时间
       lastHiddenTime.value = new Date();
     } else if (document.visibilityState === 'visible') {
-      // 当应用返回前台，如果时间非常短（例如<500ms），可能是截图
+      // 当应用返回前台，如果时间非常短（例如<100ms），可能是截图
+      // 但是如果时间太长（>1000ms），则可能是用户从其他应用返回或小窗口模式，不触发截图检测
       const now = new Date();
-      if (lastHiddenTime.value && (now - lastHiddenTime.value) < 500) {
+      const timeDiff = now - lastHiddenTime.value;
+      if (lastHiddenTime.value && timeDiff > 10 && timeDiff < 300) {
         handleScreenshotDetected();
       }
     }
@@ -733,8 +749,11 @@ const getLocalDefaultAvatarUrl = () => {
 .private-chat-view {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: 100%;
+  min-height: 100vh;
   background-color: #f7f8fa;
+  position: relative;
+  padding-bottom: env(safe-area-inset-bottom); /* 适配iPhone底部安全区域 */
 }
 .top-spacing {
   height: 20px;
@@ -776,6 +795,7 @@ const getLocalDefaultAvatarUrl = () => {
   flex: 1;
   overflow-y: auto;
   padding: 15px;
+  padding-bottom: 75px; /* 为底部输入框留出空间 */
 }
 
 .empty-chat {
@@ -913,6 +933,11 @@ const getLocalDefaultAvatarUrl = () => {
   padding: 10px 15px;
   background-color: #fff;
   border-top: 1px solid #ebeef5;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
 }
 
 .input-toolbar {

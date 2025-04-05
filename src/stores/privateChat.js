@@ -543,6 +543,100 @@ export const usePrivateChatStore = defineStore('privateChat', {
       this.error = null;
       this.unreadCount = 0;
       this.isConnected = false;
+    },
+    
+    // 置顶/取消置顶会话
+    async toggleChatPin(chatId) {
+      this.loading = true;
+      this.error = null;
+      
+      try {
+        const authStore = useAuthStore();
+        
+        // 查找当前会话
+        const chatIndex = this.chats.findIndex(chat => chat.id === chatId);
+        if (chatIndex === -1) {
+          throw new Error('会话不存在');
+        }
+        
+        // 当前会话的置顶状态
+        const currentPinnedStatus = !!this.chats[chatIndex].is_pinned;
+        // 更新后的状态
+        const newPinnedStatus = !currentPinnedStatus;
+        
+        // 调用API更新会话置顶状态
+        const response = await axios.post(
+          `${API_BASE_URL}/api/private-chats/${chatId}/pin`,
+          { isPinned: newPinnedStatus },
+          {
+            headers: { 
+              Authorization: `Bearer ${authStore.token}`
+            }
+          }
+        );
+        
+        // 更新本地状态
+        this.chats[chatIndex].is_pinned = newPinnedStatus;
+        
+        // 如果是置顶操作，将会话移到列表顶部
+        if (newPinnedStatus) {
+          const pinnedChat = this.chats.splice(chatIndex, 1)[0];
+          this.chats.unshift(pinnedChat);
+        } else {
+          // 如果是取消置顶，则根据更新时间重排会话列表
+          this.chats.sort((a, b) => {
+            // 首先按照置顶状态排序
+            if (a.is_pinned && !b.is_pinned) return -1;
+            if (!a.is_pinned && b.is_pinned) return 1;
+            
+            // 然后按照更新时间排序
+            return new Date(b.updated_at) - new Date(a.updated_at);
+          });
+        }
+        
+        return response.data;
+      } catch (error) {
+        this.error = error.response?.data?.message || '更新会话置顶状态失败';
+        throw error;
+      } finally {
+        this.loading = false;
+      }
+    },
+    
+    // 删除会话
+    async deleteChat(chatId) {
+      this.loading = true;
+      this.error = null;
+      
+      try {
+        const authStore = useAuthStore();
+        
+        // 调用API删除会话
+        const response = await axios.delete(
+          `${API_BASE_URL}/api/private-chats/${chatId}`,
+          {
+            headers: { Authorization: `Bearer ${authStore.token}` }
+          }
+        );
+        
+        // 从本地状态中移除会话
+        this.chats = this.chats.filter(chat => chat.id !== chatId);
+        
+        // 如果当前正在查看的会话被删除，清空当前会话
+        if (this.currentChat && this.currentChat.id === chatId) {
+          this.clearCurrentChat();
+        }
+        
+        // 重新计算未读消息数
+        this.unreadCount = this.chats.reduce((sum, chat) => sum + (chat.unread_count || 0), 0);
+        
+        return response.data;
+      } catch (error) {
+        this.error = error.response?.data?.message || '删除会话失败';
+        throw error;
+      } finally {
+        this.loading = false;
+      }
     }
   }
 }); 

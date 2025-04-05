@@ -388,11 +388,21 @@ export const useCommunityStore = defineStore("community", {
           if (response.data.user.avatar) {
             response.data.user.avatar = getAvatarUrl(response.data.user.avatar);
           }
-          if (response.data.user.coverImage) {
-            response.data.user.coverImage = getImageUrl(
-              response.data.user.coverImage
-            );
+          
+          // 修复封面图片处理逻辑
+          // 1. 优先使用cover_image字段（后端返回的字段名称）
+          // 2. 如果cover_image存在且不为null，将其值赋给coverImage字段
+          if (response.data.user.cover_image) {
+            response.data.user.coverImage = getImageUrl(response.data.user.cover_image);
+          } else if (response.data.user.coverImage) {
+            response.data.user.coverImage = getImageUrl(response.data.user.coverImage);
           }
+          
+          // 添加调试日志
+          console.log("用户封面图数据:", {
+            原始cover_image: response.data.user.cover_image,
+            处理后的coverImage: response.data.user.coverImage
+          });
         }
 
         // 处理帖子图片

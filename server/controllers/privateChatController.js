@@ -396,4 +396,115 @@ exports.burnMessage = async (req, res) => {
       error: error.message
     });
   }
+};
+
+// 置顶/取消置顶会话
+exports.toggleChatPin = async (req, res) => {
+  try {
+    // 验证请求
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ message: errors.array()[0].msg });
+    }
+
+    const { chatId } = req.params;
+    const { isPinned } = req.body;
+    const userId = req.user.id;
+    
+    // 验证用户是否属于这个会话
+    const [members] = await db.execute(
+      'SELECT user_id FROM private_chat_members WHERE chat_id = ? AND user_id = ?',
+      [chatId, userId]
+    );
+    
+    if (members.length === 0) {
+      return res.status(403).json({ message: '您无权操作此会话' });
+    }
+    
+    // 检查会话是否已存在置顶记录
+    const [existingPins] = await db.execute(
+      'SELECT * FROM pinned_chats WHERE chat_id = ? AND user_id = ?',
+      [chatId, userId]
+    );
+    
+    // 如果要置顶且没有记录，则添加记录
+    if (isPinned && existingPins.length === 0) {
+      await db.execute(
+        'INSERT INTO pinned_chats (chat_id, user_id) VALUES (?, ?)',
+        [chatId, userId]
+      );
+    } 
+    // 如果要取消置顶且有记录，则删除记录
+    else if (!isPinned && existingPins.length > 0) {
+      await db.execute(
+        'DELETE FROM pinned_chats WHERE chat_id = ? AND user_id = ?',
+        [chatId, userId]
+      );
+    }
+    
+    return res.json({ 
+      message: isPinned ? '会话已置顶' : '会话已取消置顶',
+      chatId,
+      isPinned
+    });
+  } catch (error) {
+    console.error('更新会话置顶状态失败:', error);
+    return res.status(500).json({ message: '服务器错误' });
+  }
+};
+
+// 删除会话
+exports.deleteChat = async (req, res) => {
+  try {
+    // 验证请求
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ message: errors.array()[0].msg });
+    }
+
+    const { chatId } = req.params;
+    const userId = req.user.id;
+    
+    // 验证用户是否属于这个会话
+    const [members] = await db.execute(
+      'SELECT user_id FROM private_chat_members WHERE chat_id = ? AND user_id = ?',
+      [chatId, userId]
+    );
+    
+    if (members.length === 0) {
+      return res.status(403).json({ message: '您无权删除此会话' });
+    }
+    
+    // 从当前用户的会话列表中删除会话（仅移除会话成员关系，不实际删除会话和消息）
+    await db.execute(
+      'DELETE FROM private_chat_members WHERE chat_id = ? AND user_id = ?',
+      [chatId, userId]
+    );
+    
+    // 删除任何相关的置顶记录
+    await db.execute(
+      'DELETE FROM pinned_chats WHERE chat_id = ? AND user_id = ?',
+      [chatId, userId]
+    );
+    
+    // 检查会话是否还有其他成员
+    const [remainingMembers] = await db.execute(
+      'SELECT COUNT(*) as count FROM private_chat_members WHERE chat_id = ?',
+      [chatId]
+    );
+    
+    // 如果没有成员，则删除会话和所有相关消息
+    if (remainingMembers[0].count === 0) {
+      await db.execute('DELETE FROM ephemeral_messages WHERE chat_id = ?', [chatId]);
+      await db.execute('DELETE FROM private_chats WHERE id = ?', [chatId]);
+    }
+    
+    return res.json({ 
+      message: '会话已删除',
+      chatId
+    });
+  } catch (error) {
+    console.error('删除会话失败:', error);
+    return res.status(500).json({ message: '服务器错误' });
+  }
 }; 

@@ -1,7 +1,7 @@
 {
   "name": "shiguang",
   "private": true,
-  "version": "2.2.0",
+  "version": "2.4.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -28,6 +28,7 @@
     "pinia": "^3.0.1",
     "qrcode": "^1.5.4",
     "swiper": "^11.2.5",
+    "vant": "^4.9.18",
     "vue": "^3.5.13",
     "vue-router": "^4.5.0"
   },

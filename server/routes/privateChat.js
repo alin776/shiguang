@@ -26,6 +26,25 @@ router.get('/:chatId',
   privateChatController.getChatById
 );
 
+// 置顶/取消置顶会话
+router.post('/:chatId/pin',
+  auth,
+  [
+    param('chatId').isInt().withMessage('会话ID必须是整数'),
+    body('isPinned').isBoolean().withMessage('isPinned必须是布尔值')
+  ],
+  privateChatController.toggleChatPin
+);
+
+// 删除会话
+router.delete('/:chatId',
+  auth,
+  [
+    param('chatId').isInt().withMessage('会话ID必须是整数')
+  ],
+  privateChatController.deleteChat
+);
+
 // 发送消息到会话
 router.post('/:chatId/messages',
   auth,

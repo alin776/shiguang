@@ -51,12 +51,14 @@ exports.getUserChats = async (userId) => {
         (SELECT JSON_ARRAYAGG(u.id) 
          FROM private_chat_members pcm 
          JOIN users u ON pcm.user_id = u.id 
-         WHERE pcm.chat_id = c.id AND pcm.user_id != ?) as members
+         WHERE pcm.chat_id = c.id AND pcm.user_id != ?) as members,
+        IFNULL((SELECT COUNT(*) > 0 FROM pinned_chats pc 
+         WHERE pc.chat_id = c.id AND pc.user_id = ?), 0) as is_pinned
       FROM private_chats c
       JOIN private_chat_members pcm ON c.id = pcm.chat_id
       WHERE pcm.user_id = ?
-      ORDER BY c.updated_at DESC`,
-      [userId, userId, userId]
+      ORDER BY is_pinned DESC, c.updated_at DESC`,
+      [userId, userId, userId, userId]
     );
     
     return chats;

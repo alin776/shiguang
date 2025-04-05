@@ -9,30 +9,51 @@
     <div class="chat-list" v-loading="loading">
       <template v-if="chats.length > 0">
         <div
-          v-for="chat in chats"
+          v-for="(chat, index) in chats"
           :key="chat.id"
-          class="chat-item"
-          :class="{ unread: chat.unread_count > 0 }"
-          @click="openChat(chat.id)"
+          class="chat-swipe-wrapper"
         >
-          <div class="chat-avatar">
-            <el-avatar
-              :size="50"
-              :src="getChatAvatar(chat)"
-              @error="handleAvatarError"
-            />
-            <div v-if="chat.is_ephemeral" class="ephemeral-badge" title="无痕会话">
-              <el-icon><Lock /></el-icon>
+          <div 
+            class="chat-item" 
+            :class="{ unread: chat.unread_count > 0, pinned: chat.is_pinned, 'show-actions': activeIndex === index }"
+            @click="openChat(chat.id)"
+            @touchstart="handleTouchStart($event, index)"
+            @touchmove="handleTouchMove($event, index)"
+            @touchend="handleTouchEnd(index)"
+          >
+            <div v-if="chat.is_pinned" class="pin-badge">
+              <el-icon><Top /></el-icon>
             </div>
-          </div>
-          <div class="chat-info">
-            <div class="chat-name">{{ getChatName(chat) }}</div>
-            <div class="last-message">{{ chat.last_message_preview || '暂无消息' }}</div>
-          </div>
-          <div class="chat-meta">
-            <div class="time">{{ formatTime(chat.updated_at) }}</div>
-            <div v-if="chat.unread_count > 0" class="unread-count">
-              {{ chat.unread_count > 99 ? '99+' : chat.unread_count }}
+            <div class="chat-avatar">
+              <el-avatar
+                :size="50"
+                :src="getChatAvatar(chat)"
+                @error="handleAvatarError"
+              />
+              <div v-if="chat.is_ephemeral" class="ephemeral-badge" title="无痕会话">
+                <el-icon><Lock /></el-icon>
+              </div>
+            </div>
+            <div class="chat-info">
+              <div class="chat-name">{{ getChatName(chat) }}</div>
+              <div class="last-message">{{ chat.last_message_preview || '暂无消息' }}</div>
+            </div>
+            <div class="chat-meta">
+              <div class="time">{{ formatTime(chat.updated_at) }}</div>
+              <div v-if="chat.unread_count > 0" class="unread-count">
+                {{ chat.unread_count > 99 ? '99+' : chat.unread_count }}
+              </div>
+            </div>
+            
+            <div class="action-buttons">
+              <div class="action-button pin" @click.stop="toggleChatPin(chat)">
+                <el-icon><component :is="chat.is_pinned ? 'Bottom' : 'Top'" /></el-icon>
+                <span>{{ chat.is_pinned ? '取消置顶' : '置顶' }}</span>
+              </div>
+              <div class="action-button delete" @click.stop="deleteChat(chat)">
+                <el-icon><Delete /></el-icon>
+                <span>删除</span>
+              </div>
             </div>
           </div>
         </div>
@@ -91,8 +112,8 @@
 <script setup>
 import { ref, onMounted, computed, onBeforeUnmount } from 'vue';
 import { useRouter } from 'vue-router';
-import { ElMessage } from 'element-plus';
-import { Lock, InfoFilled, Plus, Search } from '@element-plus/icons-vue';
+import { ElMessage, ElMessageBox } from 'element-plus';
+import { Lock, InfoFilled, Plus, Search, Delete, Top, Bottom } from '@element-plus/icons-vue';
 import { usePrivateChatStore } from '@/stores/privateChat';
 import { useAuthStore } from '@/stores/auth';
 import BottomNavBar from '@/components/BottomNavBar.vue';
@@ -110,6 +131,10 @@ const showNewChat = ref(false);
 const searchQuery = ref('');
 const searchedUsers = ref([]);
 const isSearching = ref(false);
+const activeIndex = ref(null);
+const touchStartX = ref(0);
+const touchStartY = ref(0);
+const currentIndex = ref(null);
 
 const chats = computed(() => privateChatStore.chats || []);
 
@@ -264,6 +289,68 @@ const formatTime = (timestamp) => {
     return date.format('YYYY-MM-DD');
   }
 };
+
+const toggleChatPin = async (chat) => {
+  try {
+    await privateChatStore.toggleChatPin(chat.id);
+    ElMessage.success(!chat.is_pinned ? '已置顶' : '已取消置顶');
+  } catch (error) {
+    ElMessage.error(!chat.is_pinned ? '置顶失败' : '取消置顶失败');
+    console.error('置顶操作失败:', error);
+  }
+};
+
+const deleteChat = async (chat) => {
+  try {
+    await ElMessageBox.confirm('确定要删除此会话吗？', '删除会话', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    });
+    
+    await privateChatStore.deleteChat(chat.id);
+    ElMessage.success('会话已删除');
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error('删除会话失败');
+      console.error('删除会话失败:', error);
+    }
+  }
+};
+
+const handleTouchStart = (event, index) => {
+  // 记录起始触摸点
+  if (event.touches.length === 1) {
+    const touch = event.touches[0];
+    touchStartX.value = touch.clientX;
+    touchStartY.value = touch.clientY;
+    currentIndex.value = index;
+  }
+};
+
+const handleTouchMove = (event, index) => {
+  // 如果不是当前处理的索引，忽略
+  if (currentIndex.value !== index) return;
+  
+  if (event.touches.length === 1) {
+    const touch = event.touches[0];
+    const deltaX = touchStartX.value - touch.clientX;
+    
+    // 如果是向左滑动（正值）并且大于最小阈值，显示按钮
+    if (deltaX > 50) {
+      activeIndex.value = index;
+    } else {
+      activeIndex.value = null;
+    }
+  }
+};
+
+const handleTouchEnd = (index) => {
+  // 重置状态
+  touchStartX.value = 0;
+  touchStartY.value = 0;
+  currentIndex.value = null;
+};
 </script>
 
 <style scoped>
@@ -303,18 +390,38 @@ const formatTime = (timestamp) => {
   padding: 10px 0;
 }
 
+.chat-swipe-wrapper {
+  margin-bottom: 10px;
+  background-color: transparent;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
 .chat-item {
   display: flex;
   padding: 15px;
   background-color: #fff;
-  margin-bottom: 10px;
   border-radius: 8px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   position: relative;
+  overflow: hidden;
+}
+
+.chat-item.pinned {
+  background-color: #f5faff;
+  border-left: 3px solid #409eff;
 }
 
 .chat-item.unread {
   background-color: #f0f9ff;
+}
+
+.pin-badge {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  color: #409eff;
+  font-size: 12px;
 }
 
 .chat-avatar {
@@ -387,6 +494,44 @@ const formatTime = (timestamp) => {
   padding: 0 5px;
 }
 
+.action-buttons {
+  display: flex;
+  position: absolute;
+  right: -160px; /* 初始位置，隐藏在右侧 */
+  top: 0;
+  height: 100%;
+  transition: transform 0.3s ease;
+}
+
+.chat-item.show-actions .action-buttons {
+  transform: translateX(-160px); /* 显示按钮 */
+}
+
+.action-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 70px;
+  height: 100%;
+  color: #fff;
+  font-size: 14px;
+  z-index: 10;
+}
+
+.action-button.pin {
+  background-color: #409eff;
+}
+
+.action-button.delete {
+  background-color: #f56c6c;
+}
+
+.action-button .el-icon {
+  font-size: 20px;
+  margin-bottom: 5px;
+}
+
 .user-search-results {
   max-height: 300px;
   overflow-y: auto;
@@ -430,5 +575,18 @@ const formatTime = (timestamp) => {
 .ephemeral-hint .el-icon {
   margin-right: 5px;
   color: #409eff;
+}
+
+/* 移除不需要的Vant样式覆盖 */
+:deep(.van-swipe-cell__left) {
+  display: none;
+}
+
+:deep(.van-swipe-cell__right) {
+  display: none;
+}
+
+:deep(.van-swipe-cell__wrapper) {
+  display: none;
 }
 </style> 

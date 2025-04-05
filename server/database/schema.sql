@@ -531,3 +531,13 @@ CREATE TABLE IF NOT EXISTS `ephemeral_message_reads` (
   FOREIGN KEY (`message_id`) REFERENCES `ephemeral_messages` (`id`) ON DELETE CASCADE,
   FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ); 
+ CREATE TABLE IF NOT EXISTS pinned_chats (
+        id INT NOT NULL AUTO_INCREMENT,
+        chat_id INT NOT NULL,
+        user_id INT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        UNIQUE KEY unique_pin (chat_id, user_id),
+        FOREIGN KEY (chat_id) REFERENCES private_chats(id) ON DELETE CASCADE,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      );
